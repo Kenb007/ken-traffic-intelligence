@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Newsreader, Outfit } from "next/font/google"
+import { IBM_Plex_Mono, Newsreader, Outfit } from "next/font/google"
 import "./globals.css"
 
 const outfit = Outfit({
@@ -12,6 +12,12 @@ const newsreader = Newsreader({
   variable: "--font-newsreader",
 })
 
+const hud = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-hud",
+})
+
 export const metadata: Metadata = {
   title: "Harbour corridors · Hong Kong Transport Department",
   description:
@@ -20,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${outfit.variable} ${newsreader.variable} dark h-full antialiased`}>
+    <html lang="en" className={`${outfit.variable} ${newsreader.variable} ${hud.variable} dark h-full antialiased`}>
       <body className={`${outfit.className} min-h-full`}>{children}</body>
     </html>
   )

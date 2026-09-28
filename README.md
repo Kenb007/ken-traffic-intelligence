@@ -1,6 +1,6 @@
 # Harbour corridors
 
-A Hong Kong smart-city view for the Transport Department open data Keith Li asked to study. It draws live strategic-road speeds as moving traffic over Esri satellite imagery, with a short flyover of Victoria Harbour. Journey-time boards on the approaches to the three harbour crossings sit on the map as minute counts. Traffic notices and a journey-time reading stay in the side panel.
+A Hong Kong smart-city view for the Transport Department open data Keith Li asked to study. It draws live strategic-road speeds as moving traffic over Esri satellite imagery, with a short flyover of Victoria Harbour. An operations strip across the top shows the fastest minute to each harbour crossing, the network speed, and a Hong Kong clock. Journey-time boards sit on the map as minute counts, and a notice line runs along the bottom.
 
 No account, no database, and no Mapbox or Cesium ion token. Elevation comes from the public AWS Terrarium tiles. Those tiles do not send a browser CORS header, so the app proxies them at `/api/dem/{z}/{x}/{y}.png`. If that proxy fails, the map drops terrain and stays pitched over the satellite imagery.
 

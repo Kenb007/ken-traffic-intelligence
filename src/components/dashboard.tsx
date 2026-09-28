@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
+import { OpsHud } from "@/components/ops-hud"
 import { SidePanel } from "@/components/side-panel"
 import type { ApproachesResponse, JourneyResponse, NoticesResponse, TrafficResponse } from "@/lib/types"
 
@@ -158,9 +159,15 @@ export function Dashboard() {
         onMap={setMapLive}
         onTerrain={(available) => setTerrain(available ? "on" : "off")}
       />
-      <div className="pointer-events-none absolute top-4 left-14 z-10 hidden rounded-full border border-white/15 bg-[#07131c]/80 px-3 py-1 text-xs text-zinc-100 sm:block">
-        Victoria Harbour · strategic roads
-      </div>
+      <OpsHud
+        traffic={traffic}
+        trafficLoading={trafficLoading}
+        trafficError={trafficError}
+        approaches={approaches}
+        journey={journey}
+        notices={notices}
+        mapLive={mapLive}
+      />
       <SidePanel
         open={open}
         onToggle={() => setOpen((value) => !value)}

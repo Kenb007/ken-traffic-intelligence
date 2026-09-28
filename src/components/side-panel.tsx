@@ -49,7 +49,7 @@ export function SidePanel(props: SidePanelProps) {
   const fastest = fastestApproach(props.approaches?.points ?? [])
   return (
     <aside
-      className={`pointer-events-auto absolute z-10 flex flex-col overflow-hidden border border-white/15 bg-[#07131c]/88 text-zinc-100 shadow-2xl backdrop-blur-xl ${
+      className={`pointer-events-auto absolute z-10 flex flex-col overflow-hidden border border-cyan-200/30 bg-[#041018]/82 text-zinc-100 shadow-[0_0_32px_rgba(34,211,238,0.08)] backdrop-blur-xl ${
         props.open
           ? "inset-x-3 bottom-3 max-h-[min(52vh,34rem)] rounded-2xl lg:inset-x-auto lg:top-4 lg:right-4 lg:bottom-4 lg:w-[24.5rem] lg:max-h-none"
           : "inset-x-3 bottom-3 rounded-2xl lg:inset-x-auto lg:top-auto lg:right-4 lg:bottom-4 lg:w-[24.5rem]"
@@ -57,14 +57,12 @@ export function SidePanel(props: SidePanelProps) {
     >
       <header className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
         <div>
-          <p className="text-[0.7rem] tracking-[0.16em] text-teal-200/80 uppercase">
+          <p className="font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.2em] text-cyan-200/80 uppercase">
             Transport Department
           </p>
-          <h1 className="font-[family-name:var(--font-newsreader)] text-2xl leading-tight text-white">
-            Harbour corridors
-          </h1>
+          <h1 className="font-[family-name:var(--font-hud)] text-xl leading-tight text-white">Harbour board</h1>
           <p className="mt-1 text-sm text-zinc-300">
-            Live speeds on strategic roads, over a satellite view of Hong Kong.
+            Speeds, crossing minutes, and notices for the harbour approaches.
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-2">
@@ -126,7 +124,7 @@ function SpeedSection({
   terrain: "pending" | "on" | "off"
 }) {
   return (
-    <Card size="sm" className="border-white/10 bg-white/5 text-zinc-100 ring-white/10">
+    <Card size="sm" className="border-cyan-200/15 bg-cyan-950/20 text-zinc-100 ring-cyan-200/10">
       <CardHeader>
         <CardTitle>Citywide speed</CardTitle>
         <CardDescription className="text-zinc-400">
@@ -193,7 +191,7 @@ function SpeedSection({
 
 function JourneySection({ journey, loading }: { journey: JourneyResponse | null; loading: boolean }) {
   return (
-    <Card size="sm" className="border-white/10 bg-white/5 text-zinc-100 ring-white/10">
+    <Card size="sm" className="border-cyan-200/15 bg-cyan-950/20 text-zinc-100 ring-cyan-200/10">
       <CardHeader>
         <CardTitle>Journey time</CardTitle>
         <CardDescription className="text-zinc-400">
@@ -286,7 +284,7 @@ function ApproachSection({
   onShow: (coordinates: [number, number]) => void
 }) {
   return (
-    <Card size="sm" className="border-white/10 bg-white/5 text-zinc-100 ring-white/10">
+    <Card size="sm" className="border-cyan-200/15 bg-cyan-950/20 text-zinc-100 ring-cyan-200/10">
       <CardHeader>
         <CardTitle>Crossing approaches</CardTitle>
         <CardDescription className="text-zinc-400">
@@ -376,7 +374,7 @@ function NoticeSection({
   error: string | null
 }) {
   return (
-    <Card size="sm" className="border-white/10 bg-white/5 text-zinc-100 ring-white/10">
+    <Card size="sm" className="border-cyan-200/15 bg-cyan-950/20 text-zinc-100 ring-cyan-200/10">
       <CardHeader>
         <CardTitle>Traffic notices</CardTitle>
         <CardDescription className="text-zinc-400">
@@ -461,7 +459,7 @@ function SourceSection({
     },
   ]
   return (
-    <Card size="sm" className="border-white/10 bg-white/5 text-zinc-100 ring-white/10">
+    <Card size="sm" className="border-cyan-200/15 bg-cyan-950/20 text-zinc-100 ring-cyan-200/10">
       <CardHeader>
         <CardTitle>Datasets in this slice</CardTitle>
         <CardDescription className="text-zinc-400">

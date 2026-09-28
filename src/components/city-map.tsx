@@ -398,7 +398,7 @@ function approachButton(point: ApproachPoint): HTMLButtonElement {
     "font:600 12px/1.2 Outfit,sans-serif",
     "color:#07131c",
     `background:${PILL[worstColour(point)]}`,
-    "box-shadow:0 1px 4px rgba(0,0,0,.45)",
+    `box-shadow:0 0 14px ${PILL[worstColour(point)]}, 0 1px 4px rgba(0,0,0,.45)`,
     "cursor:pointer",
   ].join(";")
   return button
