@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
 import { SidePanel } from "@/components/side-panel"
-import type { JourneyResponse, NoticesResponse, TrafficResponse } from "@/lib/types"
+import type { ApproachesResponse, JourneyResponse, NoticesResponse, TrafficResponse } from "@/lib/types"
 
 export function Dashboard() {
   const search = useSearchParams()
@@ -22,6 +22,9 @@ export function Dashboard() {
   const [noticesLoading, setNoticesLoading] = useState(true)
   const [journey, setJourney] = useState<JourneyResponse | null>(null)
   const [journeyLoading, setJourneyLoading] = useState(true)
+  const [approaches, setApproaches] = useState<ApproachesResponse | null>(null)
+  const [approachesLoading, setApproachesLoading] = useState(true)
+  const [focus, setFocus] = useState<{ token: number; coordinates: [number, number] } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -115,10 +118,41 @@ export function Dashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const response = await fetch("/api/approaches", { cache: "no-store" })
+        const body = (await response.json()) as ApproachesResponse
+        if (cancelled) return
+        setApproaches(body)
+      } catch {
+        if (!cancelled) {
+          setApproaches({
+            ok: false,
+            error: "Crossing approaches failed to load.",
+            capturedAt: null,
+            points: [],
+          })
+        }
+      } finally {
+        if (!cancelled) setApproachesLoading(false)
+      }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
   return (
     <main className="relative h-dvh overflow-hidden bg-[#061018]">
       <CityMap
         corridors={traffic?.ok ? traffic.corridors : []}
+        approaches={approaches?.ok ? approaches.points : []}
+        focus={focus}
         flyToken={flyToken}
         disabled={mapDown}
         onMap={setMapLive}
@@ -139,6 +173,11 @@ export function Dashboard() {
         noticesError={noticesError}
         journey={journey}
         journeyLoading={journeyLoading}
+        approaches={approaches}
+        approachesLoading={approachesLoading}
+        onShowApproach={(coordinates) =>
+          setFocus((current) => ({ token: (current?.token ?? 0) + 1, coordinates }))
+        }
         terrain={terrain}
         mapLive={mapLive}
       />

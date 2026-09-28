@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { bandLabel, formatSpeed } from "@/lib/speed"
 import type {
+  ApproachPoint,
+  ApproachesResponse,
   HarbourJourney,
   JourneyResponse,
   NoticesResponse,
@@ -35,12 +37,16 @@ type SidePanelProps = {
   noticesError: string | null
   journey: JourneyResponse | null
   journeyLoading: boolean
+  approaches: ApproachesResponse | null
+  approachesLoading: boolean
+  onShowApproach: (coordinates: [number, number]) => void
   terrain: "pending" | "on" | "off"
   mapLive: boolean
 }
 
 export function SidePanel(props: SidePanelProps) {
   const mean = props.traffic?.summary.meanSpeedKmh ?? null
+  const fastest = fastestApproach(props.approaches?.points ?? [])
   return (
     <aside
       className={`pointer-events-auto absolute z-10 flex flex-col overflow-hidden border border-white/15 bg-[#07131c]/88 text-zinc-100 shadow-2xl backdrop-blur-xl ${
@@ -72,7 +78,8 @@ export function SidePanel(props: SidePanelProps) {
       </header>
       {!props.open ? (
         <p className="px-4 pb-4 text-sm text-zinc-200">
-          Citywide detector speed {formatSpeed(mean)}.{" "}
+          Citywide detector speed {formatSpeed(mean)}.
+          {fastest == null ? "" : ` Fastest crossing approach ${fastest} min.`}{" "}
           {props.mapLive ? "The map stays up either way." : "The satellite view is unavailable."}
         </p>
       ) : (
@@ -84,12 +91,23 @@ export function SidePanel(props: SidePanelProps) {
             terrain={props.terrain}
           />
           <JourneySection journey={props.journey} loading={props.journeyLoading} />
+          <ApproachSection
+            approaches={props.approaches}
+            loading={props.approachesLoading}
+            mapLive={props.mapLive}
+            onShow={props.onShowApproach}
+          />
           <NoticeSection
             notices={props.notices}
             loading={props.noticesLoading}
             error={props.noticesError}
           />
-          <SourceSection traffic={props.traffic} notices={props.notices} journey={props.journey} />
+          <SourceSection
+            traffic={props.traffic}
+            notices={props.notices}
+            journey={props.journey}
+            approaches={props.approaches}
+          />
         </div>
       )}
     </aside>
@@ -256,6 +274,98 @@ function HarbourRow({ row }: { row: HarbourJourney }) {
   )
 }
 
+function ApproachSection({
+  approaches,
+  loading,
+  mapLive,
+  onShow,
+}: {
+  approaches: ApproachesResponse | null
+  loading: boolean
+  mapLive: boolean
+  onShow: (coordinates: [number, number]) => void
+}) {
+  return (
+    <Card size="sm" className="border-white/10 bg-white/5 text-zinc-100 ring-white/10">
+      <CardHeader>
+        <CardTitle>Crossing approaches</CardTitle>
+        <CardDescription className="text-zinc-400">
+          Minute counts from the journey-time boards on roads that approach the three harbour crossings.
+          The number on the map is the fastest of those crossings.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {loading ? <Skeleton className="h-20 w-full bg-white/10" /> : null}
+        {approaches && !approaches.ok ? (
+          <ErrorNote message={approaches.error ?? "Crossing approaches did not load."} />
+        ) : null}
+        {approaches?.ok && approaches.capturedAt ? (
+          <p className="text-sm text-zinc-300">Boards captured {approaches.capturedAt}.</p>
+        ) : null}
+        <ul className="space-y-3">
+          {approaches?.points.map((point) => (
+            <li key={point.id} className="border-t border-white/10 pt-3 first:border-0 first:pt-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm text-white">{point.name}</p>
+                  <ul className="mt-1 space-y-1">
+                    {point.legs.map((leg) => (
+                      <li key={leg.code} className="flex gap-2 text-sm text-zinc-300">
+                        <span className={`mt-1 size-2 shrink-0 rounded-full ${toneClass(leg.colour)}`} />
+                        <span>
+                          {leg.name}
+                          {leg.minutes == null ? "" : ` · ${leg.minutes} min`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-white/15 bg-transparent text-zinc-100"
+                  disabled={!mapLive}
+                  onClick={() => onShow(point.coordinates)}
+                >
+                  Show
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+function fastestApproach(points: ApproachPoint[]): number | null {
+  let best: number | null = null
+  for (const point of points) {
+    for (const leg of point.legs) {
+      if (leg.minutes == null) continue
+      if (best == null || leg.minutes < best) best = leg.minutes
+    }
+  }
+  return best
+}
+
+function toneClass(colour: HarbourJourney["colour"]): string {
+  switch (colour) {
+    case "red":
+      return "bg-[#FF5D73]"
+    case "amber":
+      return "bg-[#FFC857]"
+    case "green":
+      return "bg-[#3DDC97]"
+    case "none":
+      return "bg-zinc-400"
+    default: {
+      const exhaustive: never = colour
+      return exhaustive
+    }
+  }
+}
+
 function NoticeSection({
   notices,
   loading,
@@ -303,10 +413,12 @@ function SourceSection({
   traffic,
   notices,
   journey,
+  approaches,
 }: {
   traffic: TrafficResponse | null
   notices: NoticesResponse | null
   journey: JourneyResponse | null
+  approaches: ApproachesResponse | null
 }) {
   const rows = [
     {
@@ -340,6 +452,12 @@ function SourceSection({
       href: "https://data.gov.hk/en-data/dataset/hk-td-sm_8-journey-time-indicators-v2",
       state: journey == null ? "Checking" : journey.jtis.ok ? "Live" : "Error",
       detail: "Related live feed from the strategic-roads theme. Harbour rows are listed above.",
+    },
+    {
+      name: "HKeMobility journey-time boards",
+      href: "https://www.hkemobility.gov.hk/en/",
+      state: approaches == null ? "Checking" : approaches.ok ? "Live" : "Error",
+      detail: "Board locations and live minutes to the three harbour crossings.",
     },
   ]
   return (

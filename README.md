@@ -1,6 +1,6 @@
 # Harbour corridors
 
-A Hong Kong smart-city view for the Transport Department open data Keith Li asked to study. It draws live strategic-road speeds as moving traffic over Esri satellite imagery, with a short flyover of Victoria Harbour, and keeps traffic notices and a journey-time reading in a side panel.
+A Hong Kong smart-city view for the Transport Department open data Keith Li asked to study. It draws live strategic-road speeds as moving traffic over Esri satellite imagery, with a short flyover of Victoria Harbour. Journey-time boards on the approaches to the three harbour crossings sit on the map as minute counts. Traffic notices and a journey-time reading stay in the side panel.
 
 No account, no database, and no Mapbox or Cesium ion token. Elevation comes from the public AWS Terrarium tiles. Those tiles do not send a browser CORS header, so the app proxies them at `/api/dem/{z}/{x}/{y}.png`. If that proxy fails, the map drops terrain and stays pitched over the satellite imagery.
 
@@ -26,5 +26,6 @@ Road names stay as published, usually Traditional Chinese. The interface copy is
 | Traffic Data Analytics System | [hk-td-tis_28-traffic-data-tdas](https://data.gov.hk/en-data/dataset/hk-td-tis_28-traffic-data-tdas) | One shortest-time forecast, using the sample coordinates in the TDAS specification. The response has route ids, not a line. |
 | Traffic Data of Strategic / Major Roads | [hk-td-sm_4-traffic-data-strategic-major-roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) | Detector coordinates, raw lane speeds (about every minute), and processed segment speeds (about every two minutes). Moving particles follow the detector chains. |
 | Journey time indicators (2nd generation) | [hk-td-sm_8-journey-time-indicators-v2](https://data.gov.hk/en-data/dataset/hk-td-sm_8-journey-time-indicators-v2) | Related live feed from the same strategic-roads theme. Harbour indicator rows and the citywide colour tally. |
+| HKeMobility journey-time boards | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Board positions and live minutes to the Cross Harbour Tunnel, Eastern Harbour Crossing, and Western Harbour Crossing. The map pill is the fastest of those three. |
 
 Basemap tiles are [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer) with the Esri reference overlay for place names. Imagery © Esri.

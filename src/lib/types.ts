@@ -102,3 +102,24 @@ export type JourneyResponse = {
   tdas: TdasJourney
   jtis: JtisSummary
 }
+
+export type ApproachLeg = {
+  code: string
+  name: string
+  minutes: number | null
+  colour: HarbourJourney["colour"]
+}
+
+export type ApproachPoint = {
+  id: string
+  name: string
+  coordinates: [number, number]
+  legs: ApproachLeg[]
+}
+
+export type ApproachesResponse = {
+  ok: boolean
+  error?: string
+  capturedAt: string | null
+  points: ApproachPoint[]
+}

@@ -5,6 +5,7 @@ import {
   GeoJSONSource,
   GPUInitializationError,
   Map,
+  Marker,
   NavigationControl,
   Popup,
   setWorkerUrl,
@@ -14,7 +15,7 @@ import {
   type MapMouseEvent,
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
-import type { Corridor, SpeedBand } from "@/lib/types"
+import type { ApproachPoint, Corridor, HarbourJourney, SpeedBand } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
@@ -48,15 +49,37 @@ type AnimLine = {
 
 type Particle = { line: number; t: number }
 
+type MapFocus = {
+  token: number
+  coordinates: [number, number]
+}
+
 type CityMapProps = {
   corridors: Corridor[]
+  approaches: ApproachPoint[]
+  focus: MapFocus | null
   flyToken: number
   onTerrain: (available: boolean) => void
   onMap: (available: boolean) => void
   disabled?: boolean
 }
 
-export function CityMap({ corridors, flyToken, onTerrain, onMap, disabled = false }: CityMapProps) {
+const PILL: Record<HarbourJourney["colour"], string> = {
+  red: "#FF5D73",
+  amber: "#FFC857",
+  green: "#3DDC97",
+  none: "#C9D2DC",
+}
+
+export function CityMap({
+  corridors,
+  approaches,
+  focus,
+  flyToken,
+  onTerrain,
+  onMap,
+  disabled = false,
+}: CityMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const linesRef = useRef<AnimLine[]>([])
@@ -310,6 +333,32 @@ export function CityMap({ corridors, flyToken, onTerrain, onMap, disabled = fals
     }
   }, [disabled, flyToken, mapReady])
 
+  useEffect(() => {
+    const map = mapRef.current
+    if (disabled || !map || !mapReady) return
+    const markers = approaches.map((point) => {
+      const marker = new Marker({ element: approachButton(point), anchor: "center" })
+        .setLngLat(point.coordinates)
+        .setPopup(new Popup({ closeButton: true, maxWidth: "280px", offset: 16 }).setDOMContent(approachPopup(point)))
+        .addTo(map)
+      return marker
+    })
+    return () => {
+      markers.forEach((marker) => marker.remove())
+    }
+  }, [approaches, disabled, mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (disabled || !focus || !map || !mapReady) return
+    map.flyTo({
+      center: focus.coordinates,
+      zoom: Math.max(map.getZoom(), 13.4),
+      pitch: 55,
+      essential: true,
+    })
+  }, [disabled, focus, mapReady])
+
   return (
     <>
       <div
@@ -331,6 +380,56 @@ function isGpuFailure(error: unknown): boolean {
   if (error instanceof GPUInitializationError) return true
   const message = error instanceof Error ? error.message : ""
   return /webgl|gpu initialization/i.test(message)
+}
+
+function approachButton(point: ApproachPoint): HTMLButtonElement {
+  const minutes = shortestMinutes(point)
+  const button = document.createElement("button")
+  button.type = "button"
+  button.className = "approach-time"
+  button.textContent = minutes == null ? "—" : `${minutes} min`
+  button.setAttribute("aria-label", `${point.name}, ${button.textContent}`)
+  button.style.cssText = [
+    "border:0",
+    "border-radius:999px",
+    "padding:3px 8px",
+    "font:600 12px/1.2 Outfit,sans-serif",
+    "color:#07131c",
+    `background:${PILL[worstColour(point)]}`,
+    "box-shadow:0 1px 4px rgba(0,0,0,.45)",
+    "cursor:pointer",
+  ].join(";")
+  return button
+}
+
+function approachPopup(point: ApproachPoint): HTMLElement {
+  const root = document.createElement("div")
+  root.style.cssText = "font:13px/1.45 Outfit,sans-serif;color:#102033"
+  const title = document.createElement("strong")
+  title.textContent = point.name
+  root.append(title)
+  for (const leg of point.legs) {
+    const line = document.createElement("div")
+    line.textContent = leg.minutes == null ? leg.name : `${leg.name} · ${leg.minutes} min`
+    root.append(line)
+  }
+  return root
+}
+
+function shortestMinutes(point: ApproachPoint): number | null {
+  let best: number | null = null
+  for (const leg of point.legs) {
+    if (leg.minutes == null) continue
+    if (best == null || leg.minutes < best) best = leg.minutes
+  }
+  return best
+}
+
+function worstColour(point: ApproachPoint): HarbourJourney["colour"] {
+  const rank: Record<HarbourJourney["colour"], number> = { none: 0, green: 1, amber: 2, red: 3 }
+  return point.legs.reduce<HarbourJourney["colour"]>((worst, leg) => {
+    return rank[leg.colour] > rank[worst] ? leg.colour : worst
+  }, "none")
 }
 
 function emptyCollection(): GeoJSON.FeatureCollection {
