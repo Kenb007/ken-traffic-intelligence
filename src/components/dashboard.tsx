@@ -9,6 +9,7 @@ import type { JourneyResponse, NoticesResponse, TrafficResponse } from "@/lib/ty
 export function Dashboard() {
   const search = useSearchParams()
   const forceDown = search.get("feed") === "down"
+  const mapDown = search.get("map") === "down"
   const [open, setOpen] = useState(true)
   const [flyToken, setFlyToken] = useState(0)
   const [terrain, setTerrain] = useState<"pending" | "on" | "off">("pending")
@@ -118,6 +119,7 @@ export function Dashboard() {
       <CityMap
         corridors={traffic?.ok ? traffic.corridors : []}
         flyToken={flyToken}
+        disabled={mapDown}
         onTerrain={(available) => setTerrain(available ? "on" : "off")}
       />
       <div className="pointer-events-none absolute top-4 left-14 z-10 hidden rounded-full border border-white/15 bg-[#07131c]/80 px-3 py-1 text-xs text-zinc-100 sm:block">

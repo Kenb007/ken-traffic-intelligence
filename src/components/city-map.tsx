@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react"
 import {
   GeoJSONSource,
+  GPUInitializationError,
   Map,
   NavigationControl,
   Popup,
@@ -47,9 +48,10 @@ type CityMapProps = {
   corridors: Corridor[]
   flyToken: number
   onTerrain: (available: boolean) => void
+  disabled?: boolean
 }
 
-export function CityMap({ corridors, flyToken, onTerrain }: CityMapProps) {
+export function CityMap({ corridors, flyToken, onTerrain, disabled = false }: CityMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const linesRef = useRef<AnimLine[]>([])
@@ -58,6 +60,13 @@ export function CityMap({ corridors, flyToken, onTerrain }: CityMapProps) {
   const onTerrainRef = useRef(onTerrain)
   const readyRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
+  const [gpuFailed, setGpuFailed] = useState(false)
+  const [wasDisabled, setWasDisabled] = useState(disabled)
+  if (disabled !== wasDisabled) {
+    setWasDisabled(disabled)
+    if (!disabled) setGpuFailed(false)
+  }
+  const unavailable = disabled || gpuFailed
 
   useEffect(() => {
     corridorsRef.current = corridors
@@ -71,55 +80,83 @@ export function CityMap({ corridors, flyToken, onTerrain }: CityMapProps) {
   }, [onTerrain])
 
   useEffect(() => {
+    if (disabled) return
+
     const container = containerRef.current
     if (!container) return
 
-    const map = new Map({
-      container,
-      attributionControl: { compact: true },
-      maxPitch: 72,
-      maxBounds: [
-        [113.62, 21.98],
-        [114.62, 22.72],
-      ],
-      style: {
-        version: 8,
-        sources: {
-          imagery: {
-            type: "raster",
-            tiles: [
-              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            ],
-            tileSize: 256,
-            attribution: "Imagery © Esri",
-          },
-          labels: {
-            type: "raster",
-            tiles: [
-              "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-            ],
-            tileSize: 256,
-          },
-          terrain: {
-            type: "raster-dem",
-            tiles: ["/api/dem/{z}/{x}/{y}.png"],
-            encoding: "terrarium",
-            tileSize: 256,
-            maxzoom: 15,
-          },
-        },
-        layers: [
-          { id: "satellite", type: "raster", source: "imagery" },
-          { id: "places", type: "raster", source: "labels", paint: { "raster-opacity": 0.88 } },
+    let active = true
+    let map: Map
+    try {
+      map = new Map({
+        container,
+        attributionControl: { compact: true },
+        maxPitch: 72,
+        maxBounds: [
+          [113.62, 21.98],
+          [114.62, 22.72],
         ],
-      },
-      ...OPENING,
-    })
+        style: {
+          version: 8,
+          sources: {
+            imagery: {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              ],
+              tileSize: 256,
+              attribution: "Imagery © Esri",
+            },
+            labels: {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+              ],
+              tileSize: 256,
+            },
+            terrain: {
+              type: "raster-dem",
+              tiles: ["/api/dem/{z}/{x}/{y}.png"],
+              encoding: "terrarium",
+              tileSize: 256,
+              maxzoom: 15,
+            },
+          },
+          layers: [
+            { id: "satellite", type: "raster", source: "imagery" },
+            { id: "places", type: "raster", source: "labels", paint: { "raster-opacity": 0.88 } },
+          ],
+        },
+        ...OPENING,
+      })
+    } catch (error) {
+      if (!isGpuFailure(error)) throw error
+      queueMicrotask(() => {
+        if (active) setGpuFailed(true)
+      })
+      return () => {
+        active = false
+      }
+    }
     map.addControl(new NavigationControl({ visualizePitch: true }), "top-left")
     mapRef.current = map
 
     let terrainFailed = false
+    let removed = false
+    const dropMap = () => {
+      if (removed) return
+      removed = true
+      readyRef.current = false
+      mapRef.current = null
+      setMapReady(false)
+      setGpuFailed(true)
+      map.remove()
+    }
     map.on("error", (event: ErrorEvent & { sourceId?: string }) => {
+      if (isGpuFailure(event.error)) {
+        dropMap()
+        return
+      }
       if (terrainFailed) return
       if (event.sourceId === "terrain") {
         terrainFailed = true
@@ -221,16 +258,20 @@ export function CityMap({ corridors, flyToken, onTerrain }: CityMapProps) {
     frame = requestAnimationFrame(tick)
 
     return () => {
+      active = false
       cancelAnimationFrame(frame)
       readyRef.current = false
-      map.remove()
+      if (!removed) {
+        removed = true
+        map.remove()
+      }
       mapRef.current = null
     }
-  }, [])
+  }, [disabled])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !mapReady) return
+    if (disabled || !map || !mapReady) return
     let cancelled = false
     const timeouts: number[] = []
     const start = window.setTimeout(() => {
@@ -250,11 +291,26 @@ export function CityMap({ corridors, flyToken, onTerrain }: CityMapProps) {
     return () => {
       cancelled = true
       timeouts.forEach((id) => window.clearTimeout(id))
-      map.stop()
+      if (mapRef.current === map) map.stop()
     }
-  }, [flyToken, mapReady])
+  }, [disabled, flyToken, mapReady])
 
-  return <div ref={containerRef} className="absolute inset-0" aria-label="Satellite map of Hong Kong" />
+  return (
+    <>
+      <div ref={containerRef} className="absolute inset-0" aria-label="Satellite map of Hong Kong" />
+      {unavailable ? (
+        <p className="pointer-events-none absolute inset-x-6 top-[28%] z-[1] max-w-md text-sm leading-relaxed text-zinc-300">
+          The satellite map did not start. Speeds, journey time, and notices stay available.
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+function isGpuFailure(error: unknown): boolean {
+  if (error instanceof GPUInitializationError) return true
+  const message = error instanceof Error ? error.message : ""
+  return /webgl|gpu initialization/i.test(message)
 }
 
 function emptyCollection(): GeoJSON.FeatureCollection {

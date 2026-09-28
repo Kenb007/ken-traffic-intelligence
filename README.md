@@ -13,7 +13,7 @@ npm run dev
 
 The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 
-Add `?feed=down` to force the speed request to fail. The panel shows the error and the satellite map stays up.
+Add `?feed=down` to force the speed request to fail. The panel shows the error and the satellite map stays up. Add `?map=down` to skip the map. Speeds, journey time, and notices stay on screen.
 
 ## What the map uses
 
