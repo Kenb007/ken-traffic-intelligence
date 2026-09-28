@@ -19,19 +19,22 @@ Buttons along the bottom turn road speed, cameras, road works, and toll points o
 
 ## What the map uses
 
-Road names stay as published, usually Traditional Chinese. The interface copy is English. Detector corridors use bands for this view: moving is 50 km/h or faster, slow is 30 to 49, jammed is under 30. They are not an official Transport Department colour legend.
+Road names stay as published, usually Traditional Chinese. The interface copy is English. Centreline speeds use bands for this view: moving is 50 km/h or faster, slow is 30 to 49, jammed is under 30. They are not an official Transport Department colour legend.
 
 | Source | Record | What this app uses it for |
 | --- | --- | --- |
 | Traffic notices | [hk-td-tis_22-traffic-notices](https://data.gov.hk/en-data/dataset/hk-td-tis_22-traffic-notices) | Titles only, with no positions, so they are not drawn. |
-| Road Network (2nd generation) | [hk-td-tis_15-road-network-v2](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) | Revision date only. The centreline (about 125 MB KMZ, 486 MB GML) is not drawn. |
+| Road Network (2nd generation) | [hk-td-tis_15-road-network-v2](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) | Centreline geometry for the strategic-road segments. `ROUTE_ID` matches the live segment id. The full KMZ is simplified once into `data/strategic-centerlines.json`. |
 | Traffic Data Analytics System | [hk-td-tis_28-traffic-data-tdas](https://data.gov.hk/en-data/dataset/hk-td-tis_28-traffic-data-tdas) | One shortest-time forecast, using the sample coordinates in the TDAS specification. The response has route ids, not a line. |
-| Traffic Data of Strategic / Major Roads | [hk-td-sm_4-traffic-data-strategic-major-roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) | Detector coordinates, raw lane speeds (about every minute), and processed segment speeds (about every two minutes). Moving particles follow the detector chains. |
+| Traffic Data of Strategic / Major Roads | [hk-td-sm_4-traffic-data-strategic-major-roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) | Processed segment speeds (about every two minutes) colour the centreline. Raw detector speeds remain the fallback if that geometry is missing. |
 | Journey time indicators (2nd generation) | [hk-td-sm_8-journey-time-indicators-v2](https://data.gov.hk/en-data/dataset/hk-td-sm_8-journey-time-indicators-v2) | Related live feed from the same strategic-roads theme. Harbour indicator rows and the citywide colour tally. |
 | HKeMobility journey-time boards | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Board positions and live minutes to the Cross Harbour Tunnel, Eastern Harbour Crossing, and Western Harbour Crossing. The map pill is the fastest of those three. |
 | HKeMobility speed map | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Not drawn. The published image is a neon green, yellow, and red stroke with no speed key, and it sat on top of the detector lines. |
 | HKeMobility cameras | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Public snapshot points and facing direction. Harbour districts stay visible while zoomed out; the rest appear on a closer zoom. Clicking a cone loads the JPEG. |
 | HKeMobility road works | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Lane closures on roads with a speed limit of 70 km/h or above. Red is in progress, amber is under preparation. |
 | HKeMobility toll points | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Cross Harbour Tunnel, Eastern Harbour Crossing, Western Harbour Crossing, and Tai Lam Tunnel. |
+| Smart lamppost detectors | [hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts](https://data.gov.hk/en-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) | Live speed points for the 20 lamppost detectors in Yau Tsim Mong, Kwun Tong, and Wan Chai. |
+
+The Transport Department provider list also publishes red-light camera housings, speed-enforcement camera housings, and an annual junction blacksite list. Those are fixed sites or a yearly ranking, so they are not drawn. Special traffic news names a road but leaves latitude and longitude empty. The official roadworks GeoJSON is the same set of works already on the map.
 
 Basemap tiles are [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer) with the Esri reference overlay for place names. Imagery © Esri.

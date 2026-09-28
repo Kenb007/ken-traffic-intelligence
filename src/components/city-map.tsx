@@ -208,7 +208,7 @@ export function CityMap({
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
-        attribution: "Road speeds © Transport Department",
+        attribution: "Road centreline and speeds © Transport Department",
       })
       map.addSource("particles", { type: "geojson", data: emptyCollection() })
       map.addLayer({
@@ -533,14 +533,27 @@ function publishCorridors(
   })
   linesRef.current = lines
   const particles: Particle[] = []
-  lines.forEach((line, lineIndex) => {
-    const total = line.cum[line.cum.length - 1] ?? 0
-    const count = Math.max(1, Math.min(8, Math.round(total / 0.85)))
+  const ranked = lines
+    .map((line, lineIndex) => ({ line, lineIndex, distance: harbourDistance(line.coords) }))
+    .sort((a, b) => a.distance - b.distance)
+  for (const entry of ranked) {
+    const total = entry.line.cum[entry.line.cum.length - 1] ?? 0
+    const count = Math.max(1, Math.min(4, Math.round(total / 1.2)))
     for (let index = 0; index < count; index += 1) {
-      particles.push({ line: lineIndex, t: (index + Math.random() * 0.2) / count })
+      particles.push({ line: entry.lineIndex, t: (index + 0.15) / count })
+      if (particles.length >= 280) break
     }
-  })
-  particlesRef.current = particles.slice(0, 420)
+    if (particles.length >= 280) break
+  }
+  particlesRef.current = particles
+}
+
+function harbourDistance(coords: [number, number][]): number {
+  const mid = coords[Math.floor(coords.length / 2)]
+  if (!mid) return 99
+  const dLng = (mid[0] - 114.175) * 102
+  const dLat = (mid[1] - 22.293) * 111
+  return Math.hypot(dLng, dLat)
 }
 
 function stepParticles(map: Map, lines: AnimLine[], particles: Particle[], dt: number) {
@@ -733,7 +746,7 @@ function corridorPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
   const detail = document.createElement("div")
   const direction = textProp(properties, "direction")
   const speed = textProp(properties, "speed")
-  detail.textContent = `${direction} · ${speed}`
+  detail.textContent = direction ? `${direction} · ${speed}` : speed
   const english = document.createElement("div")
   english.style.color = "#526170"
   english.textContent = textProp(properties, "nameEn")

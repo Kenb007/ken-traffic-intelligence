@@ -35,7 +35,7 @@ export type NetworkStatus = {
   ok: boolean
   error?: string
   revisionDate: string | null
-  usedOnMap: false
+  usedOnMap: boolean
   reason: string
 }
 

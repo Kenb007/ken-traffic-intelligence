@@ -1,7 +1,14 @@
 import { parseCsv } from "@/lib/csv"
 import { buildCorridors, laneSpeed, type DetectorSite } from "@/lib/corridors"
 import { fetchText } from "@/lib/fetch-text"
-import type { NetworkStatus, SegmentSummary, SpeedSummary, TrafficResponse } from "@/lib/types"
+import {
+  corridorsFromSegments,
+  lamppostCorridors,
+  loadCenterlines,
+  summarizeCorridors,
+  type LamppostSite,
+} from "@/lib/segments"
+import type { Corridor, NetworkStatus, SegmentSummary, SpeedSummary, TrafficResponse } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
 
@@ -10,9 +17,13 @@ const LOCATIONS =
 const RAW_SPEEDS = "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol-all.xml"
 const SEGMENT_SPEEDS = "https://resource.data.one.gov.hk/td/traffic-detectors/irnAvgSpeed-all.xml"
 const NETWORK_DATE = "https://static.data.gov.hk/td/road-network-v2/DATA_LAST_UPDATED_DATE.csv"
+const LAMPPOSTS = "https://static.data.gov.hk/td/traffic-data-slp/info/traffic_speed_volume_occ_info-slp.csv"
+const LAMPPOST_SPEEDS = "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
 
-const NETWORK_REASON =
-  "The 2nd-generation centreline is about 125 MB compressed (486 MB as GML). This view does not load it. Corridors are traced through detector coordinates on the strategic-road feed."
+const NETWORK_DRAWN =
+  "Strategic-road speeds follow the 2nd-generation centreline. Each live segment id is that centreline's ROUTE_ID. Smart-lamppost speeds are drawn as separate points."
+const NETWORK_FALLBACK =
+  "The centreline file was not available, so speeds are traced through detector coordinates."
 
 function emptySummary(): SpeedSummary {
   return {
@@ -43,7 +54,7 @@ function failedNetwork(error?: string): NetworkStatus {
     error,
     revisionDate: null,
     usedOnMap: false,
-    reason: NETWORK_REASON,
+    reason: NETWORK_FALLBACK,
   }
 }
 
@@ -62,23 +73,32 @@ export async function GET(request: Request) {
         ok: true,
         revisionDate: null,
         usedOnMap: false,
-        reason: NETWORK_REASON,
+        reason: NETWORK_FALLBACK,
       },
     }
     return Response.json(body, { status: 502 })
   }
 
-  const [locations, raw, segments, network] = await Promise.allSettled([
+  const [locations, raw, segments, network, centerlines, lampposts, lamppostSpeeds] = await Promise.allSettled([
     fetchText(LOCATIONS, 6 * 60 * 60 * 1000),
     fetchText(RAW_SPEEDS, 45_000),
     fetchText(SEGMENT_SPEEDS, 45_000),
     fetchText(NETWORK_DATE, 6 * 60 * 60 * 1000),
+    loadCenterlines(),
+    fetchText(LAMPPOSTS, 6 * 60 * 60 * 1000),
+    fetchText(LAMPPOST_SPEEDS, 45_000),
   ])
 
-  const networkStatus = networkStatusFrom(network)
-  const segmentSummary = segments.status === "fulfilled" ? parseSegments(segments.value) : failedSegments(reason(segments))
+  const segmentParsed = segments.status === "fulfilled" ? parseSegments(segments.value) : null
+  const segmentSummary = segmentParsed
+    ? segmentParsed.summary
+    : failedSegments(segments.status === "rejected" ? reason(segments) : "Segment speeds were empty.")
+  const drawn =
+    centerlines.status === "fulfilled" && segmentParsed && segmentParsed.byId.size > 0
+      ? drawnFromNetwork(centerlines.value, segmentParsed.byId, lampposts, lamppostSpeeds)
+      : null
 
-  if (locations.status === "rejected" || raw.status === "rejected") {
+  if (!drawn && (locations.status === "rejected" || raw.status === "rejected")) {
     const body: TrafficResponse = {
       ok: false,
       error: [locations, raw]
@@ -88,23 +108,55 @@ export async function GET(request: Request) {
       corridors: [],
       summary: emptySummary(),
       segments: segmentSummary,
-      network: networkStatus,
+      network: networkStatusFrom(network, false),
     }
     return Response.json(body, { status: 502 })
   }
 
-  const sites = parseSites(locations.value)
-  const speeds = parseRawSpeeds(raw.value)
-  const { corridors, summary } = buildCorridors(sites, speeds.byId)
+  const detector =
+    drawn || locations.status === "rejected" || raw.status === "rejected"
+      ? null
+      : buildCorridors(parseSites(locations.value), parseRawSpeeds(raw.value).byId)
+  const lamppostOnly =
+    drawn || lampposts.status !== "fulfilled" || lamppostSpeeds.status !== "fulfilled"
+      ? []
+      : lamppostCorridors(parseLampposts(lampposts.value), parseRawSpeeds(lamppostSpeeds.value).byId)
+  const corridors = drawn?.corridors ?? [...(detector?.corridors ?? []), ...lamppostOnly]
+  const summary =
+    drawn?.summary ??
+    summarizeCorridors(corridors, (detector?.summary.detectorCount ?? 0) + lamppostOnly.length)
+  const observedAt = drawn
+    ? segmentSummary.observedAt
+    : locations.status === "fulfilled" && raw.status === "fulfilled"
+      ? parseRawSpeeds(raw.value).observedAt
+      : null
   const body: TrafficResponse = {
-    ok: true,
-    observedAt: speeds.observedAt,
+    ok: corridors.length > 0,
+    observedAt,
     corridors,
     summary,
     segments: segmentSummary,
-    network: networkStatus,
+    network: networkStatusFrom(network, Boolean(drawn)),
   }
-  return Response.json(body)
+  return Response.json(body, { status: body.ok ? 200 : 502 })
+}
+
+function drawnFromNetwork(
+  lines: Awaited<ReturnType<typeof loadCenterlines>>,
+  speeds: Map<string, number | null>,
+  lampposts: PromiseSettledResult<string>,
+  lamppostSpeeds: PromiseSettledResult<string>,
+): { corridors: Corridor[]; summary: SpeedSummary } {
+  const segments = corridorsFromSegments(lines, speeds)
+  const points =
+    lampposts.status === "fulfilled" && lamppostSpeeds.status === "fulfilled"
+      ? lamppostCorridors(parseLampposts(lampposts.value), parseRawSpeeds(lamppostSpeeds.value).byId)
+      : []
+  const corridors = [...segments, ...points]
+  return {
+    corridors,
+    summary: summarizeCorridors(corridors, points.length),
+  }
 }
 
 function reason(result: PromiseRejectedResult): string {
@@ -149,33 +201,62 @@ function parseRawSpeeds(xml: string): { observedAt: string | null; byId: Map<str
   return { observedAt: date && from ? `${date} ${from}` : date, byId }
 }
 
-function parseSegments(xml: string): SegmentSummary {
+function parseSegments(xml: string): { summary: SegmentSummary; byId: Map<string, number | null> } {
   const date = xml.match(/<date>([^<]+)<\/date>/)?.[1] ?? null
   const time = xml.match(/<time>([^<]+)<\/time>/)?.[1] ?? null
+  const byId = new Map<string, number | null>()
   let validSum = 0
   let validCount = 0
   let invalidCount = 0
   for (const match of xml.matchAll(
-    /<speed>([^<]*)<\/speed>\s*<valid>([YN])<\/valid>/g,
+    /<segment_id>([^<]+)<\/segment_id>\s*<speed>([^<]*)<\/speed>\s*<valid>([YN])<\/valid>/g,
   )) {
-    const speed = Number(match[1])
-    if (match[2] !== "Y" || !Number.isFinite(speed)) {
+    const speed = Number(match[2])
+    if (match[3] !== "Y" || !Number.isFinite(speed)) {
       invalidCount += 1
+      byId.set(match[1], null)
       continue
     }
     validSum += speed
     validCount += 1
+    byId.set(match[1], speed)
   }
   return {
-    ok: true,
-    observedAt: date && time ? `${date} ${time}` : date,
-    validCount,
-    invalidCount,
-    meanSpeedKmh: validCount > 0 ? validSum / validCount : null,
+    summary: {
+      ok: true,
+      observedAt: date && time ? `${date} ${time}` : date,
+      validCount,
+      invalidCount,
+      meanSpeedKmh: validCount > 0 ? validSum / validCount : null,
+    },
+    byId,
   }
 }
 
-function networkStatusFrom(result: PromiseSettledResult<string>): NetworkStatus {
+function parseLampposts(csv: string): LamppostSite[] {
+  return parseCsv(csv).flatMap((row) => {
+    const lat = Number(row.Latitude)
+    const lng = Number(row.Longitude)
+    const id = row.AID_ID_Number
+    if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) return []
+    return [
+      {
+        id,
+        roadTc: stripAid(row.Road_TC ?? ""),
+        roadEn: stripAid(row.Road_EN ?? ""),
+        lat,
+        lng,
+        direction: row.Direction ?? "",
+      },
+    ]
+  })
+}
+
+function stripAid(name: string): string {
+  return name.replace(/\s*\[[^\]]+\]\s*$/, "").trim()
+}
+
+function networkStatusFrom(result: PromiseSettledResult<string>, usedOnMap: boolean): NetworkStatus {
   if (result.status === "rejected") return failedNetwork(reason(result))
   const date = result.value
     .split(/\r?\n/)
@@ -184,7 +265,7 @@ function networkStatusFrom(result: PromiseSettledResult<string>): NetworkStatus 
   return {
     ok: true,
     revisionDate: date ?? null,
-    usedOnMap: false,
-    reason: NETWORK_REASON,
+    usedOnMap,
+    reason: usedOnMap ? NETWORK_DRAWN : NETWORK_FALLBACK,
   }
 }
