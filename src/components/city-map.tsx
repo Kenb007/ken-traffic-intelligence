@@ -202,27 +202,28 @@ export function CityMap({
         map.setTerrain(null)
       }
 
-      map.addSource("speed-map", {
-        type: "raster",
-        tiles: ["/api/speed-map/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        minzoom: 11,
-        maxzoom: 16,
-        attribution: "Speed map © Transport Department",
-      })
-      map.addLayer({
-        id: "speed-map",
-        type: "raster",
-        source: "speed-map",
-        minzoom: 11,
-        paint: { "raster-opacity": 0.95, "raster-fade-duration": 0 },
-      })
-
       map.addSource("cameras", { type: "geojson", data: emptyCollection() })
       map.addSource("works", { type: "geojson", data: emptyCollection() })
       map.addSource("tolls", { type: "geojson", data: emptyCollection() })
-      map.addSource("corridors", { type: "geojson", data: emptyCollection() })
+      map.addSource("corridors", {
+        type: "geojson",
+        data: emptyCollection(),
+        attribution: "Road speeds © Transport Department",
+      })
       map.addSource("particles", { type: "geojson", data: emptyCollection() })
+      map.addLayer({
+        id: "corridor-glow",
+        type: "line",
+        source: "corridors",
+        filter: ["==", ["geometry-type"], "LineString"],
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 7, 13, 12, 15, 16],
+          "line-opacity": 0.32,
+          "line-blur": 4,
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      })
       map.addLayer({
         id: "corridor-casing",
         type: "line",
@@ -230,8 +231,8 @@ export function CityMap({
         filter: ["==", ["geometry-type"], "LineString"],
         paint: {
           "line-color": "#041018",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2.4, 12, 5.5, 14, 9],
-          "line-opacity": 0.55,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3.2, 13, 4.6, 15, 6.5],
+          "line-opacity": 0.45,
         },
         layout: { "line-cap": "round", "line-join": "round" },
       })
@@ -242,8 +243,8 @@ export function CityMap({
         filter: ["==", ["geometry-type"], "LineString"],
         paint: {
           "line-color": ["get", "color"],
-          "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1.4, 12, 3.4, 14, 6],
-          "line-opacity": 0.92,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 13, 2.4, 15, 3.4],
+          "line-opacity": 0.95,
         },
         layout: { "line-cap": "round", "line-join": "round" },
       })
@@ -690,7 +691,7 @@ function cameraCone(): ImageData | null {
 function layerIds(kind: WatchLayer): string[] {
   switch (kind) {
     case "speed":
-      return ["speed-map"]
+      return ["corridor-glow", "corridor-casing", "corridor-line", "corridor-point", "traffic-particles"]
     case "cameras":
       return ["cameras-harbour", "cameras-city"]
     case "works":

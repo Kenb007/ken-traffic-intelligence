@@ -12,11 +12,17 @@ type LayerDockProps = {
 }
 
 const LAYERS: { id: WatchLayer; label: string; swatch: string }[] = [
-  { id: "speed", label: "Speed map", swatch: "bg-[#3DDC97]" },
+  { id: "speed", label: "Speed", swatch: "bg-[#3DDC97]" },
   { id: "cameras", label: "Cameras", swatch: "bg-[#7DD3E8]" },
   { id: "works", label: "Works", swatch: "bg-[#FF5D73]" },
   { id: "tolls", label: "Tolls", swatch: "bg-[#E7FBFF]" },
 ]
+
+const SPEED_KEY = [
+  { color: "#3DDC97", name: "Moving", detail: "50+" },
+  { color: "#FFC857", name: "Slow", detail: "30–49" },
+  { color: "#FF5D73", name: "Jammed", detail: "under 30" },
+] as const
 
 export function LayerDock(props: LayerDockProps) {
   if (!props.mapLive) return null
@@ -50,6 +56,20 @@ export function LayerDock(props: LayerDockProps) {
       >
         Replay
       </button>
+      {props.layers.speed ? (
+        <p
+          className="basis-full flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-hud)] text-[0.68rem] tracking-[0.06em] text-cyan-50/90 uppercase"
+          aria-label="Road speed in kilometres per hour. Moving is 50 or faster, slow is 30 to 49, jammed is under 30."
+        >
+          {SPEED_KEY.map((band) => (
+            <span key={band.name} className="inline-flex items-center gap-1.5">
+              <span className="h-1.5 w-4 rounded-full" style={{ background: band.color }} />
+              {band.name} {band.detail}
+            </span>
+          ))}
+          <span className="text-cyan-100/60">km/h</span>
+        </p>
+      ) : null}
       {props.pictureError ? (
         <p className="basis-full text-xs text-red-100" role="alert">
           {props.pictureError}
