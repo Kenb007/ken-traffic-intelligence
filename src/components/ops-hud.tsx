@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { bestCrossings } from "@/lib/crossings"
 import { formatSpeed } from "@/lib/speed"
-import type { ApproachesResponse, HarbourJourney, JourneyResponse, NoticesResponse, TrafficResponse } from "@/lib/types"
+import type { ApproachesResponse, HarbourJourney, JourneyResponse, TrafficResponse } from "@/lib/types"
 
 type OpsHudProps = {
   traffic: TrafficResponse | null
@@ -11,7 +11,6 @@ type OpsHudProps = {
   trafficError: string | null
   approaches: ApproachesResponse | null
   journey: JourneyResponse | null
-  notices: NoticesResponse | null
   mapLive: boolean
 }
 
@@ -27,17 +26,12 @@ export function OpsHud(props: OpsHudProps) {
   const crossings = bestCrossings(props.approaches?.ok ? props.approaches.points : [])
   const summary = props.traffic?.ok ? props.traffic.summary : null
   const totalBands = summary ? summary.free + summary.slow + summary.congested : 0
-  const titles = (props.notices?.notices ?? []).map((notice) => notice.titleEn || notice.titleTc).filter(Boolean)
-  const ticker = titles.length > 0 ? titles : ["No traffic notices in the files that loaded"]
-  const loop = [...ticker, ...ticker]
   const forecast = props.journey?.tdas.ok ? props.journey.tdas : null
   const live = Boolean(summary) && !props.trafficError
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[5]">
-      <div className="hud-vignette absolute inset-0" />
-      <div className="hud-scan absolute inset-x-0 top-0" />
-      <header className="absolute top-3 right-3 left-3 flex flex-wrap items-center gap-x-3 gap-y-2 border border-cyan-200/30 bg-[#041018]/80 px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-[26.5rem] lg:left-16">
+      <header className="absolute top-3 right-3 left-3 flex flex-wrap items-center gap-x-3 gap-y-2 border border-cyan-200/30 bg-[#041018]/80 px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:left-16">
         <div className="min-w-0">
           <p className="font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.22em] text-cyan-200/80 uppercase">
             Victoria Harbour
@@ -94,19 +88,6 @@ export function OpsHud(props: OpsHudProps) {
           ) : null}
         </div>
       </header>
-      <div
-        className="absolute right-[26.5rem] bottom-3 left-16 hidden overflow-hidden border border-cyan-200/20 bg-[#041018]/75 lg:block"
-        aria-hidden="true"
-      >
-        <div className="hud-ticker flex w-max gap-8 py-1.5 pr-8">
-          {loop.map((title, index) => (
-            <span key={`${title}-${index}`} className="font-[family-name:var(--font-hud)] text-[0.72rem] text-cyan-50/90">
-              <span className="mr-2 text-cyan-300/70">NOTICE</span>
-              {title}
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

@@ -123,3 +123,15 @@ export type ApproachesResponse = {
   capturedAt: string | null
   points: ApproachPoint[]
 }
+
+export type PictureResponse = {
+  ok: boolean
+  error?: string
+  cameras: GeoJSON.FeatureCollection
+  works: GeoJSON.FeatureCollection
+  tolls: GeoJSON.FeatureCollection
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls"
+
+export type WatchLayers = Record<WatchLayer, boolean>

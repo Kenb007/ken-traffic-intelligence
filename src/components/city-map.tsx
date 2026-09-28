@@ -15,7 +15,8 @@ import {
   type MapMouseEvent,
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
-import type { ApproachPoint, Corridor, HarbourJourney, SpeedBand } from "@/lib/types"
+import { isCameraSnapshotUrl } from "@/lib/picture"
+import type { ApproachPoint, Corridor, HarbourJourney, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
@@ -28,17 +29,19 @@ const BAND_COLOR: Record<SpeedBand, string> = {
 }
 
 const OPENING = {
-  center: [114.172, 22.292] as [number, number],
-  zoom: 12.15,
-  pitch: 64,
-  bearing: -28,
+  center: [114.175, 22.293] as [number, number],
+  zoom: 12.55,
+  pitch: 58,
+  bearing: -20,
 }
 
 const FLYOVER = [
-  { center: [114.142, 22.304] as [number, number], zoom: 12.6, pitch: 60, bearing: -6, duration: 7800, curve: 1.3 },
-  { center: [114.182, 22.336] as [number, number], zoom: 12.2, pitch: 56, bearing: 16, duration: 8200, curve: 1.3 },
-  { center: [114.11, 22.35] as [number, number], zoom: 10.55, pitch: 48, bearing: -14, duration: 7400, curve: 1.25 },
+  { center: [114.148, 22.3] as [number, number], zoom: 12.7, pitch: 60, bearing: -8, duration: 7000, curve: 1.25 },
+  { center: [114.21, 22.3] as [number, number], zoom: 12.55, pitch: 54, bearing: 18, duration: 7600, curve: 1.25 },
+  { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
+
+const WATCH_HITS = ["cameras-harbour", "cameras-city", "works", "tolls-portal", "tolls-overview"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -49,17 +52,12 @@ type AnimLine = {
 
 type Particle = { line: number; t: number }
 
-type MapFocus = {
-  token: number
-  coordinates: [number, number]
-}
-
 type CityMapProps = {
   corridors: Corridor[]
   approaches: ApproachPoint[]
-  focus: MapFocus | null
+  picture: PictureResponse | null
+  layers: WatchLayers
   flyToken: number
-  onTerrain: (available: boolean) => void
   onMap: (available: boolean) => void
   disabled?: boolean
 }
@@ -74,9 +72,9 @@ const PILL: Record<HarbourJourney["colour"], string> = {
 export function CityMap({
   corridors,
   approaches,
-  focus,
+  picture,
+  layers,
   flyToken,
-  onTerrain,
   onMap,
   disabled = false,
 }: CityMapProps) {
@@ -85,7 +83,6 @@ export function CityMap({
   const linesRef = useRef<AnimLine[]>([])
   const particlesRef = useRef<Particle[]>([])
   const corridorsRef = useRef(corridors)
-  const onTerrainRef = useRef(onTerrain)
   const onMapRef = useRef(onMap)
   const readyRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
@@ -103,10 +100,6 @@ export function CityMap({
     if (!map || !readyRef.current) return
     publishCorridors(map, corridors, linesRef, particlesRef)
   }, [corridors])
-
-  useEffect(() => {
-    onTerrainRef.current = onTerrain
-  }, [onTerrain])
 
   useEffect(() => {
     onMapRef.current = onMap
@@ -198,7 +191,6 @@ export function CityMap({
       if (event.sourceId === "terrain") {
         terrainFailed = true
         map.setTerrain(null)
-        onTerrainRef.current(false)
       }
     })
 
@@ -206,11 +198,29 @@ export function CityMap({
       map.resize()
       try {
         map.setTerrain({ source: "terrain", exaggeration: 1.35 })
-        onTerrainRef.current(true)
       } catch {
-        onTerrainRef.current(false)
+        map.setTerrain(null)
       }
 
+      map.addSource("speed-map", {
+        type: "raster",
+        tiles: ["/api/speed-map/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        minzoom: 11,
+        maxzoom: 16,
+        attribution: "Speed map © Transport Department",
+      })
+      map.addLayer({
+        id: "speed-map",
+        type: "raster",
+        source: "speed-map",
+        minzoom: 11,
+        paint: { "raster-opacity": 0.95, "raster-fade-duration": 0 },
+      })
+
+      map.addSource("cameras", { type: "geojson", data: emptyCollection() })
+      map.addSource("works", { type: "geojson", data: emptyCollection() })
+      map.addSource("tolls", { type: "geojson", data: emptyCollection() })
       map.addSource("corridors", { type: "geojson", data: emptyCollection() })
       map.addSource("particles", { type: "geojson", data: emptyCollection() })
       map.addLayer({
@@ -263,21 +273,42 @@ export function CityMap({
         },
       })
 
+      addWatchLayers(map)
+      const showPopup = popupOpener(map)
+      const watchLayers = WATCH_HITS.filter((layerId) => map.getLayer(layerId))
       const onCorridorClick = (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
         const target = event.originalEvent.target
         if (target instanceof Element && target.closest(".approach-time")) return
+        if (watchLayers.length > 0) {
+          const covering = map.queryRenderedFeatures(event.point, { layers: watchLayers })
+          if (covering.length > 0) return
+        }
         const feature = event.features?.[0]
         if (!feature) return
-        openPopup(map, event.lngLat, feature.properties ?? null)
+        showPopup(event.lngLat, corridorPopup(feature.properties ?? null))
       }
       map.on("click", "corridor-line", onCorridorClick)
       map.on("click", "corridor-point", onCorridorClick)
-      map.on("mouseenter", "corridor-line", () => {
-        map.getCanvas().style.cursor = "pointer"
-      })
-      map.on("mouseleave", "corridor-line", () => {
-        map.getCanvas().style.cursor = ""
-      })
+      const featurePopups: Record<string, (properties: GeoJSON.GeoJsonProperties) => HTMLElement> = {
+        "cameras-harbour": cameraPopup,
+        "cameras-city": cameraPopup,
+        works: workPopup,
+        "tolls-portal": tollPopup,
+        "tolls-overview": tollPopup,
+      }
+      for (const layerId of watchLayers) {
+        const render = featurePopups[layerId]
+        if (!render) continue
+        map.on("click", layerId, (event) => openFeature(showPopup, event, render))
+      }
+      for (const layerId of ["corridor-line", ...watchLayers]) {
+        map.on("mouseenter", layerId, () => {
+          map.getCanvas().style.cursor = "pointer"
+        })
+        map.on("mouseleave", layerId, () => {
+          map.getCanvas().style.cursor = ""
+        })
+      }
 
       readyRef.current = true
       setMapReady(true)
@@ -352,14 +383,23 @@ export function CityMap({
 
   useEffect(() => {
     const map = mapRef.current
-    if (disabled || !focus || !map || !mapReady) return
-    map.flyTo({
-      center: focus.coordinates,
-      zoom: Math.max(map.getZoom(), 13.4),
-      pitch: 55,
-      essential: true,
-    })
-  }, [disabled, focus, mapReady])
+    if (disabled || !map || !mapReady) return
+    geoJsonSource(map, "cameras")?.setData(picture?.cameras ?? emptyCollection())
+    geoJsonSource(map, "works")?.setData(picture?.works ?? emptyCollection())
+    geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
+  }, [disabled, mapReady, picture])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (disabled || !map || !mapReady) return
+    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls"]
+    for (const kind of kinds) {
+      for (const layerId of layerIds(kind)) {
+        if (!map.getLayer(layerId)) continue
+        map.setLayoutProperty(layerId, "visibility", layers[kind] ? "visible" : "none")
+      }
+    }
+  }, [disabled, layers, mapReady])
 
   return (
     <>
@@ -371,7 +411,7 @@ export function CityMap({
       />
       {unavailable ? (
         <p className="pointer-events-none absolute inset-x-6 top-[28%] z-[1] max-w-md text-sm leading-relaxed text-zinc-300">
-          The satellite map did not start. Speeds, journey time, and notices stay available.
+          The satellite map did not start. Crossing minutes and network speed stay on screen.
         </p>
       ) : null}
     </>
@@ -549,32 +589,241 @@ function geoJsonSource(map: Map, id: string): GeoJSONSource | null {
   return source instanceof GeoJSONSource ? source : null
 }
 
-function openPopup(map: Map, lngLat: LngLat, properties: GeoJSON.GeoJsonProperties) {
-  const name = textProp(properties, "name")
+function addWatchLayers(map: Map) {
+  const cone = cameraCone()
+  if (cone && !map.hasImage("camera-cone")) {
+    map.addImage("camera-cone", cone, { pixelRatio: 2 })
+  }
+  map.addLayer({
+    id: "tolls-overview",
+    type: "circle",
+    source: "tolls",
+    maxzoom: 12.4,
+    filter: ["==", ["get", "band"], "overview"],
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 6, 15, 11],
+      "circle-color": "rgba(125, 211, 232, 0.18)",
+      "circle-stroke-color": "#E7FBFF",
+      "circle-stroke-width": 2,
+      "circle-pitch-alignment": "map",
+    },
+  })
+  map.addLayer({
+    id: "tolls-portal",
+    type: "circle",
+    source: "tolls",
+    minzoom: 12.4,
+    filter: ["==", ["get", "band"], "portal"],
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 6, 15, 11],
+      "circle-color": "rgba(125, 211, 232, 0.18)",
+      "circle-stroke-color": "#E7FBFF",
+      "circle-stroke-width": 2,
+      "circle-pitch-alignment": "map",
+    },
+  })
+  map.addLayer({
+    id: "works",
+    type: "circle",
+    source: "works",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 14, 9],
+      "circle-color": ["match", ["get", "status"], "In Progress", "#FF5D73", "Under Preparation", "#FFC857", "#C9D2DC"],
+      "circle-stroke-color": "#041018",
+      "circle-stroke-width": 2,
+      "circle-pitch-alignment": "map",
+    },
+  })
+  if (!map.hasImage("camera-cone")) return
+  addCameraLayer(map, "cameras-harbour", 1, 11.6)
+  addCameraLayer(map, "cameras-city", 0, 14)
+}
+
+function addCameraLayer(map: Map, id: string, harbour: 0 | 1, minzoom: number) {
+  map.addLayer({
+    id,
+    type: "symbol",
+    source: "cameras",
+    minzoom,
+    filter: ["==", ["get", "harbour"], harbour],
+    layout: {
+      "icon-image": "camera-cone",
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.42, 14, 0.85, 16, 1.05],
+      "icon-rotate": ["get", "rotation"],
+      "icon-rotation-alignment": "map",
+      "icon-pitch-alignment": "viewport",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+    },
+  })
+}
+
+function cameraCone(): ImageData | null {
+  const size = 64
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  if (!context) return null
+  context.clearRect(0, 0, size, size)
+  context.translate(size / 2, size / 2)
+  context.beginPath()
+  context.moveTo(0, 2)
+  context.lineTo(-18, -26)
+  context.quadraticCurveTo(0, -18, 18, -26)
+  context.closePath()
+  context.fillStyle = "rgba(125, 211, 232, 0.72)"
+  context.fill()
+  context.lineWidth = 2
+  context.strokeStyle = "rgba(236, 254, 255, 0.95)"
+  context.stroke()
+  context.beginPath()
+  context.arc(0, 2, 5, 0, Math.PI * 2)
+  context.fillStyle = "#F4FEFF"
+  context.fill()
+  context.lineWidth = 1.5
+  context.strokeStyle = "#083044"
+  context.stroke()
+  return context.getImageData(0, 0, size, size)
+}
+
+function layerIds(kind: WatchLayer): string[] {
+  switch (kind) {
+    case "speed":
+      return ["speed-map"]
+    case "cameras":
+      return ["cameras-harbour", "cameras-city"]
+    case "works":
+      return ["works"]
+    case "tolls":
+      return ["tolls-portal", "tolls-overview"]
+    default: {
+      const exhaustive: never = kind
+      return exhaustive
+    }
+  }
+}
+
+function popupOpener(map: Map) {
+  let active: Popup | null = null
+  return (lngLat: LngLat, content: HTMLElement) => {
+    active?.remove()
+    active = new Popup({ closeButton: true, maxWidth: "320px", offset: 16 }).setLngLat(lngLat).setDOMContent(content).addTo(map)
+  }
+}
+
+function openFeature(
+  showPopup: (lngLat: LngLat, content: HTMLElement) => void,
+  event: MapMouseEvent & { features?: MapGeoJSONFeature[] },
+  render: (properties: GeoJSON.GeoJsonProperties) => HTMLElement,
+) {
+  const target = event.originalEvent.target
+  if (target instanceof Element && target.closest(".approach-time")) return
+  const feature = event.features?.[0]
+  if (!feature) return
+  showPopup(event.lngLat, render(feature.properties ?? null))
+}
+
+function corridorPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
+  const root = document.createElement("div")
+  root.style.cssText = "font:13px/1.4 Outfit,sans-serif;color:#102033"
+  const title = document.createElement("strong")
+  title.textContent = textProp(properties, "name")
+  const detail = document.createElement("div")
   const direction = textProp(properties, "direction")
   const speed = textProp(properties, "speed")
-  const english = textProp(properties, "nameEn")
-  new Popup({ closeButton: true, maxWidth: "260px" })
-    .setLngLat(lngLat)
-    .setHTML(
-      `<div style="font: 13px/1.4 Outfit, sans-serif; color: #102033">
-        <strong>${escapeHtml(name)}</strong>
-        <div>${escapeHtml(direction)} · ${escapeHtml(speed)}</div>
-        <div style="color:#526170">${escapeHtml(english)}</div>
-      </div>`,
-    )
-    .addTo(map)
+  detail.textContent = `${direction} · ${speed}`
+  const english = document.createElement("div")
+  english.style.color = "#526170"
+  english.textContent = textProp(properties, "nameEn")
+  root.append(title, detail, english)
+  return root
+}
+
+function cameraPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
+  const root = popupRoot()
+  const title = document.createElement("strong")
+  title.textContent = textProp(properties, "name")
+  const district = document.createElement("div")
+  district.style.color = "#526170"
+  district.textContent = textProp(properties, "district")
+  root.append(title, district)
+  const url = textProp(properties, "url")
+  if (!isCameraSnapshotUrl(url)) return root
+  const image = document.createElement("img")
+  image.alt = title.textContent
+  image.width = 300
+  image.style.cssText = "display:block;width:100%;height:auto;margin-top:6px;background:#d7dee6"
+  image.addEventListener("error", () => {
+    image.remove()
+    const note = document.createElement("p")
+    note.textContent = "Snapshot did not load."
+    root.append(note)
+  })
+  image.src = url
+  root.append(image)
+  return root
+}
+
+function workPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
+  const root = popupRoot()
+  const title = document.createElement("strong")
+  title.textContent = textProp(properties, "road") || "Road work"
+  const place = document.createElement("div")
+  place.textContent = textProp(properties, "place")
+  const status = document.createElement("div")
+  const lane = textProp(properties, "lane")
+  const kind = textProp(properties, "kind")
+  status.textContent = [textProp(properties, "status"), lane, kind].filter(Boolean).join(" · ")
+  root.append(title, place, status)
+  const when = timeRange(textProp(properties, "start"), textProp(properties, "end"))
+  if (when) {
+    const line = document.createElement("div")
+    line.style.color = "#526170"
+    line.textContent = when
+    root.append(line)
+  }
+  return root
+}
+
+function tollPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
+  const root = popupRoot()
+  const title = document.createElement("strong")
+  title.textContent = textProp(properties, "name")
+  const band = document.createElement("div")
+  band.textContent = textProp(properties, "band") === "overview" ? "Tunnel" : "Tunnel portal"
+  root.append(title, band)
+  return root
+}
+
+function popupRoot(): HTMLElement {
+  const root = document.createElement("div")
+  root.style.cssText = "font:13px/1.4 Outfit,sans-serif;color:#102033;width:300px"
+  return root
+}
+
+function timeRange(start: string, end: string): string {
+  const from = clock(start)
+  const to = clock(end)
+  if (from && to) return `${from} – ${to} HKT`
+  return from || to
+}
+
+function clock(value: string): string {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Hong_Kong",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    day: "numeric",
+    month: "short",
+  }).format(date)
 }
 
 function textProp(properties: GeoJSON.GeoJsonProperties, key: string): string {
   const value = properties?.[key]
   return typeof value === "string" ? value : ""
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
 }

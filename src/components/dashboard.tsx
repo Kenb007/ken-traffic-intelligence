@@ -3,29 +3,42 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
+import { LayerDock } from "@/components/layer-dock"
 import { OpsHud } from "@/components/ops-hud"
-import { SidePanel } from "@/components/side-panel"
-import type { ApproachesResponse, JourneyResponse, NoticesResponse, TrafficResponse } from "@/lib/types"
+import type {
+  ApproachesResponse,
+  JourneyResponse,
+  PictureResponse,
+  TrafficResponse,
+  WatchLayer,
+  WatchLayers,
+} from "@/lib/types"
+
+const LAYERS_ON: WatchLayers = { speed: true, cameras: true, works: true, tolls: true }
+
+function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
+  const codes = new Set<string>()
+  for (const feature of tolls.features) {
+    const code = feature.properties && typeof feature.properties.code === "string" ? feature.properties.code : ""
+    if (code) codes.add(code)
+  }
+  return codes.size
+}
 
 export function Dashboard() {
   const search = useSearchParams()
   const forceDown = search.get("feed") === "down"
   const mapDown = search.get("map") === "down"
-  const [open, setOpen] = useState(true)
   const [flyToken, setFlyToken] = useState(0)
-  const [terrain, setTerrain] = useState<"pending" | "on" | "off">("pending")
   const [mapLive, setMapLive] = useState(!mapDown)
+  const [layers, setLayers] = useState<WatchLayers>(LAYERS_ON)
   const [traffic, setTraffic] = useState<TrafficResponse | null>(null)
   const [trafficError, setTrafficError] = useState<string | null>(null)
   const [trafficLoading, setTrafficLoading] = useState(true)
-  const [notices, setNotices] = useState<NoticesResponse | null>(null)
-  const [noticesError, setNoticesError] = useState<string | null>(null)
-  const [noticesLoading, setNoticesLoading] = useState(true)
   const [journey, setJourney] = useState<JourneyResponse | null>(null)
-  const [journeyLoading, setJourneyLoading] = useState(true)
   const [approaches, setApproaches] = useState<ApproachesResponse | null>(null)
-  const [approachesLoading, setApproachesLoading] = useState(true)
-  const [focus, setFocus] = useState<{ token: number; coordinates: [number, number] } | null>(null)
+  const [picture, setPicture] = useState<PictureResponse | null>(null)
+  const [pictureError, setPictureError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -51,30 +64,6 @@ export function Dashboard() {
       window.clearInterval(timer)
     }
   }, [forceDown])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch("/api/notices", { cache: "no-store" })
-        const body = (await response.json()) as NoticesResponse
-        if (cancelled) return
-        setNotices(body)
-        setNoticesError(!response.ok || !body.ok ? body.error ?? `Notices failed (${response.status})` : body.error ?? null)
-      } catch (error) {
-        if (cancelled) return
-        setNoticesError(error instanceof Error ? error.message : "Notices failed")
-      } finally {
-        if (!cancelled) setNoticesLoading(false)
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 5 * 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -107,8 +96,6 @@ export function Dashboard() {
             },
           })
         }
-      } finally {
-        if (!cancelled) setJourneyLoading(false)
       }
     }
     void load()
@@ -136,8 +123,6 @@ export function Dashboard() {
             points: [],
           })
         }
-      } finally {
-        if (!cancelled) setApproachesLoading(false)
       }
     }
     void load()
@@ -148,16 +133,42 @@ export function Dashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const response = await fetch("/api/picture", { cache: "no-store" })
+        const body = (await response.json()) as PictureResponse
+        if (cancelled) return
+        setPicture(body)
+        setPictureError(body.error ?? (body.ok ? null : `Picture failed (${response.status})`))
+      } catch (error) {
+        if (cancelled) return
+        setPictureError(error instanceof Error ? error.message : "Picture failed")
+      }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  const toggleLayer = (layer: WatchLayer) => {
+    setLayers((current) => ({ ...current, [layer]: !current[layer] }))
+  }
+
   return (
     <main className="relative h-dvh overflow-hidden bg-[#061018]">
       <CityMap
         corridors={traffic?.ok ? traffic.corridors : []}
         approaches={approaches?.ok ? approaches.points : []}
-        focus={focus}
+        picture={picture}
+        layers={layers}
         flyToken={flyToken}
         disabled={mapDown}
         onMap={setMapLive}
-        onTerrain={(available) => setTerrain(available ? "on" : "off")}
       />
       <OpsHud
         traffic={traffic}
@@ -165,28 +176,20 @@ export function Dashboard() {
         trafficError={trafficError}
         approaches={approaches}
         journey={journey}
-        notices={notices}
         mapLive={mapLive}
       />
-      <SidePanel
-        open={open}
-        onToggle={() => setOpen((value) => !value)}
+      <LayerDock
+        layers={layers}
+        counts={{
+          speed: null,
+          cameras: picture ? picture.cameras.features.length : null,
+          works: picture ? picture.works.features.length : null,
+          tolls: picture ? tunnelCount(picture.tolls) : null,
+        }}
+        onToggle={toggleLayer}
         onReplay={() => setFlyToken((value) => value + 1)}
-        traffic={traffic}
-        trafficLoading={trafficLoading}
-        trafficError={trafficError}
-        notices={notices}
-        noticesLoading={noticesLoading}
-        noticesError={noticesError}
-        journey={journey}
-        journeyLoading={journeyLoading}
-        approaches={approaches}
-        approachesLoading={approachesLoading}
-        onShowApproach={(coordinates) =>
-          setFocus((current) => ({ token: (current?.token ?? 0) + 1, coordinates }))
-        }
-        terrain={terrain}
         mapLive={mapLive}
+        pictureError={pictureError}
       />
     </main>
   )
