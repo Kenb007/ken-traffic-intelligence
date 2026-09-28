@@ -264,6 +264,8 @@ export function CityMap({
       })
 
       const onCorridorClick = (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
+        const target = event.originalEvent.target
+        if (target instanceof Element && target.closest(".approach-time")) return
         const feature = event.features?.[0]
         if (!feature) return
         openPopup(map, event.lngLat, feature.properties ?? null)
