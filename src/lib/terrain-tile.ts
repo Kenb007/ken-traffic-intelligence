@@ -1,13 +1,18 @@
 import { PNG } from "pngjs"
 
 // Hong Kong land in these tiles is the SRTM radar surface measured in February 2000.
-// Tai Mo Shan, the highest ground, is 957 m, and real steps in a tile stay under 60 m.
-// A few pixels are voids: Sha Tin town contains a 2,436 m spike beside a -655 m hole.
+// The posting is about 30 m, but street-level tiles are only a few metres wide, so a
+// 10–20 m radar jump becomes a cliff on flat ground in every district. Smooth across
+// about 140 m. Tai Mo Shan is the highest mountain in Hong Kong, at 957 m, so no
+// cell is allowed above that summit.
 const MIN_HEIGHT_M = -30
-const MAX_HEIGHT_M = 980
+const MAX_HEIGHT_M = 957
 const MAX_STEP_M = 70
+const SMOOTH_METRES = 140
+const METRES_PER_PIXEL_AT_EQUATOR = 156543.03392
+const HONG_KONG_LATITUDE = 22.35
 
-export function repairTerrariumPng(bytes: Buffer): Buffer {
+export function repairTerrariumPng(bytes: Buffer, zoom: number): Buffer {
   const png = PNG.sync.read(bytes)
   const width = png.width
   const height = png.height
@@ -23,8 +28,45 @@ export function repairTerrariumPng(bytes: Buffer): Buffer {
 
   const bad = markBadPixels(meters, width, height)
   fillBadPixels(meters, bad, width, height)
+  const smoothed = boxBlur(meters, width, height, smoothRadius(zoom))
+  meters.set(smoothed)
   writeTerrarium(png, meters)
   return PNG.sync.write(png)
+}
+
+function smoothRadius(zoom: number): number {
+  const metresPerPixel =
+    (METRES_PER_PIXEL_AT_EQUATOR * Math.cos((HONG_KONG_LATITUDE * Math.PI) / 180)) / 2 ** zoom
+  if (!Number.isFinite(metresPerPixel) || metresPerPixel <= 0) return 1
+  return Math.max(1, Math.min(28, Math.round(SMOOTH_METRES / metresPerPixel)))
+}
+
+function boxBlur(source: Float64Array, width: number, height: number, radius: number): Float64Array {
+  const integral = new Float64Array((width + 1) * (height + 1))
+  for (let y = 0; y < height; y += 1) {
+    let run = 0
+    for (let x = 0; x < width; x += 1) {
+      run += source[y * width + x] ?? 0
+      const integralIndex = (y + 1) * (width + 1) + (x + 1)
+      integral[integralIndex] = (integral[y * (width + 1) + (x + 1)] ?? 0) + run
+    }
+  }
+  const smoothed = new Float64Array(source.length)
+  for (let y = 0; y < height; y += 1) {
+    const y0 = Math.max(0, y - radius)
+    const y1 = Math.min(height - 1, y + radius)
+    for (let x = 0; x < width; x += 1) {
+      const x0 = Math.max(0, x - radius)
+      const x1 = Math.min(width - 1, x + radius)
+      const sum =
+        (integral[(y1 + 1) * (width + 1) + (x1 + 1)] ?? 0) -
+        (integral[y0 * (width + 1) + (x1 + 1)] ?? 0) -
+        (integral[(y1 + 1) * (width + 1) + x0] ?? 0) +
+        (integral[y0 * (width + 1) + x0] ?? 0)
+      smoothed[y * width + x] = sum / ((y1 - y0 + 1) * (x1 - x0 + 1))
+    }
+  }
+  return smoothed
 }
 
 function markBadPixels(meters: Float64Array, width: number, height: number): Uint8Array {

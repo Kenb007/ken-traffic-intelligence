@@ -148,7 +148,7 @@ export function CityMap({
             },
             terrain: {
               type: "raster-dem",
-              tiles: ["/api/dem/{z}/{x}/{y}.png?v=2"],
+              tiles: ["/api/dem/{z}/{x}/{y}.png?v=3"],
               encoding: "terrarium",
               tileSize: 256,
               maxzoom: 15,
@@ -199,7 +199,7 @@ export function CityMap({
     map.on("load", () => {
       map.resize()
       try {
-        map.setTerrain({ source: "terrain", exaggeration: 1.35 })
+        map.setTerrain({ source: "terrain", exaggeration: 1 })
       } catch {
         map.setTerrain(null)
       }

@@ -24,7 +24,7 @@ export async function GET(
     return new Response(null, { status: response.status })
   }
   const bytes = Buffer.from(await response.arrayBuffer())
-  const repaired = repairTerrariumPng(bytes)
+  const repaired = repairTerrariumPng(bytes, zN)
   return new Response(new Uint8Array(repaired), {
     headers: {
       "Content-Type": "image/png",
