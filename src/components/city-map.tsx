@@ -148,7 +148,7 @@ export function CityMap({
             },
             terrain: {
               type: "raster-dem",
-              tiles: ["/api/dem/{z}/{x}/{y}.png"],
+              tiles: ["/api/dem/{z}/{x}/{y}.png?v=2"],
               encoding: "terrarium",
               tileSize: 256,
               maxzoom: 15,

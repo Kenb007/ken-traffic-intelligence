@@ -1,3 +1,5 @@
+import { repairTerrariumPng } from "@/lib/terrain-tile"
+
 export const dynamic = "force-dynamic"
 
 export async function GET(
@@ -21,8 +23,9 @@ export async function GET(
   if (!response.ok) {
     return new Response(null, { status: response.status })
   }
-  const bytes = await response.arrayBuffer()
-  return new Response(bytes, {
+  const bytes = Buffer.from(await response.arrayBuffer())
+  const repaired = repairTerrariumPng(bytes)
+  return new Response(new Uint8Array(repaired), {
     headers: {
       "Content-Type": "image/png",
       "Cache-Control": "public, max-age=86400",
