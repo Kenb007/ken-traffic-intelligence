@@ -15,7 +15,7 @@ The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://12
 
 Add `?feed=down` to force the speed request to fail. The status bar shows the fault and the satellite map stays up. Add `?map=down` to skip the map. Crossing minutes and network speed stay on screen.
 
-Buttons along the bottom turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is moving at 50 km/h or faster, slow at 30 to 49, and jammed under 30.
+Buttons along the bottom switch the picture between the pitched satellite view and a flat OpenStreetMap, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is moving at 50 km/h or faster, slow at 30 to 49, and jammed under 30.
 
 ## What the map uses
 
@@ -24,6 +24,7 @@ Road names stay as published, usually Traditional Chinese. The interface copy is
 | Source | Record | What this app uses it for |
 | --- | --- | --- |
 | Traffic notices | [hk-td-tis_22-traffic-notices](https://data.gov.hk/en-data/dataset/hk-td-tis_22-traffic-notices) | Titles only, with no positions, so they are not drawn. |
+| OpenStreetMap | [OpenStreetMap](https://www.openstreetmap.org/copyright) | Flat street map. The Streets button turns the pitched satellite picture off and draws this instead. © OpenStreetMap contributors. |
 | Road Network (2nd generation) | [hk-td-tis_15-road-network-v2](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) | Centreline geometry for the strategic-road segments. `ROUTE_ID` matches the live segment id. The full KMZ is simplified once into `data/strategic-centerlines.json`. |
 | Traffic Data Analytics System | [hk-td-tis_28-traffic-data-tdas](https://data.gov.hk/en-data/dataset/hk-td-tis_28-traffic-data-tdas) | One shortest-time forecast, using the sample coordinates in the TDAS specification. The response has route ids, not a line. |
 | Traffic Data of Strategic / Major Roads | [hk-td-sm_4-traffic-data-strategic-major-roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) | Processed segment speeds (about every two minutes) colour the centreline. Raw detector speeds remain the fallback if that geometry is missing. |

@@ -1,15 +1,22 @@
 "use client"
 
-import type { WatchLayer, WatchLayers } from "@/lib/types"
+import type { Basemap, WatchLayer, WatchLayers } from "@/lib/types"
 
 type LayerDockProps = {
   layers: WatchLayers
+  basemap: Basemap
   counts: Record<WatchLayer, number | null>
   onToggle: (layer: WatchLayer) => void
+  onBasemap: (basemap: Basemap) => void
   onReplay: () => void
   mapLive: boolean
   pictureError: string | null
 }
+
+const BASEMAPS: { id: Basemap; label: string }[] = [
+  { id: "satellite", label: "Satellite" },
+  { id: "street", label: "Streets" },
+]
 
 const LAYERS: { id: WatchLayer; label: string; swatch: string }[] = [
   { id: "speed", label: "Speed", swatch: "bg-[#3DDC97]" },
@@ -29,6 +36,24 @@ export function LayerDock(props: LayerDockProps) {
   if (!props.mapLive) return null
   return (
     <div className="pointer-events-auto absolute bottom-4 left-4 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2 lg:left-16">
+      <div className="inline-flex border border-white/15" role="group" aria-label="Basemap">
+        {BASEMAPS.map((item) => {
+          const on = props.basemap === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => props.onBasemap(item.id)}
+              className={`px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] uppercase ${
+                on ? "bg-[#041018]/80 text-white" : "bg-[#041018]/55 text-zinc-400"
+              }`}
+            >
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
       {LAYERS.map((layer) => {
         const on = props.layers[layer.id]
         const count = props.counts[layer.id]

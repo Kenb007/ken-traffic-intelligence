@@ -13,6 +13,7 @@ import type {
   TrafficResponse,
   WatchLayer,
   WatchLayers,
+  Basemap,
 } from "@/lib/types"
 
 const LAYERS_ON: WatchLayers = { speed: true, cameras: true, works: true, tolls: true, incidents: true }
@@ -33,6 +34,7 @@ export function Dashboard() {
   const [flyToken, setFlyToken] = useState(0)
   const [mapLive, setMapLive] = useState(!mapDown)
   const [layers, setLayers] = useState<WatchLayers>(LAYERS_ON)
+  const [basemap, setBasemap] = useState<Basemap>("satellite")
   const [traffic, setTraffic] = useState<TrafficResponse | null>(null)
   const [trafficError, setTrafficError] = useState<string | null>(null)
   const [trafficLoading, setTrafficLoading] = useState(true)
@@ -195,6 +197,7 @@ export function Dashboard() {
         picture={picture}
         incidents={incidents?.ok ? incidents.incidents : null}
         layers={layers}
+        basemap={basemap}
         flyToken={flyToken}
         disabled={mapDown}
         onMap={setMapLive}
@@ -209,6 +212,7 @@ export function Dashboard() {
       />
       <LayerDock
         layers={layers}
+        basemap={basemap}
         counts={{
           speed: null,
           cameras: picture ? picture.cameras.features.length : null,
@@ -217,6 +221,7 @@ export function Dashboard() {
           incidents: incidents ? incidents.incidents.features.length : null,
         }}
         onToggle={toggleLayer}
+        onBasemap={setBasemap}
         onReplay={() => setFlyToken((value) => value + 1)}
         mapLive={mapLive}
         pictureError={pictureError}

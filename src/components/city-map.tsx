@@ -16,7 +16,7 @@ import {
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { isCameraSnapshotUrl } from "@/lib/picture"
-import type { ApproachPoint, Corridor, HarbourJourney, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
+import type { ApproachPoint, Basemap, Corridor, HarbourJourney, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
@@ -33,6 +33,38 @@ const OPENING = {
   zoom: 12.55,
   pitch: 58,
   bearing: -20,
+}
+
+function showBasemap(map: Map, basemap: Basemap) {
+  switch (basemap) {
+    case "street":
+      setRasterVisible(map, "osm", true)
+      setRasterVisible(map, "satellite", false)
+      setRasterVisible(map, "places", false)
+      map.setTerrain(null)
+      map.easeTo({ pitch: 0, bearing: 0, duration: 650, essential: true })
+      return
+    case "satellite":
+      setRasterVisible(map, "osm", false)
+      setRasterVisible(map, "satellite", true)
+      setRasterVisible(map, "places", true)
+      try {
+        map.setTerrain({ source: "terrain", exaggeration: 1 })
+      } catch {
+        map.setTerrain(null)
+      }
+      map.easeTo({ pitch: OPENING.pitch, bearing: OPENING.bearing, duration: 650, essential: true })
+      return
+    default: {
+      const exhaustive: never = basemap
+      return exhaustive
+    }
+  }
+}
+
+function setRasterVisible(map: Map, layerId: string, visible: boolean) {
+  if (!map.getLayer(layerId)) return
+  map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none")
 }
 
 const FLYOVER = [
@@ -58,6 +90,7 @@ type CityMapProps = {
   picture: PictureResponse | null
   incidents: GeoJSON.FeatureCollection | null
   layers: WatchLayers
+  basemap: Basemap
   flyToken: number
   onMap: (available: boolean) => void
   disabled?: boolean
@@ -76,6 +109,7 @@ export function CityMap({
   picture,
   incidents,
   layers,
+  basemap,
   flyToken,
   onMap,
   disabled = false,
@@ -87,6 +121,9 @@ export function CityMap({
   const corridorsRef = useRef(corridors)
   const onMapRef = useRef(onMap)
   const readyRef = useRef(false)
+  const basemapRef = useRef(basemap)
+  const cancelFlyRef = useRef<(() => void) | null>(null)
+  const appliedBasemap = useRef<Basemap | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [gpuFailed, setGpuFailed] = useState(false)
   const [wasDisabled, setWasDisabled] = useState(disabled)
@@ -106,6 +143,10 @@ export function CityMap({
   useEffect(() => {
     onMapRef.current = onMap
   }, [onMap])
+
+  useEffect(() => {
+    basemapRef.current = basemap
+  }, [basemap])
 
   useEffect(() => {
     onMapRef.current(!unavailable)
@@ -146,6 +187,13 @@ export function CityMap({
               ],
               tileSize: 256,
             },
+            osm: {
+              type: "raster",
+              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+              tileSize: 256,
+              maxzoom: 19,
+              attribution: "© OpenStreetMap contributors",
+            },
             terrain: {
               type: "raster-dem",
               tiles: ["/api/dem/{z}/{x}/{y}.png?v=3"],
@@ -155,6 +203,7 @@ export function CityMap({
             },
           },
           layers: [
+            { id: "osm", type: "raster", source: "osm", layout: { visibility: "none" } },
             { id: "satellite", type: "raster", source: "imagery" },
             { id: "places", type: "raster", source: "labels", paint: { "raster-opacity": 0.88 } },
           ],
@@ -349,6 +398,10 @@ export function CityMap({
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
     let cancelled = false
+    const cancel = () => {
+      cancelled = true
+    }
+    cancelFlyRef.current = cancel
     const timeouts: number[] = []
     const start = window.setTimeout(() => {
       if (cancelled) return
@@ -358,18 +411,40 @@ export function CityMap({
         const next = FLYOVER[index]
         index += 1
         if (!next) return
-        map.flyTo({ ...next, essential: true })
+        const street = basemapRef.current === "street"
+        map.flyTo({
+          ...next,
+          pitch: street ? 0 : next.pitch,
+          bearing: street ? 0 : next.bearing,
+          essential: true,
+        })
         map.once("moveend", run)
       }
       run()
     }, 700)
     timeouts.push(start)
     return () => {
-      cancelled = true
+      cancel()
+      if (cancelFlyRef.current === cancel) cancelFlyRef.current = null
       timeouts.forEach((id) => window.clearTimeout(id))
       if (mapRef.current === map) map.stop()
     }
   }, [disabled, flyToken, mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!mapReady) {
+      appliedBasemap.current = null
+      return
+    }
+    if (disabled || !map) return
+    if (appliedBasemap.current === basemap) return
+    const first = appliedBasemap.current === null
+    appliedBasemap.current = basemap
+    if (first && basemap === "satellite") return
+    cancelFlyRef.current?.()
+    showBasemap(map, basemap)
+  }, [basemap, disabled, mapReady])
 
   useEffect(() => {
     const map = mapRef.current
@@ -413,7 +488,7 @@ export function CityMap({
         ref={containerRef}
         className="absolute inset-0 h-full w-full"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-        aria-label="Satellite map of Hong Kong"
+        aria-label={basemap === "street" ? "OpenStreetMap of Hong Kong" : "Satellite map of Hong Kong"}
       />
       {unavailable ? (
         <p className="pointer-events-none absolute inset-x-6 top-[28%] z-[1] max-w-md text-sm leading-relaxed text-zinc-300">
