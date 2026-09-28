@@ -1,6 +1,6 @@
 # Harbour corridors
 
-A Hong Kong harbour picture for the Transport Department open data Keith Li asked to study. Satellite imagery carries strategic-road speeds, journey-time boards, camera directions, road works, and toll points. A short flyover stays over Victoria Harbour. Crossing minutes, network speed, and a Hong Kong clock sit in a bar across the top. Click a camera cone for the live snapshot, a work disc for the closure, or a toll ring for the crossing.
+A Hong Kong harbour picture for the Transport Department open data Keith Li asked to study. Satellite imagery carries strategic-road speeds, journey-time boards, camera directions, road works, toll points, and open traffic incidents. A short flyover stays over Victoria Harbour. Crossing minutes, network speed, and a Hong Kong clock sit in a bar across the top. Click a camera cone for the live snapshot, a work disc for the closure, a toll ring for the crossing, or an incident diamond for the special traffic news.
 
 No account, no database, and no Mapbox or Cesium ion token. Elevation comes from the public AWS Terrarium tiles. Those tiles do not send a browser CORS header, so the app proxies them at `/api/dem/{z}/{x}/{y}.png`. If that proxy fails, the map drops terrain and stays pitched over the satellite imagery.
 
@@ -15,7 +15,7 @@ The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://12
 
 Add `?feed=down` to force the speed request to fail. The status bar shows the fault and the satellite map stays up. Add `?map=down` to skip the map. Crossing minutes and network speed stay on screen.
 
-Buttons along the bottom turn road speed, cameras, road works, and toll points on and off. The speed key is moving at 50 km/h or faster, slow at 30 to 49, and jammed under 30.
+Buttons along the bottom turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is moving at 50 km/h or faster, slow at 30 to 49, and jammed under 30.
 
 ## What the map uses
 
@@ -34,7 +34,8 @@ Road names stay as published, usually Traditional Chinese. The interface copy is
 | HKeMobility road works | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Lane closures on roads with a speed limit of 70 km/h or above. Red is in progress, amber is under preparation. |
 | HKeMobility toll points | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Cross Harbour Tunnel, Eastern Harbour Crossing, Western Harbour Crossing, and Tai Lam Tunnel. |
 | Smart lamppost detectors | [hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts](https://data.gov.hk/en-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) | Live speed points for the 20 lamppost detectors in Yau Tsim Mong, Kwun Tong, and Wan Chai. |
+| Special traffic news | [hk-td-tis_19-special-traffic-news-v2](https://data.gov.hk/en-data/dataset/hk-td-tis_19-special-traffic-news-v2) | Open incidents. Latitude and longitude are often empty, so the road name is snapped to the centreline, beside the named landmark when that road is in the network. Closed incidents are not drawn. |
 
-The Transport Department provider list also publishes red-light camera housings, speed-enforcement camera housings, and an annual junction blacksite list. Those are fixed sites or a yearly ranking, so they are not drawn. Special traffic news names a road but leaves latitude and longitude empty. The official roadworks GeoJSON is the same set of works already on the map.
+The Transport Department provider list also publishes red-light camera housings, speed-enforcement camera housings, and an annual junction blacksite list. Those are fixed sites or a yearly ranking, so they are not drawn. The official roadworks GeoJSON is the same set of works already on the map.
 
 Basemap tiles are [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer) with the Esri reference overlay for place names. Imagery © Esri.

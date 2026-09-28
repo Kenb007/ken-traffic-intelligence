@@ -8,13 +8,14 @@ import { OpsHud } from "@/components/ops-hud"
 import type {
   ApproachesResponse,
   JourneyResponse,
+  IncidentsResponse,
   PictureResponse,
   TrafficResponse,
   WatchLayer,
   WatchLayers,
 } from "@/lib/types"
 
-const LAYERS_ON: WatchLayers = { speed: true, cameras: true, works: true, tolls: true }
+const LAYERS_ON: WatchLayers = { speed: true, cameras: true, works: true, tolls: true, incidents: true }
 
 function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
   const codes = new Set<string>()
@@ -39,6 +40,7 @@ export function Dashboard() {
   const [approaches, setApproaches] = useState<ApproachesResponse | null>(null)
   const [picture, setPicture] = useState<PictureResponse | null>(null)
   const [pictureError, setPictureError] = useState<string | null>(null)
+  const [incidents, setIncidents] = useState<IncidentsResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -155,6 +157,32 @@ export function Dashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const response = await fetch("/api/incidents", { cache: "no-store" })
+        const body = (await response.json()) as IncidentsResponse
+        if (!cancelled) setIncidents(body)
+      } catch {
+        if (!cancelled) {
+          setIncidents({
+            ok: false,
+            error: "Special traffic news failed to load.",
+            observedAt: null,
+            incidents: { type: "FeatureCollection", features: [] },
+          })
+        }
+      }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
   const toggleLayer = (layer: WatchLayer) => {
     setLayers((current) => ({ ...current, [layer]: !current[layer] }))
   }
@@ -165,6 +193,7 @@ export function Dashboard() {
         corridors={traffic?.ok ? traffic.corridors : []}
         approaches={approaches?.ok ? approaches.points : []}
         picture={picture}
+        incidents={incidents?.ok ? incidents.incidents : null}
         layers={layers}
         flyToken={flyToken}
         disabled={mapDown}
@@ -185,6 +214,7 @@ export function Dashboard() {
           cameras: picture ? picture.cameras.features.length : null,
           works: picture ? picture.works.features.length : null,
           tolls: picture ? tunnelCount(picture.tolls) : null,
+          incidents: incidents ? incidents.incidents.features.length : null,
         }}
         onToggle={toggleLayer}
         onReplay={() => setFlyToken((value) => value + 1)}

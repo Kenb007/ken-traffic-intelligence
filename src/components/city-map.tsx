@@ -41,7 +41,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["cameras-harbour", "cameras-city", "works", "tolls-portal", "tolls-overview"]
+const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-city", "works", "tolls-portal", "tolls-overview"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -56,6 +56,7 @@ type CityMapProps = {
   corridors: Corridor[]
   approaches: ApproachPoint[]
   picture: PictureResponse | null
+  incidents: GeoJSON.FeatureCollection | null
   layers: WatchLayers
   flyToken: number
   onMap: (available: boolean) => void
@@ -73,6 +74,7 @@ export function CityMap({
   corridors,
   approaches,
   picture,
+  incidents,
   layers,
   flyToken,
   onMap,
@@ -205,6 +207,7 @@ export function CityMap({
       map.addSource("cameras", { type: "geojson", data: emptyCollection() })
       map.addSource("works", { type: "geojson", data: emptyCollection() })
       map.addSource("tolls", { type: "geojson", data: emptyCollection() })
+      map.addSource("incidents", { type: "geojson", data: emptyCollection() })
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
@@ -296,6 +299,7 @@ export function CityMap({
         works: workPopup,
         "tolls-portal": tollPopup,
         "tolls-overview": tollPopup,
+        incidents: incidentPopup,
       }
       for (const layerId of watchLayers) {
         const render = featurePopups[layerId]
@@ -388,12 +392,13 @@ export function CityMap({
     geoJsonSource(map, "cameras")?.setData(picture?.cameras ?? emptyCollection())
     geoJsonSource(map, "works")?.setData(picture?.works ?? emptyCollection())
     geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
-  }, [disabled, mapReady, picture])
+    geoJsonSource(map, "incidents")?.setData(incidents ?? emptyCollection())
+  }, [disabled, incidents, mapReady, picture])
 
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls"]
+    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents"]
     for (const kind of kinds) {
       for (const layerId of layerIds(kind)) {
         if (!map.getLayer(layerId)) continue
@@ -648,9 +653,60 @@ function addWatchLayers(map: Map) {
       "circle-pitch-alignment": "map",
     },
   })
+  const mark = incidentMark()
+  if (mark && !map.hasImage("incident-mark")) {
+    map.addImage("incident-mark", mark, { pixelRatio: 2 })
+  }
+  if (map.hasImage("incident-mark")) {
+    map.addLayer({
+      id: "incidents",
+      type: "symbol",
+      source: "incidents",
+      layout: {
+        "icon-image": "incident-mark",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.72, 14, 1.05],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+        "icon-pitch-alignment": "viewport",
+      },
+    })
+  }
   if (!map.hasImage("camera-cone")) return
   addCameraLayer(map, "cameras-harbour", 1, 11.6)
   addCameraLayer(map, "cameras-city", 0, 14)
+}
+
+function incidentMark(): ImageData | null {
+  const size = 64
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  if (!context) return null
+  context.clearRect(0, 0, size, size)
+  context.translate(size / 2, size / 2)
+  context.beginPath()
+  context.moveTo(0, -22)
+  context.lineTo(18, 0)
+  context.lineTo(0, 22)
+  context.lineTo(-18, 0)
+  context.closePath()
+  context.fillStyle = "#FF5D73"
+  context.fill()
+  context.lineWidth = 4
+  context.strokeStyle = "#FFF7F8"
+  context.stroke()
+  context.beginPath()
+  context.moveTo(0, -8)
+  context.lineTo(0, 4)
+  context.lineWidth = 3
+  context.strokeStyle = "#041018"
+  context.stroke()
+  context.beginPath()
+  context.arc(0, 10, 1.8, 0, Math.PI * 2)
+  context.fillStyle = "#041018"
+  context.fill()
+  return context.getImageData(0, 0, size, size)
 }
 
 function addCameraLayer(map: Map, id: string, harbour: 0 | 1, minzoom: number) {
@@ -711,6 +767,8 @@ function layerIds(kind: WatchLayer): string[] {
       return ["works"]
     case "tolls":
       return ["tolls-portal", "tolls-overview"]
+    case "incidents":
+      return ["incidents"]
     default: {
       const exhaustive: never = kind
       return exhaustive
@@ -779,6 +837,38 @@ function cameraPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
   return root
 }
 
+function incidentPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
+  const root = popupRoot()
+  const title = document.createElement("strong")
+  title.textContent = textProp(properties, "name") || "Incident"
+  const place = document.createElement("div")
+  const location = textProp(properties, "location")
+  const locationEn = textProp(properties, "locationEn")
+  const direction = textProp(properties, "direction")
+  place.textContent = [location || locationEn, direction].filter(Boolean).join(" · ")
+  root.append(title, place)
+  const landmark = textProp(properties, "landmark")
+  if (landmark) {
+    const near = document.createElement("div")
+    near.textContent = `Near ${landmark}`
+    root.append(near)
+  }
+  const content = textProp(properties, "content")
+  if (content) {
+    const line = document.createElement("div")
+    line.textContent = content
+    root.append(line)
+  }
+  const announced = clock(hongKongStamp(textProp(properties, "announced")))
+  if (announced) {
+    const when = document.createElement("div")
+    when.style.color = "#526170"
+    when.textContent = announced
+    root.append(when)
+  }
+  return root
+}
+
 function workPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
   const root = popupRoot()
   const title = document.createElement("strong")
@@ -821,6 +911,11 @@ function timeRange(start: string, end: string): string {
   const to = clock(end)
   if (from && to) return `${from} – ${to} HKT`
   return from || to
+}
+
+function hongKongStamp(value: string): string {
+  if (!value || /(?:Z|[+-]\d{2}:?\d{2})$/.test(value)) return value
+  return `${value}+08:00`
 }
 
 function clock(value: string): string {

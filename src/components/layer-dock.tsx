@@ -16,6 +16,7 @@ const LAYERS: { id: WatchLayer; label: string; swatch: string }[] = [
   { id: "cameras", label: "Cameras", swatch: "bg-[#7DD3E8]" },
   { id: "works", label: "Works", swatch: "bg-[#FF5D73]" },
   { id: "tolls", label: "Tolls", swatch: "bg-[#E7FBFF]" },
+  { id: "incidents", label: "Incidents", swatch: "bg-[#FF5D73]" },
 ]
 
 const SPEED_KEY = [

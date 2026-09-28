@@ -132,6 +132,13 @@ export type PictureResponse = {
   tolls: GeoJSON.FeatureCollection
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls"
+export type IncidentsResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  incidents: GeoJSON.FeatureCollection
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents"
 
 export type WatchLayers = Record<WatchLayer, boolean>
