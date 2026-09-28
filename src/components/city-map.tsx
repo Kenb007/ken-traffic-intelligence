@@ -180,6 +180,7 @@ export function CityMap({ corridors, flyToken, onTerrain, onMap, disabled = fals
     })
 
     map.on("load", () => {
+      map.resize()
       try {
         map.setTerrain({ source: "terrain", exaggeration: 1.35 })
         onTerrainRef.current(true)
@@ -311,7 +312,12 @@ export function CityMap({ corridors, flyToken, onTerrain, onMap, disabled = fals
 
   return (
     <>
-      <div ref={containerRef} className="absolute inset-0" aria-label="Satellite map of Hong Kong" />
+      <div
+        ref={containerRef}
+        className="absolute inset-0 h-full w-full"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+        aria-label="Satellite map of Hong Kong"
+      />
       {unavailable ? (
         <p className="pointer-events-none absolute inset-x-6 top-[28%] z-[1] max-w-md text-sm leading-relaxed text-zinc-300">
           The satellite map did not start. Speeds, journey time, and notices stay available.
