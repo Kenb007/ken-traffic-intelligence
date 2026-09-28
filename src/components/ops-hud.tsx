@@ -45,13 +45,17 @@ export function OpsHud(props: OpsHudProps) {
           <p className="font-[family-name:var(--font-hud)] text-sm text-white">Operations</p>
         </div>
         <p className="font-[family-name:var(--font-hud)] text-sm text-cyan-50 tabular-nums">{clock} HKT</p>
+        <p className="w-full font-[family-name:var(--font-hud)] text-xs text-cyan-50 lg:hidden">
+          {crossings.map((crossing) => `${crossing.label} ${crossing.minutes}m`).join(" · ")}
+          {summary ? ` · ${formatSpeed(summary.meanSpeedKmh)}` : ""}
+        </p>
         <p className="flex items-center gap-1.5 font-[family-name:var(--font-hud)] text-[0.7rem] tracking-[0.16em] text-cyan-100 uppercase">
           <span className={`size-1.5 rounded-full ${live ? "hud-pulse bg-[#3DDC97]" : "bg-[#FFC857]"}`} />
           {live ? "Live" : props.trafficLoading ? "Sync" : "Fault"}
           {props.mapLive ? "" : " · map off"}
         </p>
         <div className="hidden h-8 w-px bg-cyan-200/25 sm:block" />
-        <div className="flex flex-wrap items-stretch gap-2">
+        <div className="hidden items-stretch gap-2 lg:flex">
           {crossings.map((crossing) => (
             <div key={crossing.code} className="min-w-[7.5rem] border border-white/10 bg-black/30 px-2 py-1">
               <p className="font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/80 uppercase">
@@ -74,7 +78,7 @@ export function OpsHud(props: OpsHudProps) {
             </span>
           </p>
         ) : null}
-        <div className="ml-auto min-w-[9rem]">
+        <div className="ml-auto hidden min-w-[9rem] lg:block">
           <p className="font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/80 uppercase">
             Network speed
           </p>
