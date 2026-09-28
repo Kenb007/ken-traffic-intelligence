@@ -7,6 +7,7 @@ import {
   Map,
   NavigationControl,
   Popup,
+  setWorkerUrl,
   type ErrorEvent,
   type LngLat,
   type MapGeoJSONFeature,
@@ -14,6 +15,9 @@ import {
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { Corridor, SpeedBand } from "@/lib/types"
+
+// Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
 
 const BAND_COLOR: Record<SpeedBand, string> = {
   free: "#3DDC97",
