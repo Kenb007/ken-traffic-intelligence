@@ -92,12 +92,17 @@ export function OpsHud(props: OpsHudProps) {
   )
 }
 
+const CLOCK_PLACEHOLDER = "--:--:--"
+
 function useHongKongClock(): string {
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000)
+    const tick = () => setNow(new Date())
+    tick()
+    const timer = window.setInterval(tick, 1000)
     return () => window.clearInterval(timer)
   }, [])
+  if (!now) return CLOCK_PLACEHOLDER
   return new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Hong_Kong",
     hour: "2-digit",
