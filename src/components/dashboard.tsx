@@ -13,6 +13,7 @@ export function Dashboard() {
   const [open, setOpen] = useState(true)
   const [flyToken, setFlyToken] = useState(0)
   const [terrain, setTerrain] = useState<"pending" | "on" | "off">("pending")
+  const [mapLive, setMapLive] = useState(!mapDown)
   const [traffic, setTraffic] = useState<TrafficResponse | null>(null)
   const [trafficError, setTrafficError] = useState<string | null>(null)
   const [trafficLoading, setTrafficLoading] = useState(true)
@@ -120,6 +121,7 @@ export function Dashboard() {
         corridors={traffic?.ok ? traffic.corridors : []}
         flyToken={flyToken}
         disabled={mapDown}
+        onMap={setMapLive}
         onTerrain={(available) => setTerrain(available ? "on" : "off")}
       />
       <div className="pointer-events-none absolute top-4 left-14 z-10 hidden rounded-full border border-white/15 bg-[#07131c]/80 px-3 py-1 text-xs text-zinc-100 sm:block">
@@ -138,6 +140,7 @@ export function Dashboard() {
         journey={journey}
         journeyLoading={journeyLoading}
         terrain={terrain}
+        mapLive={mapLive}
       />
     </main>
   )

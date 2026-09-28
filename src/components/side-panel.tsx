@@ -36,6 +36,7 @@ type SidePanelProps = {
   journey: JourneyResponse | null
   journeyLoading: boolean
   terrain: "pending" | "on" | "off"
+  mapLive: boolean
 }
 
 export function SidePanel(props: SidePanelProps) {
@@ -71,7 +72,8 @@ export function SidePanel(props: SidePanelProps) {
       </header>
       {!props.open ? (
         <p className="px-4 pb-4 text-sm text-zinc-200">
-          Citywide detector speed {formatSpeed(mean)}. The map stays up either way.
+          Citywide detector speed {formatSpeed(mean)}.{" "}
+          {props.mapLive ? "The map stays up either way." : "The satellite view is unavailable."}
         </p>
       ) : (
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">

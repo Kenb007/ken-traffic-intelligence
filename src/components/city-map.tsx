@@ -48,16 +48,18 @@ type CityMapProps = {
   corridors: Corridor[]
   flyToken: number
   onTerrain: (available: boolean) => void
+  onMap: (available: boolean) => void
   disabled?: boolean
 }
 
-export function CityMap({ corridors, flyToken, onTerrain, disabled = false }: CityMapProps) {
+export function CityMap({ corridors, flyToken, onTerrain, onMap, disabled = false }: CityMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const linesRef = useRef<AnimLine[]>([])
   const particlesRef = useRef<Particle[]>([])
   const corridorsRef = useRef(corridors)
   const onTerrainRef = useRef(onTerrain)
+  const onMapRef = useRef(onMap)
   const readyRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
   const [gpuFailed, setGpuFailed] = useState(false)
@@ -78,6 +80,14 @@ export function CityMap({ corridors, flyToken, onTerrain, disabled = false }: Ci
   useEffect(() => {
     onTerrainRef.current = onTerrain
   }, [onTerrain])
+
+  useEffect(() => {
+    onMapRef.current = onMap
+  }, [onMap])
+
+  useEffect(() => {
+    onMapRef.current(!unavailable)
+  }, [unavailable])
 
   useEffect(() => {
     if (disabled) return
