@@ -35,12 +35,15 @@ const OPENING = {
   bearing: -20,
 }
 
+const CITY_LAYERS = ["city-land", "city-water", "city-roads", "buildings-3d"]
+
 function showBasemap(map: Map, basemap: Basemap) {
   switch (basemap) {
     case "street":
       setRasterVisible(map, "osm", true)
       setRasterVisible(map, "satellite", false)
       setRasterVisible(map, "places", false)
+      setCityVisible(map, false)
       map.setTerrain(null)
       map.easeTo({ pitch: 0, bearing: 0, duration: 650, essential: true })
       return
@@ -48,6 +51,7 @@ function showBasemap(map: Map, basemap: Basemap) {
       setRasterVisible(map, "osm", false)
       setRasterVisible(map, "satellite", true)
       setRasterVisible(map, "places", true)
+      setCityVisible(map, false)
       try {
         map.setTerrain({ source: "terrain", exaggeration: 1 })
       } catch {
@@ -55,6 +59,54 @@ function showBasemap(map: Map, basemap: Basemap) {
       }
       map.easeTo({ pitch: OPENING.pitch, bearing: OPENING.bearing, duration: 650, essential: true })
       return
+    case "buildings":
+      setRasterVisible(map, "osm", false)
+      setRasterVisible(map, "satellite", false)
+      setRasterVisible(map, "places", false)
+      setCityVisible(map, true)
+      map.setTerrain(null)
+      map.easeTo({
+        pitch: 64,
+        bearing: -18,
+        zoom: Math.max(map.getZoom(), 15.4),
+        duration: 800,
+        essential: true,
+      })
+      return
+    default: {
+      const exhaustive: never = basemap
+      return exhaustive
+    }
+  }
+}
+
+function setCityVisible(map: Map, visible: boolean) {
+  for (const layerId of CITY_LAYERS) setRasterVisible(map, layerId, visible)
+}
+
+function tourCamera(step: (typeof FLYOVER)[number], basemap: Basemap) {
+  switch (basemap) {
+    case "street":
+      return { ...step, pitch: 0, bearing: 0 }
+    case "satellite":
+      return step
+    case "buildings":
+      return { ...step, zoom: Math.max(step.zoom, 15.2), pitch: Math.max(step.pitch, 60) }
+    default: {
+      const exhaustive: never = basemap
+      return exhaustive
+    }
+  }
+}
+
+function mapLabel(basemap: Basemap) {
+  switch (basemap) {
+    case "street":
+      return "OpenStreetMap of Hong Kong"
+    case "satellite":
+      return "Satellite map of Hong Kong"
+    case "buildings":
+      return "3D building map of Hong Kong"
     default: {
       const exhaustive: never = basemap
       return exhaustive
@@ -194,6 +246,11 @@ export function CityMap({
               maxzoom: 19,
               attribution: "© OpenStreetMap contributors",
             },
+            openmap: {
+              type: "vector",
+              url: "https://tiles.openfreemap.org/planet",
+              attribution: "© OpenStreetMap © OpenMapTiles © OpenFreeMap",
+            },
             terrain: {
               type: "raster-dem",
               tiles: ["/api/dem/{z}/{x}/{y}.png?v=3"],
@@ -203,9 +260,61 @@ export function CityMap({
             },
           },
           layers: [
+            { id: "city-land", type: "background", paint: { "background-color": "#e6eef2" }, layout: { visibility: "none" } },
+            {
+              id: "city-water",
+              type: "fill",
+              source: "openmap",
+              "source-layer": "water",
+              layout: { visibility: "none" },
+              paint: { "fill-color": "#b9d7e4" },
+            },
+            {
+              id: "city-roads",
+              type: "line",
+              source: "openmap",
+              "source-layer": "transportation",
+              layout: { visibility: "none", "line-join": "round", "line-cap": "round" },
+              paint: {
+                "line-color": "#f7f4ee",
+                "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 15, 2.2, 17, 5],
+              },
+            },
             { id: "osm", type: "raster", source: "osm", layout: { visibility: "none" } },
             { id: "satellite", type: "raster", source: "imagery" },
             { id: "places", type: "raster", source: "labels", paint: { "raster-opacity": 0.88 } },
+            {
+              id: "buildings-3d",
+              type: "fill-extrusion",
+              source: "openmap",
+              "source-layer": "building",
+              minzoom: 14,
+              filter: ["!=", ["get", "hide_3d"], true],
+              layout: { visibility: "none" },
+              paint: {
+                "fill-extrusion-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["to-number", ["get", "render_height"], 0],
+                  0,
+                  "#d5dee6",
+                  80,
+                  "#b4c4d2",
+                  200,
+                  "#8ea6ba",
+                  400,
+                  "#6d8da6",
+                ],
+                "fill-extrusion-height": [
+                  "case",
+                  [">", ["to-number", ["get", "render_height"], 0], 0],
+                  ["to-number", ["get", "render_height"], 0],
+                  12,
+                ],
+                "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
+                "fill-extrusion-opacity": 0.94,
+              },
+            },
           ],
         },
         ...OPENING,
@@ -411,13 +520,7 @@ export function CityMap({
         const next = FLYOVER[index]
         index += 1
         if (!next) return
-        const street = basemapRef.current === "street"
-        map.flyTo({
-          ...next,
-          pitch: street ? 0 : next.pitch,
-          bearing: street ? 0 : next.bearing,
-          essential: true,
-        })
+        map.flyTo({ ...tourCamera(next, basemapRef.current), essential: true })
         map.once("moveend", run)
       }
       run()
@@ -488,7 +591,7 @@ export function CityMap({
         ref={containerRef}
         className="absolute inset-0 h-full w-full"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-        aria-label={basemap === "street" ? "OpenStreetMap of Hong Kong" : "Satellite map of Hong Kong"}
+        aria-label={mapLabel(basemap)}
       />
       {unavailable ? (
         <p className="pointer-events-none absolute inset-x-6 top-[28%] z-[1] max-w-md text-sm leading-relaxed text-zinc-300">

@@ -16,6 +16,7 @@ type LayerDockProps = {
 const BASEMAPS: { id: Basemap; label: string }[] = [
   { id: "satellite", label: "Satellite" },
   { id: "street", label: "Streets" },
+  { id: "buildings", label: "Buildings" },
 ]
 
 const LAYERS: { id: WatchLayer; label: string; swatch: string }[] = [

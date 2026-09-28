@@ -143,4 +143,4 @@ export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 
-export type Basemap = "satellite" | "street"
+export type Basemap = "satellite" | "street" | "buildings"
