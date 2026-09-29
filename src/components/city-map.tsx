@@ -129,6 +129,7 @@ type CityMapProps = {
   layers: WatchLayers
   basemap: Basemap
   flyToken: number
+  focus: { id: string; coordinates: [number, number] } | null
   onMap: (available: boolean) => void
   disabled?: boolean
 }
@@ -148,6 +149,7 @@ export function CityMap({
   layers,
   basemap,
   flyToken,
+  focus,
   onMap,
   disabled = false,
 }: CityMapProps) {
@@ -521,6 +523,19 @@ export function CityMap({
       if (mapRef.current === map) map.stop()
     }
   }, [disabled, flyToken, mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!focus || disabled || !map || !mapReady) return
+    cancelFlyRef.current?.()
+    map.stop()
+    map.flyTo({
+      center: focus.coordinates,
+      zoom: Math.max(map.getZoom(), basemapRef.current === "buildings" ? 15.6 : 14.2),
+      duration: 900,
+      essential: true,
+    })
+  }, [disabled, focus, mapReady])
 
   useEffect(() => {
     const map = mapRef.current

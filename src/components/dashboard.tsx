@@ -43,6 +43,7 @@ export function Dashboard() {
   const [picture, setPicture] = useState<PictureResponse | null>(null)
   const [pictureError, setPictureError] = useState<string | null>(null)
   const [incidents, setIncidents] = useState<IncidentsResponse | null>(null)
+  const [focus, setFocus] = useState<{ id: string; coordinates: [number, number] } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -199,6 +200,7 @@ export function Dashboard() {
         layers={layers}
         basemap={basemap}
         flyToken={flyToken}
+        focus={focus}
         disabled={mapDown}
         onMap={setMapLive}
       />
@@ -208,7 +210,10 @@ export function Dashboard() {
         trafficError={trafficError}
         approaches={approaches}
         journey={journey}
+        incidents={incidents?.ok ? incidents.incidents : null}
+        works={picture?.works ?? null}
         mapLive={mapLive}
+        onFocus={setFocus}
       />
       <LayerDock
         layers={layers}
