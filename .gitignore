@@ -41,3 +41,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local agent tooling. These files stay on a working machine and do not belong in the public repository.
+.cursor/
+AGENTS.md
+CLAUDE.md
+scripts/ask-jev.mjs
