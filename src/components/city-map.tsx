@@ -17,8 +17,16 @@ import {
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useI18n } from "@/components/locale"
-import { controlName, displayText, districtName, queueText, type Messages } from "@/lib/i18n"
-import { isCameraSnapshotUrl } from "@/lib/picture"
+import {
+  approachPopup,
+  cameraPopup,
+  controlPointPopup,
+  corridorPopup,
+  incidentPopup,
+  tollPopup,
+  workPopup,
+} from "@/components/map-cards"
+import { displayText, type Messages } from "@/lib/i18n"
 import type { ApproachPoint, Basemap, Corridor, HarbourJourney, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
@@ -453,7 +461,7 @@ export function CityMap({
         }
         const feature = event.features?.[0]
         if (!feature) return
-        showPopup(event.lngLat, corridorPopup(feature.properties ?? null))
+        showPopup(event.lngLat, corridorPopup(feature.properties ?? null, copyRef.current))
       }
       map.on("click", "corridor-line", onCorridorClick)
       map.on("click", "corridor-point", onCorridorClick)
@@ -578,9 +586,13 @@ export function CityMap({
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
     const markers = approaches.map((point) => {
+      const popup = new Popup({ className: "city-popup", closeButton: true, maxWidth: "340px", offset: 16 }).setDOMContent(
+        approachPopup(point, messages),
+      )
+      popup.on("open", () => keepCardInView(map, popup))
       const marker = new Marker({ element: approachButton(point, messages), anchor: "center" })
         .setLngLat(point.coordinates)
-        .setPopup(new Popup({ closeButton: true, maxWidth: "280px", offset: 16 }).setDOMContent(approachPopup(point, messages)))
+        .setPopup(popup)
         .addTo(map)
       return marker
     })
@@ -667,21 +679,6 @@ function approachButton(point: ApproachPoint, m: Messages): HTMLButtonElement {
     "cursor:pointer",
   ].join(";")
   return button
-}
-
-function approachPopup(point: ApproachPoint, m: Messages): HTMLElement {
-  const root = document.createElement("div")
-  root.style.cssText = "font:13px/1.45 Outfit,sans-serif;color:#102033"
-  const title = document.createElement("strong")
-  title.textContent = displayText(m.locale, "", point.name)
-  root.append(title)
-  for (const leg of point.legs) {
-    const line = document.createElement("div")
-    const name = crossingLegName(leg.code, leg.name, m)
-    line.textContent = leg.minutes == null ? name : `${name} · ${m.minutes(leg.minutes)}`
-    root.append(line)
-  }
-  return root
 }
 
 function shortestMinutes(point: ApproachPoint): number | null {
@@ -1035,8 +1032,28 @@ function popupOpener(map: Map) {
   let active: Popup | null = null
   return (lngLat: LngLat, content: HTMLElement) => {
     active?.remove()
-    active = new Popup({ closeButton: true, maxWidth: "320px", offset: 16 }).setLngLat(lngLat).setDOMContent(content).addTo(map)
+    active = new Popup({ className: "city-popup", closeButton: true, maxWidth: "340px", offset: 16 })
+      .setLngLat(lngLat)
+      .setDOMContent(content)
+      .addTo(map)
+    keepCardInView(map, active)
   }
+}
+
+function keepCardInView(map: Map, popup: Popup) {
+  const element = popup.getElement()
+  if (!element) return
+  const mapBox = map.getContainer().getBoundingClientRect()
+  const box = element.getBoundingClientRect()
+  const pad = 18
+  const topLimit = mapBox.top + 76
+  let x = 0
+  let y = 0
+  if (box.top < topLimit) y = box.top - topLimit
+  else if (box.bottom > mapBox.bottom - pad) y = box.bottom - (mapBox.bottom - pad)
+  if (box.left < mapBox.left + pad) x = box.left - (mapBox.left + pad)
+  else if (box.right > mapBox.right - pad) x = box.right - (mapBox.right - pad)
+  if (x !== 0 || y !== 0) map.panBy([x, y], { duration: 280, essential: true })
 }
 
 function openFeature(
@@ -1051,190 +1068,3 @@ function openFeature(
   showPopup(event.lngLat, render(feature.properties ?? null))
 }
 
-function corridorPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
-  const root = document.createElement("div")
-  root.style.cssText = "font:13px/1.4 Outfit,sans-serif;color:#102033"
-  const title = document.createElement("strong")
-  title.textContent = textProp(properties, "name")
-  const detail = document.createElement("div")
-  const direction = textProp(properties, "direction")
-  const speed = textProp(properties, "speed")
-  detail.textContent = direction ? `${direction} · ${speed}` : speed
-  const english = document.createElement("div")
-  english.style.color = "#526170"
-  english.textContent = textProp(properties, "nameEn")
-  root.append(title, detail, english)
-  return root
-}
-
-function crossingLegName(code: string, fallback: string, m: Messages): string {
-  if (code === "CH") return m.crossFull
-  if (code === "EH") return m.easternFull
-  if (code === "WH") return m.westernFull
-  return displayText(m.locale, "", fallback)
-}
-
-function cameraPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const root = popupRoot()
-  const title = document.createElement("strong")
-  title.textContent = textProp(properties, "name")
-  const district = document.createElement("div")
-  district.style.color = "#526170"
-  district.textContent = districtName(m.locale, textProp(properties, "district"))
-  root.append(title, district)
-  const url = textProp(properties, "url")
-  if (!isCameraSnapshotUrl(url)) return root
-  const image = document.createElement("img")
-  image.alt = title.textContent
-  image.width = 300
-  image.style.cssText = "display:block;width:100%;height:auto;margin-top:6px;background:#d7dee6"
-  image.addEventListener("error", () => {
-    image.remove()
-    const note = document.createElement("p")
-    note.textContent = m.snapshotFailed
-    root.append(note)
-  })
-  image.src = url
-  root.append(image)
-  return root
-}
-
-function controlPointPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const root = popupRoot()
-  const title = document.createElement("strong")
-  title.textContent = controlName(m.locale, textProp(properties, "code"), textProp(properties, "name") || m.controlPoint)
-  const kind = document.createElement("div")
-  kind.textContent = m.passengerClearance
-  root.append(title, kind)
-  const rows = [
-    [m.residentArrival, "residentArrCode", false],
-    [m.residentDeparture, "residentDepCode", false],
-    [m.visitorArrival, "visitorArrCode", true],
-    [m.visitorDeparture, "visitorDepCode", true],
-  ] as const
-  for (const [label, key, visitor] of rows) {
-    const code = properties?.[key]
-    const line = document.createElement("div")
-    line.textContent = `${label}：${typeof code === "number" ? queueText(code, visitor, m) : m.queueNone}`
-    root.append(line)
-  }
-  const roadName = displayText(m.locale, textProp(properties, "vehicleRoadTc"), textProp(properties, "vehicleRoadEn"))
-  const kmh = properties?.vehicleKmh
-  const band = textProp(properties, "vehicleBand")
-  const road = document.createElement("div")
-  road.textContent =
-    roadName && typeof kmh === "number" && band
-      ? `${m.vehicles}：${roadName} ${m.speedKmh(Math.round(kmh))}`
-      : m.noVehicleApproach
-  root.append(road)
-  return root
-}
-
-function incidentPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const root = popupRoot()
-  const title = document.createElement("strong")
-  title.textContent = displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "name")) || m.incident
-  const place = document.createElement("div")
-  const location = displayText(m.locale, textProp(properties, "location"), textProp(properties, "locationEn"))
-  const direction = displayText(m.locale, textProp(properties, "directionTc"), textProp(properties, "direction"))
-  place.textContent = [location, direction].filter(Boolean).join(" · ")
-  root.append(title, place)
-  const landmark = displayText(m.locale, textProp(properties, "landmark"), textProp(properties, "landmarkEn"))
-  if (landmark) {
-    const near = document.createElement("div")
-    near.textContent = m.near(landmark)
-    root.append(near)
-  }
-  const content = displayText(m.locale, textProp(properties, "contentTc"), textProp(properties, "content"))
-  if (content) {
-    const line = document.createElement("div")
-    line.textContent = content
-    root.append(line)
-  }
-  const announced = clock(hongKongStamp(textProp(properties, "announced")))
-  if (announced) {
-    const when = document.createElement("div")
-    when.style.color = "#526170"
-    when.textContent = announced
-    root.append(when)
-  }
-  return root
-}
-
-function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const root = popupRoot()
-  const title = document.createElement("strong")
-  title.textContent = textProp(properties, "road") || m.roadWork
-  const place = document.createElement("div")
-  place.textContent = textProp(properties, "place")
-  const status = document.createElement("div")
-  const lane = textProp(properties, "lane")
-  const kind = textProp(properties, "kind")
-  const statusText = textProp(properties, "status")
-  const statusWord = /in progress/i.test(statusText) ? m.worksLive : /preparation/i.test(statusText) ? m.worksPrep : statusText
-  status.textContent = [statusWord, lane, kind].filter(Boolean).join(" · ")
-  root.append(title, place, status)
-  const when = timeRange(textProp(properties, "start"), textProp(properties, "end"))
-  if (when) {
-    const line = document.createElement("div")
-    line.style.color = "#526170"
-    line.textContent = when
-    root.append(line)
-  }
-  return root
-}
-
-const TUNNEL_TC: Record<string, string> = {
-  "Western Harbour Crossing": "西區海底隧道",
-  "Eastern Harbour Crossing": "東區海底隧道",
-  "Cross Harbour Tunnel": "紅磡海底隧道",
-  "Tai Lam Tunnel": "大欖隧道",
-}
-
-function tollPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const root = popupRoot()
-  const title = document.createElement("strong")
-  const name = textProp(properties, "name")
-  title.textContent = displayText(m.locale, TUNNEL_TC[name] ?? "", name)
-  const band = document.createElement("div")
-  band.textContent = textProp(properties, "band") === "overview" ? m.tunnel : m.tunnelPortal
-  root.append(title, band)
-  return root
-}
-
-function popupRoot(): HTMLElement {
-  const root = document.createElement("div")
-  root.style.cssText = "font:13px/1.4 Outfit,sans-serif;color:#102033;width:300px"
-  return root
-}
-
-function timeRange(start: string, end: string): string {
-  const from = clock(start)
-  const to = clock(end)
-  if (from && to) return `${from} – ${to} HKT`
-  return from || to
-}
-
-function hongKongStamp(value: string): string {
-  if (!value || /(?:Z|[+-]\d{2}:?\d{2})$/.test(value)) return value
-  return `${value}+08:00`
-}
-
-function clock(value: string): string {
-  if (!value) return ""
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ""
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Hong_Kong",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-    day: "numeric",
-    month: "short",
-  }).format(date)
-}
-
-function textProp(properties: GeoJSON.GeoJsonProperties, key: string): string {
-  const value = properties?.[key]
-  return typeof value === "string" ? value : ""
-}
