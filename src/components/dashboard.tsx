@@ -262,13 +262,16 @@ export function Dashboard() {
         onOpenChange={setIntelOpen}
         onFocus={setFocus}
       />
-      <p className="maplibregl-ctrl-attrib pointer-events-auto absolute bottom-0 left-0 z-20 m-0 px-[5px] py-0 text-[12px] leading-5 text-[#333]">
+      <p
+        className="pointer-events-auto absolute left-3 z-30 max-w-[min(34rem,calc(100%-19rem))] bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white"
+        style={{ bottom: "0.4rem" }}
+      >
         Designed and Created by Keith Li —{" "}
         <a
           href="https://www.linkedin.com/in/keithlihk"
           target="_blank"
           rel="noreferrer"
-          className="text-[#333] underline"
+          className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
         >
           Follow me on LinkedIn
         </a>
