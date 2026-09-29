@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
 import { LayerDock } from "@/components/layer-dock"
 import { OpsHud } from "@/components/ops-hud"
+import { decorateControlPoints } from "@/lib/control-points"
 import type {
   ApproachesResponse,
   JourneyResponse,
@@ -233,7 +234,9 @@ export function Dashboard() {
         approaches={approaches?.ok ? approaches.points : []}
         picture={picture}
         incidents={incidents?.ok ? incidents.incidents : null}
-        controlPoints={controlPoints?.ok ? controlPoints.points : null}
+        controlPoints={
+          controlPoints?.ok ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : []) : null
+        }
         layers={layers}
         basemap={basemap}
         flyToken={flyToken}
@@ -249,7 +252,11 @@ export function Dashboard() {
         journey={journey}
         incidents={incidents?.ok ? incidents.incidents : null}
         works={picture?.works ?? null}
-        controlPoints={layers.control && controlPoints?.ok ? controlPoints.points : null}
+        controlPoints={
+          layers.control && controlPoints?.ok
+            ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : [])
+            : null
+        }
         mapLive={mapLive}
         open={intelOpen}
         onOpenChange={setIntelOpen}

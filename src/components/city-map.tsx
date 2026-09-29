@@ -484,6 +484,10 @@ export function CityMap({
       const current = mapRef.current
       if (current && readyRef.current && !document.hidden) {
         stepParticles(current, linesRef.current, particlesRef.current, dt)
+        if (current.getLayer("control-points-ring")) {
+          const pulse = 0.15 + 0.2 * (0.5 + 0.5 * Math.sin(now / 320))
+          current.setPaintProperty("control-points-ring", "circle-opacity", pulse)
+        }
       }
       frame = requestAnimationFrame(tick)
     }
@@ -1098,6 +1102,10 @@ function controlPointPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
     line.textContent = `${label}: ${textProp(properties, key)}`
     root.append(line)
   }
+  const vehicles = textProp(properties, "vehicleLine")
+  const road = document.createElement("div")
+  road.textContent = vehicles ? `Vehicles: ${vehicles}` : "Vehicles: no strategic approach on this feed"
+  root.append(road)
   return root
 }
 

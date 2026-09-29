@@ -15,7 +15,7 @@ The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://12
 
 Add `?feed=down` to force the speed request to fail. The status bar shows the fault and the satellite map stays up. Add `?map=down` to skip the map. Crossing minutes and network speed stay on screen.
 
-Buttons along the bottom switch the picture between the pitched satellite view, a flat OpenStreetMap, and a pitched OpenFreeMap city with extruded buildings, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is the official class: good, average, and bad. The Boundary switch adds land control points. Passenger arrival and departure at each hall come from the Immigration Department, updated about every 15 minutes. The road speeds toward those points stay on the speed lines.
+Buttons along the bottom switch the picture between the pitched satellite view, a flat OpenStreetMap, and a pitched OpenFreeMap city with extruded buildings, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is the official class: good, average, and bad. The Boundary switch adds the eight land control points. Passenger arrival and departure come from the Immigration Department, about every 15 minutes. Vehicle flow is the live speed on the strategic road that feeds each port. Lo Wu is a passenger crossing and has no vehicle approach on that feed. Private-car queue counts are not in the public file.
 
 ## What the map uses
 

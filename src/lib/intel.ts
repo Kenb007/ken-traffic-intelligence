@@ -83,18 +83,24 @@ function controlPointsOf(collection: GeoJSON.FeatureCollection | null): IntelIte
   if (!collection) return []
   const rows = collection.features.flatMap((feature) => {
     const worst = numberProp(feature.properties, "worst")
-    if (worst !== 1 && worst !== 2) return []
+    const vehicleBand = textProp(feature.properties, "vehicleBand")
+    const passengerHot = worst === 1 || worst === 2
+    const vehicleHot = vehicleBand === "congested" || vehicleBand === "slow"
+    if (!passengerHot && !vehicleHot) return []
     const name = textProp(feature.properties, "name") || "Control point"
+    const veryBusy = worst === 2 || vehicleBand === "congested"
     return [
       {
         id: `control-${textProp(feature.properties, "code") || name}`,
         kind: "control" as const,
-        score: worst === 2 ? 750_000 : 230_000,
-        urgent: worst === 2,
+        score: worst === 2 ? 750_000 : vehicleBand === "congested" ? 420_000 : 230_000,
+        urgent: veryBusy,
         label: "Control",
         title: name,
-        detail: textProp(feature.properties, "summary"),
-        tone: (worst === 2 ? "red" : "amber") as IntelTone,
+        detail: [textProp(feature.properties, "summary"), textProp(feature.properties, "vehicleLine")]
+          .filter(Boolean)
+          .join(" · "),
+        tone: (veryBusy ? "red" : "amber") as IntelTone,
         coordinates: pointOf(feature),
       },
     ]

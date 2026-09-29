@@ -1,6 +1,20 @@
+import { bandLabel } from "@/lib/speed"
+import type { SpeedBand } from "@/lib/types"
+
 export type ControlPointCode = "HYW" | "HZM" | "LMC" | "LSC" | "LWS" | "MKT" | "SBC" | "STK"
 
 export type QueueFile = Record<ControlPointCode, { arrQueue: number; depQueue: number }>
+
+const VEHICLE_ROADS: Record<ControlPointCode, string[]> = {
+  HYW: ["HEUNG YUEN WAI"],
+  HZM: ["TUEN MUN CHEK LAP KOK", "HONG KONG-ZHUHAI-MACAO", "HONG KONG ZHUHAI"],
+  LMC: ["SAN TIN HIGHWAY", "LOK MA CHAU"],
+  LSC: ["SAN TIN HIGHWAY", "LOK MA CHAU"],
+  LWS: [],
+  MKT: ["MAN KAM TO"],
+  SBC: ["SHENZHEN BAY", "KONG SHAM", "HUNG TIN"],
+  STK: ["SHA TAU KOK"],
+}
 
 const POINTS: { code: ControlPointCode; name: string; coordinates: [number, number] }[] = [
   { code: "HYW", name: "Heung Yuen Wai", coordinates: [114.1516, 22.5592] },
@@ -40,6 +54,71 @@ export function controlPointFeatures(resident: QueueFile, visitor: QueueFile): G
       geometry: { type: "Point", coordinates: point.coordinates },
     }
   })
+}
+
+export function decorateControlPoints(
+  collection: GeoJSON.FeatureCollection,
+  corridors: { roadEn: string; roadTc: string; speedKmh: number | null; band: SpeedBand }[],
+): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: collection.features.map((feature) => {
+      const code = textCode(feature.properties?.code)
+      const vehicle = code ? slowestApproach(corridors, VEHICLE_ROADS[code]) : null
+      const vehicleLine = vehicle
+        ? `${vehicle.road} ${Math.round(vehicle.speedKmh)} km/h, ${bandLabel(vehicle.band).toLowerCase()}`
+        : ""
+      return {
+        ...feature,
+        properties: {
+          ...feature.properties,
+          vehicleLine,
+          vehicleBand: vehicle?.band ?? "",
+        },
+      }
+    }),
+  }
+}
+
+function slowestApproach(
+  corridors: { roadEn: string; roadTc: string; speedKmh: number | null; band: SpeedBand }[],
+  needles: string[],
+): { road: string; speedKmh: number; band: SpeedBand } | null {
+  let best: { road: string; speedKmh: number; band: SpeedBand } | null = null
+  for (const corridor of corridors) {
+    if (corridor.speedKmh == null) continue
+    const name = `${corridor.roadEn} ${corridor.roadTc}`.toUpperCase()
+    if (!needles.some((needle) => name.includes(needle))) continue
+    const road = corridor.roadEn || corridor.roadTc || "Approach"
+    if (!best || rankBand(corridor.band) > rankBand(best.band) || (corridor.band === best.band && corridor.speedKmh < best.speedKmh)) {
+      best = { road, speedKmh: corridor.speedKmh, band: corridor.band }
+    }
+  }
+  return best
+}
+
+function rankBand(band: SpeedBand): number {
+  switch (band) {
+    case "congested":
+      return 3
+    case "slow":
+      return 2
+    case "free":
+      return 1
+    case "unknown":
+      return 0
+    default: {
+      const exhaustive: never = band
+      return exhaustive
+    }
+  }
+}
+
+function textCode(value: unknown): ControlPointCode | null {
+  if (value === "HYW" || value === "HZM" || value === "LMC" || value === "LSC" || value === "LWS" || value === "MKT" || value === "SBC" || value === "STK") {
+    return value
+  }
+  return null
 }
 
 export function isQueueFile(value: unknown): value is QueueFile {
