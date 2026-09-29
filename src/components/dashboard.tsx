@@ -48,6 +48,7 @@ export function Dashboard() {
   const [mapLive, setMapLive] = useState(!mapDown)
   const [layers, setLayers] = useState<WatchLayers>(LAYERS_ON)
   const [basemap, setBasemap] = useState<Basemap>("satellite")
+  const [ground, setGround] = useState<Exclude<Basemap, "buildings">>("satellite")
   const trafficLive = useLiveJson<TrafficResponse>(forceDown ? "/api/traffic?simulate=fail" : "/api/traffic")
   const approachesLive = useLiveJson<ApproachesResponse>("/api/approaches")
   const pictureLive = useLiveJson<PictureResponse>("/api/picture")
@@ -71,6 +72,15 @@ export function Dashboard() {
 
   const toggleLayer = (layer: WatchLayer) => {
     setLayers((current) => ({ ...current, [layer]: !current[layer] }))
+  }
+
+  function selectBasemap(next: Basemap) {
+    if (next === "buildings") {
+      setBasemap((current) => (current === "buildings" ? ground : "buildings"))
+      return
+    }
+    setGround(next)
+    setBasemap(next)
   }
 
   return (
@@ -139,7 +149,7 @@ export function Dashboard() {
             : null,
         }}
         onToggle={toggleLayer}
-        onBasemap={setBasemap}
+        onBasemap={selectBasemap}
         onReplay={() => setFlyToken((value) => value + 1)}
         mapLive={mapLive}
         pictureError={pictureError}
