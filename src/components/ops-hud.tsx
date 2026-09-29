@@ -14,6 +14,7 @@ type OpsHudProps = {
   journey: JourneyResponse | null
   incidents: GeoJSON.FeatureCollection | null
   works: GeoJSON.FeatureCollection | null
+  controlPoints: GeoJSON.FeatureCollection | null
   mapLive: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -40,6 +41,7 @@ export function OpsHud(props: OpsHudProps) {
     traffic: props.traffic,
     incidents: props.incidents,
     works: props.works,
+    controlPoints: props.controlPoints,
     approaches: props.approaches?.ok ? props.approaches.points : [],
   })
   const urgentCount = intel.filter((item) => item.urgent).length

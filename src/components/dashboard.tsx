@@ -8,6 +8,7 @@ import { OpsHud } from "@/components/ops-hud"
 import type {
   ApproachesResponse,
   JourneyResponse,
+  ControlPointsResponse,
   IncidentsResponse,
   PictureResponse,
   TrafficResponse,
@@ -16,7 +17,14 @@ import type {
   Basemap,
 } from "@/lib/types"
 
-const LAYERS_ON: WatchLayers = { speed: true, cameras: true, works: true, tolls: true, incidents: true }
+const LAYERS_ON: WatchLayers = {
+  speed: true,
+  cameras: true,
+  works: true,
+  tolls: true,
+  incidents: true,
+  control: true,
+}
 
 function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
   const codes = new Set<string>()
@@ -43,6 +51,7 @@ export function Dashboard() {
   const [picture, setPicture] = useState<PictureResponse | null>(null)
   const [pictureError, setPictureError] = useState<string | null>(null)
   const [incidents, setIncidents] = useState<IncidentsResponse | null>(null)
+  const [controlPoints, setControlPoints] = useState<ControlPointsResponse | null>(null)
   const [focus, setFocus] = useState<{ id: string; coordinates: [number, number] } | null>(null)
   const [intelOpen, setIntelOpen] = useState(true)
 
@@ -187,6 +196,32 @@ export function Dashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const response = await fetch("/api/control-points", { cache: "no-store" })
+        const body = (await response.json()) as ControlPointsResponse
+        if (!cancelled) setControlPoints(body)
+      } catch {
+        if (!cancelled) {
+          setControlPoints({
+            ok: false,
+            error: "Control point waiting times failed to load.",
+            observedAt: null,
+            points: { type: "FeatureCollection", features: [] },
+          })
+        }
+      }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
   const toggleLayer = (layer: WatchLayer) => {
     setLayers((current) => ({ ...current, [layer]: !current[layer] }))
   }
@@ -198,6 +233,7 @@ export function Dashboard() {
         approaches={approaches?.ok ? approaches.points : []}
         picture={picture}
         incidents={incidents?.ok ? incidents.incidents : null}
+        controlPoints={controlPoints?.ok ? controlPoints.points : null}
         layers={layers}
         basemap={basemap}
         flyToken={flyToken}
@@ -213,6 +249,7 @@ export function Dashboard() {
         journey={journey}
         incidents={incidents?.ok ? incidents.incidents : null}
         works={picture?.works ?? null}
+        controlPoints={layers.control && controlPoints?.ok ? controlPoints.points : null}
         mapLive={mapLive}
         open={intelOpen}
         onOpenChange={setIntelOpen}
@@ -241,6 +278,12 @@ export function Dashboard() {
           works: picture ? picture.works.features.length : null,
           tolls: picture ? tunnelCount(picture.tolls) : null,
           incidents: incidents ? incidents.incidents.features.length : null,
+          control: controlPoints?.ok
+            ? controlPoints.points.features.filter((feature) => {
+                const worst = feature.properties && feature.properties.worst
+                return worst === 1 || worst === 2
+              }).length
+            : null,
         }}
         onToggle={toggleLayer}
         onBasemap={setBasemap}

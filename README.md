@@ -15,7 +15,7 @@ The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://12
 
 Add `?feed=down` to force the speed request to fail. The status bar shows the fault and the satellite map stays up. Add `?map=down` to skip the map. Crossing minutes and network speed stay on screen.
 
-Buttons along the bottom switch the picture between the pitched satellite view, a flat OpenStreetMap, and a pitched OpenFreeMap city with extruded buildings, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is the official class: good, average, and bad.
+Buttons along the bottom switch the picture between the pitched satellite view, a flat OpenStreetMap, and a pitched OpenFreeMap city with extruded buildings, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is the official class: good, average, and bad. The Boundary switch adds land control points. Passenger arrival and departure at each hall come from the Immigration Department, updated about every 15 minutes. The road speeds toward those points stay on the speed lines.
 
 ## What the map uses
 
@@ -37,6 +37,7 @@ Road names stay as published, usually Traditional Chinese. The interface copy is
 | HKeMobility toll points | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Cross Harbour Tunnel, Eastern Harbour Crossing, Western Harbour Crossing, and Tai Lam Tunnel. |
 | Smart lamppost detectors | [hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts](https://data.gov.hk/en-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) | Live speed points for the 20 lamppost detectors in Yau Tsim Mong, Kwun Tong, and Wan Chai. |
 | Special traffic news | [hk-td-tis_19-special-traffic-news-v2](https://data.gov.hk/en-data/dataset/hk-td-tis_19-special-traffic-news-v2) | Open incidents. Latitude and longitude are often empty, so the road name is snapped to the centreline, beside the named landmark when that road is in the network. Closed incidents are not drawn. |
+| Land boundary control point waiting time | [hk-immd-set28-land-boundary-control-points-waiting-time](https://data.gov.hk/en-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) | Passenger hall status at the eight land control points, for residents and visitors, arrival and departure. The Boundary switch draws them. Busy and very busy halls also enter the intel list. |
 
 The Transport Department provider list also publishes red-light camera housings, speed-enforcement camera housings, and an annual junction blacksite list. Those are fixed sites or a yearly ranking, so they are not drawn. The official roadworks GeoJSON is the same set of works already on the map.
 

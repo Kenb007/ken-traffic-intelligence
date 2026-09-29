@@ -1,6 +1,6 @@
 import type { ApproachPoint, Corridor, TrafficResponse } from "@/lib/types"
 
-export type IntelKind = "fault" | "incident" | "crossing" | "jam" | "works" | "slow"
+export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow"
 
 export type IntelTone = "red" | "amber" | "green" | "none"
 
@@ -21,6 +21,7 @@ export type IntelInput = {
   traffic: TrafficResponse | null
   incidents: GeoJSON.FeatureCollection | null
   works: GeoJSON.FeatureCollection | null
+  controlPoints: GeoJSON.FeatureCollection | null
   approaches: ApproachPoint[]
 }
 
@@ -45,6 +46,7 @@ export function rankIntel(input: IntelInput): IntelItem[] {
     })
   }
   items.push(...incidentsOf(input.incidents))
+  items.push(...controlPointsOf(input.controlPoints))
   items.push(...crossingsOf(input.approaches))
   items.push(...jamsOf(input.traffic?.ok ? input.traffic.corridors : []))
   items.push(...worksOf(input.works))
@@ -75,6 +77,30 @@ function incidentsOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] 
       coordinates: pointOf(row.feature),
     }
   })
+}
+
+function controlPointsOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] {
+  if (!collection) return []
+  const rows = collection.features.flatMap((feature) => {
+    const worst = numberProp(feature.properties, "worst")
+    if (worst !== 1 && worst !== 2) return []
+    const name = textProp(feature.properties, "name") || "Control point"
+    return [
+      {
+        id: `control-${textProp(feature.properties, "code") || name}`,
+        kind: "control" as const,
+        score: worst === 2 ? 750_000 : 230_000,
+        urgent: worst === 2,
+        label: "Control",
+        title: name,
+        detail: textProp(feature.properties, "summary"),
+        tone: (worst === 2 ? "red" : "amber") as IntelTone,
+        coordinates: pointOf(feature),
+      },
+    ]
+  })
+  rows.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+  return rows.slice(0, 3)
 }
 
 function crossingsOf(points: ApproachPoint[]): IntelItem[] {
@@ -212,6 +238,12 @@ function textProp(properties: GeoJSON.GeoJsonProperties, key: string): string {
   if (!properties) return ""
   const value = properties[key]
   return typeof value === "string" ? value.trim() : ""
+}
+
+function numberProp(properties: GeoJSON.GeoJsonProperties, key: string): number | null {
+  if (!properties) return null
+  const value = properties[key]
+  return typeof value === "number" && Number.isFinite(value) ? value : null
 }
 
 function clip(value: string, limit: number): string {

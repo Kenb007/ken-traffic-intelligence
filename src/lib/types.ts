@@ -139,7 +139,14 @@ export type IncidentsResponse = {
   incidents: GeoJSON.FeatureCollection
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents"
+export type ControlPointsResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  points: GeoJSON.FeatureCollection
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 

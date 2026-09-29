@@ -110,7 +110,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-city", "works", "tolls-portal", "tolls-overview"]
+const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -126,6 +126,7 @@ type CityMapProps = {
   approaches: ApproachPoint[]
   picture: PictureResponse | null
   incidents: GeoJSON.FeatureCollection | null
+  controlPoints: GeoJSON.FeatureCollection | null
   layers: WatchLayers
   basemap: Basemap
   flyToken: number
@@ -146,6 +147,7 @@ export function CityMap({
   approaches,
   picture,
   incidents,
+  controlPoints,
   layers,
   basemap,
   flyToken,
@@ -353,6 +355,11 @@ export function CityMap({
       map.addSource("works", { type: "geojson", data: emptyCollection() })
       map.addSource("tolls", { type: "geojson", data: emptyCollection() })
       map.addSource("incidents", { type: "geojson", data: emptyCollection() })
+      map.addSource("control-points", {
+        type: "geojson",
+        data: emptyCollection(),
+        attribution: "Passenger clearance © Immigration Department",
+      })
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
@@ -448,6 +455,7 @@ export function CityMap({
         "tolls-portal": tollPopup,
         "tolls-overview": tollPopup,
         incidents: incidentPopup,
+        "control-points": controlPointPopup,
       }
       for (const layerId of watchLayers) {
         const render = featurePopups[layerId]
@@ -574,12 +582,13 @@ export function CityMap({
     geoJsonSource(map, "works")?.setData(picture?.works ?? emptyCollection())
     geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
     geoJsonSource(map, "incidents")?.setData(incidents ?? emptyCollection())
-  }, [disabled, incidents, mapReady, picture])
+    geoJsonSource(map, "control-points")?.setData(controlPoints ?? emptyCollection())
+  }, [controlPoints, disabled, incidents, mapReady, picture])
 
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents"]
+    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control"]
     for (const kind of kinds) {
       for (const layerId of layerIds(kind)) {
         if (!map.getLayer(layerId)) continue
@@ -838,6 +847,43 @@ function addWatchLayers(map: Map) {
     },
   })
   map.addLayer({
+    id: "control-points-ring",
+    type: "circle",
+    source: "control-points",
+    filter: ["==", ["get", "worst"], 2],
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 14, 22],
+      "circle-color": "rgba(255, 93, 115, 0.18)",
+      "circle-stroke-color": "#FF5D73",
+      "circle-stroke-width": 1,
+      "circle-pitch-alignment": "map",
+    },
+  })
+  map.addLayer({
+    id: "control-points",
+    type: "circle",
+    source: "control-points",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 14, 9],
+      "circle-color": [
+        "match",
+        ["get", "worst"],
+        0,
+        "#3DDC97",
+        1,
+        "#FFC857",
+        2,
+        "#FF5D73",
+        99,
+        "#5C6B7A",
+        "#C9D2DC",
+      ],
+      "circle-stroke-color": "#041018",
+      "circle-stroke-width": 2,
+      "circle-pitch-alignment": "map",
+    },
+  })
+  map.addLayer({
     id: "works",
     type: "circle",
     source: "works",
@@ -965,6 +1011,8 @@ function layerIds(kind: WatchLayer): string[] {
       return ["tolls-portal", "tolls-overview"]
     case "incidents":
       return ["incidents"]
+    case "control":
+      return ["control-points", "control-points-ring"]
     default: {
       const exhaustive: never = kind
       return exhaustive
@@ -1030,6 +1078,26 @@ function cameraPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
   })
   image.src = url
   root.append(image)
+  return root
+}
+
+function controlPointPopup(properties: GeoJSON.GeoJsonProperties): HTMLElement {
+  const root = popupRoot()
+  const title = document.createElement("strong")
+  title.textContent = textProp(properties, "name") || "Control point"
+  const kind = document.createElement("div")
+  kind.textContent = "Passenger clearance"
+  root.append(title, kind)
+  for (const [label, key] of [
+    ["Resident arrival", "residentArr"],
+    ["Resident departure", "residentDep"],
+    ["Visitor arrival", "visitorArr"],
+    ["Visitor departure", "visitorDep"],
+  ] as const) {
+    const line = document.createElement("div")
+    line.textContent = `${label}: ${textProp(properties, key)}`
+    root.append(line)
+  }
   return root
 }
 
