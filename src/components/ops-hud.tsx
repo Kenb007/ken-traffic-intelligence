@@ -115,15 +115,6 @@ export function OpsHud(props: OpsHudProps) {
         <div className="flex items-center gap-2 px-2 py-1.5">
           {open ? (
             <>
-              <button
-                type="button"
-                aria-expanded={open}
-                aria-controls="harbour-intel-list"
-                onClick={() => props.onOpenChange(false)}
-                className="shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
-              >
-                Hide
-              </button>
               {urgentCount > 0 ? (
                 <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-[#FF5D73] uppercase">
                   {urgentCount}
@@ -132,6 +123,15 @@ export function OpsHud(props: OpsHudProps) {
               <p className="font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.16em] text-cyan-100/80 uppercase">
                 Ranked live
               </p>
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls="harbour-intel-list"
+                onClick={() => props.onOpenChange(false)}
+                className="ml-auto shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
+              >
+                Hide
+              </button>
             </>
           ) : (
             <>
