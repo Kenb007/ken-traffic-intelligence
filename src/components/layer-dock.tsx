@@ -11,6 +11,7 @@ type LayerDockProps = {
   onReplay: () => void
   mapLive: boolean
   pictureError: string | null
+  aboveMarquee: boolean
 }
 
 const BASEMAPS: { id: Basemap; label: string }[] = [
@@ -36,7 +37,11 @@ const SPEED_KEY = [
 export function LayerDock(props: LayerDockProps) {
   if (!props.mapLive) return null
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-4 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2 lg:left-16">
+    <div
+      className={`pointer-events-auto absolute left-4 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2 lg:left-16 ${
+        props.aboveMarquee ? "bottom-14" : "bottom-4 lg:max-w-[calc(100%-28rem)]"
+      }`}
+    >
       <div className="inline-flex border border-white/15" role="group" aria-label="Basemap">
         {BASEMAPS.map((item) => {
           const on = props.basemap === item.id

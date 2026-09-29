@@ -15,6 +15,8 @@ type OpsHudProps = {
   incidents: GeoJSON.FeatureCollection | null
   works: GeoJSON.FeatureCollection | null
   mapLive: boolean
+  open: boolean
+  onOpenChange: (open: boolean) => void
   onFocus: (focus: { id: string; coordinates: [number, number] }) => void
 }
 
@@ -27,7 +29,7 @@ const TONE: Record<HarbourJourney["colour"], string> = {
 
 export function OpsHud(props: OpsHudProps) {
   const clock = useHongKongClock()
-  const [open, setOpen] = useState(true)
+  const open = props.open
   const crossings = bestCrossings(props.approaches?.ok ? props.approaches.points : [])
   const summary = props.traffic?.ok ? props.traffic.summary : null
   const totalBands = summary ? summary.free + summary.slow + summary.congested : 0
@@ -44,8 +46,8 @@ export function OpsHud(props: OpsHudProps) {
   const marqueeSeconds = Math.max(28, intel.length * 9)
 
   return (
-    <div className="pointer-events-none absolute top-3 right-3 left-3 z-[5] flex flex-col gap-2 lg:right-4 lg:left-16">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border border-cyan-200/30 bg-[#041018]/80 px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md">
+    <div className="pointer-events-none absolute inset-0 z-[5]">
+      <header className="absolute top-3 right-3 left-3 flex flex-wrap items-center gap-x-3 gap-y-2 border border-cyan-200/30 bg-[#041018]/80 px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:left-16">
         <div className="min-w-0">
           <p className="font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.22em] text-cyan-200/80 uppercase">
             Victoria Harbour
@@ -104,14 +106,18 @@ export function OpsHud(props: OpsHudProps) {
       </header>
       <section
         id="harbour-intel"
-        className={`pointer-events-auto border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md ${open ? "w-full lg:w-[24rem]" : ""}`}
+        className={
+          open
+            ? "pointer-events-auto absolute right-3 bottom-28 z-[6] w-[min(24rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-4"
+            : "pointer-events-auto absolute inset-x-0 bottom-0 z-[6] border-t border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md"
+        }
       >
         <div className="flex items-center gap-2 px-2 py-1.5">
           <button
             type="button"
             aria-expanded={open}
             aria-controls="harbour-intel-list"
-            onClick={() => setOpen((current) => !current)}
+            onClick={() => props.onOpenChange(!open)}
             className="shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
           >
             {open ? "Hide" : "Intel"}

@@ -44,6 +44,7 @@ export function Dashboard() {
   const [pictureError, setPictureError] = useState<string | null>(null)
   const [incidents, setIncidents] = useState<IncidentsResponse | null>(null)
   const [focus, setFocus] = useState<{ id: string; coordinates: [number, number] } | null>(null)
+  const [intelOpen, setIntelOpen] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -213,6 +214,8 @@ export function Dashboard() {
         incidents={incidents?.ok ? incidents.incidents : null}
         works={picture?.works ?? null}
         mapLive={mapLive}
+        open={intelOpen}
+        onOpenChange={setIntelOpen}
         onFocus={setFocus}
       />
       <LayerDock
@@ -230,6 +233,7 @@ export function Dashboard() {
         onReplay={() => setFlyToken((value) => value + 1)}
         mapLive={mapLive}
         pictureError={pictureError}
+        aboveMarquee={!intelOpen}
       />
     </main>
   )
