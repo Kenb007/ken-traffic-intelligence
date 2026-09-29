@@ -99,21 +99,6 @@ function tourCamera(step: (typeof FLYOVER)[number], basemap: Basemap) {
   }
 }
 
-function mapLabel(basemap: Basemap) {
-  switch (basemap) {
-    case "street":
-      return "OpenStreetMap of Hong Kong"
-    case "satellite":
-      return "Satellite map of Hong Kong"
-    case "buildings":
-      return "3D building map of Hong Kong"
-    default: {
-      const exhaustive: never = basemap
-      return exhaustive
-    }
-  }
-}
-
 function setRasterVisible(map: Map, layerId: string, visible: boolean) {
   if (!map.getLayer(layerId)) return
   map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none")
@@ -585,13 +570,28 @@ export function CityMap({
     }
   }, [disabled, layers, mapReady])
 
+  function basemapTitle(mode: Basemap): string {
+    switch (mode) {
+      case "street":
+        return "OpenStreetMap of Hong Kong"
+      case "satellite":
+        return "Satellite map of Hong Kong"
+      case "buildings":
+        return "3D building map of Hong Kong"
+      default: {
+        const exhaustive: never = mode
+        return exhaustive
+      }
+    }
+  }
+
   return (
     <>
       <div
         ref={containerRef}
         className="absolute inset-0 h-full w-full"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-        aria-label={mapLabel(basemap)}
+        aria-label={basemapTitle(basemap)}
       />
       {unavailable ? (
         <p className="pointer-events-none absolute inset-x-6 top-[28%] z-[1] max-w-md text-sm leading-relaxed text-zinc-300">
