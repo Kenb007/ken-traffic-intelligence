@@ -1,3 +1,4 @@
+import type { Messages } from "@/lib/i18n"
 import { bandLabel } from "@/lib/speed"
 import type { SpeedBand } from "@/lib/types"
 
@@ -44,6 +45,10 @@ export function controlPointFeatures(resident: QueueFile, visitor: QueueFile): G
         residentDep: queueLabel(residentDep, false),
         visitorArr: queueLabel(visitorArr, true),
         visitorDep: queueLabel(visitorDep, true),
+        residentArrCode: residentArr,
+        residentDepCode: residentDep,
+        visitorArrCode: visitorArr,
+        visitorDepCode: visitorDep,
         summary: busySummary([
           ["Resident arrival", residentArr],
           ["Resident departure", residentDep],
@@ -73,6 +78,9 @@ export function decorateControlPoints(
         properties: {
           ...feature.properties,
           vehicleLine,
+          vehicleRoadEn: vehicle?.road ?? "",
+          vehicleRoadTc: vehicle?.roadTc ?? "",
+          vehicleKmh: vehicle?.speedKmh ?? null,
           vehicleBand: vehicle?.band ?? "",
         },
       }
@@ -83,15 +91,15 @@ export function decorateControlPoints(
 function slowestApproach(
   corridors: { roadEn: string; roadTc: string; speedKmh: number | null; band: SpeedBand }[],
   needles: string[],
-): { road: string; speedKmh: number; band: SpeedBand } | null {
-  let best: { road: string; speedKmh: number; band: SpeedBand } | null = null
+): { road: string; roadTc: string; speedKmh: number; band: SpeedBand } | null {
+  let best: { road: string; roadTc: string; speedKmh: number; band: SpeedBand } | null = null
   for (const corridor of corridors) {
     if (corridor.speedKmh == null) continue
     const name = `${corridor.roadEn} ${corridor.roadTc}`.toUpperCase()
     if (!needles.some((needle) => name.includes(needle))) continue
     const road = corridor.roadEn || corridor.roadTc || "Approach"
     if (!best || rankBand(corridor.band) > rankBand(best.band) || (corridor.band === best.band && corridor.speedKmh < best.speedKmh)) {
-      best = { road, speedKmh: corridor.speedKmh, band: corridor.band }
+      best = { road, roadTc: corridor.roadTc, speedKmh: corridor.speedKmh, band: corridor.band }
     }
   }
   return best
@@ -172,8 +180,8 @@ export type BoundaryGlance = {
   tone: "red" | "amber" | "green" | "none"
 }
 
-export function boundaryGlance(collection: GeoJSON.FeatureCollection | null, error: string | null): BoundaryGlance {
-  if (error) return { label: "No feed", tone: "amber" }
+export function boundaryGlance(collection: GeoJSON.FeatureCollection | null, error: string | null, m: Messages): BoundaryGlance {
+  if (error) return { label: m.noFeed, tone: "amber" }
   if (!collection) return { label: "…", tone: "none" }
   let veryBusy = 0
   let busy = 0
@@ -189,16 +197,12 @@ export function boundaryGlance(collection: GeoJSON.FeatureCollection | null, err
     if (band === "congested") badRoad += 1
     else if (band === "slow") slowRoad += 1
   }
-  if (veryBusy > 0) return { label: countLabel(veryBusy, "very busy"), tone: "red" }
-  if (badRoad > 0) return { label: countLabel(badRoad, "bad approach"), tone: "red" }
-  if (busy > 0) return { label: countLabel(busy, "busy"), tone: "amber" }
-  if (slowRoad > 0) return { label: countLabel(slowRoad, "slow"), tone: "amber" }
-  if (closed > 0) return { label: countLabel(closed, "closed"), tone: "amber" }
-  return { label: "Clear", tone: "green" }
-}
-
-function countLabel(count: number, word: string): string {
-  return count === 1 ? `1 ${word}` : `${count} ${word}`
+  if (veryBusy > 0) return { label: m.veryBusyCount(veryBusy), tone: "red" }
+  if (badRoad > 0) return { label: m.badApproachCount(badRoad), tone: "red" }
+  if (busy > 0) return { label: m.busyCount(busy), tone: "amber" }
+  if (slowRoad > 0) return { label: m.slowCount(slowRoad), tone: "amber" }
+  if (closed > 0) return { label: m.closedCount(closed), tone: "amber" }
+  return { label: m.clear, tone: "green" }
 }
 
 function busySummary(rows: [string, number][]): string {

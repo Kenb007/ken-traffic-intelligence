@@ -172,6 +172,18 @@
   background: rgb(186 230 253 / 68%);
 }
 
+html[data-locale^="zh-"] {
+  --font-hud: "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", "WenQuanYi Micro Hei", sans-serif;
+}
+
+html[data-locale="zh-CN"] {
+  --font-hud: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+}
+
+html[data-locale^="zh-"] .uppercase {
+  letter-spacing: 0.04em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hud-pulse {
     animation: none;

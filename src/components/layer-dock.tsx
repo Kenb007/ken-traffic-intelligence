@@ -1,5 +1,7 @@
 "use client"
 
+import { useI18n } from "@/components/locale"
+import type { Messages } from "@/lib/i18n"
 import type { Basemap, WatchLayer, WatchLayers } from "@/lib/types"
 
 type LayerDockProps = {
@@ -14,28 +16,60 @@ type LayerDockProps = {
   aboveMarquee: boolean
 }
 
-const BASEMAPS: { id: Basemap; label: string }[] = [
-  { id: "satellite", label: "Satellite" },
-  { id: "street", label: "Streets" },
-  { id: "buildings", label: "Buildings" },
-]
-
-const LAYERS: { id: WatchLayer; label: string; swatch: string }[] = [
-  { id: "speed", label: "Speed", swatch: "bg-[#3DDC97]" },
-  { id: "cameras", label: "Cameras", swatch: "bg-[#7DD3E8]" },
-  { id: "works", label: "Works", swatch: "bg-[#FF5D73]" },
-  { id: "tolls", label: "Tolls", swatch: "bg-[#E7FBFF]" },
-  { id: "incidents", label: "Incidents", swatch: "bg-[#FF5D73]" },
-  { id: "control", label: "Boundary", swatch: "bg-[#D7B4FF]" },
-]
-
 const SPEED_KEY = [
-  { color: "#3DDC97", name: "Good" },
-  { color: "#FFC857", name: "Average" },
-  { color: "#FF5D73", name: "Bad" },
+  { color: "#3DDC97", key: "good" },
+  { color: "#FFC857", key: "average" },
+  { color: "#FF5D73", key: "bad" },
 ] as const
 
+function layerLabel(id: WatchLayer, m: Messages): string {
+  switch (id) {
+    case "speed":
+      return m.speedLayer
+    case "cameras":
+      return m.cameras
+    case "works":
+      return m.worksLayer
+    case "tolls":
+      return m.tolls
+    case "incidents":
+      return m.incidentsLayer
+    case "control":
+      return m.boundary
+    default: {
+      const exhaustive: never = id
+      return exhaustive
+    }
+  }
+}
+
+function basemapLabel(id: Basemap, m: Messages): string {
+  switch (id) {
+    case "satellite":
+      return m.satellite
+    case "street":
+      return m.streets
+    case "buildings":
+      return m.buildings
+    default: {
+      const exhaustive: never = id
+      return exhaustive
+    }
+  }
+}
+
+const BASEMAPS: Basemap[] = ["satellite", "street", "buildings"]
+const LAYERS: { id: WatchLayer; swatch: string }[] = [
+  { id: "speed", swatch: "bg-[#3DDC97]" },
+  { id: "cameras", swatch: "bg-[#7DD3E8]" },
+  { id: "works", swatch: "bg-[#FF5D73]" },
+  { id: "tolls", swatch: "bg-[#E7FBFF]" },
+  { id: "incidents", swatch: "bg-[#FF5D73]" },
+  { id: "control", swatch: "bg-[#D7B4FF]" },
+]
+
 export function LayerDock(props: LayerDockProps) {
+  const { messages: m } = useI18n()
   if (!props.mapLive) return null
   return (
     <div
@@ -43,20 +77,20 @@ export function LayerDock(props: LayerDockProps) {
         props.aboveMarquee ? "bottom-28" : "bottom-14 lg:max-w-[calc(100%-30rem)]"
       }`}
     >
-      <div className="inline-flex border border-white/15" role="group" aria-label="Basemap">
-        {BASEMAPS.map((item) => {
-          const on = props.basemap === item.id
+      <div className="inline-flex border border-white/15" role="group" aria-label={m.basemap}>
+        {BASEMAPS.map((id) => {
+          const on = props.basemap === id
           return (
             <button
-              key={item.id}
+              key={id}
               type="button"
               aria-pressed={on}
-              onClick={() => props.onBasemap(item.id)}
+              onClick={() => props.onBasemap(id)}
               className={`px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] uppercase ${
                 on ? "bg-[#041018]/80 text-white" : "bg-[#041018]/55 text-zinc-400"
               }`}
             >
-              {item.label}
+              {basemapLabel(id, m)}
             </button>
           )
         })}
@@ -77,7 +111,7 @@ export function LayerDock(props: LayerDockProps) {
             }`}
           >
             <span className={`size-2 rounded-full ${layer.swatch} ${on ? "" : "opacity-35"}`} />
-            {layer.label}
+            {layerLabel(layer.id, m)}
             {count == null ? "" : ` ${count}`}
           </button>
         )
@@ -87,24 +121,24 @@ export function LayerDock(props: LayerDockProps) {
         onClick={props.onReplay}
         className="border border-white/15 bg-[#041018]/70 px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] text-cyan-50 uppercase"
       >
-        Replay
+        {m.replay}
       </button>
       {props.layers.speed ? (
         <p
           className="basis-full flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-hud)] text-[0.68rem] tracking-[0.06em] text-cyan-50/90 uppercase"
-          aria-label="Official traffic class. Good, average, and bad are the Transport Department saturation levels."
+          aria-label={m.speedKey}
         >
           {SPEED_KEY.map((band) => (
-            <span key={band.name} className="inline-flex items-center gap-1.5">
+            <span key={band.key} className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-4 rounded-full" style={{ background: band.color }} />
-              {band.name}
+              {m[band.key]}
             </span>
           ))}
         </p>
       ) : null}
       {props.pictureError ? (
         <p className="basis-full text-xs text-red-100" role="alert">
-          {props.pictureError}
+          {m.locale === "en" ? props.pictureError : m.pictureFailed}
         </p>
       ) : null}
     </div>

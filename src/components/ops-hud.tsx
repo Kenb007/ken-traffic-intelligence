@@ -1,9 +1,11 @@
 "use client"
 
 import { useEffect, useState, type KeyboardEvent } from "react"
+import { useI18n } from "@/components/locale"
 import { boundaryGlance } from "@/lib/control-points"
 import { bestCrossings } from "@/lib/crossings"
-import { INTEL_EMPTY, INTEL_TABS, intelBoard, type IntelItem, type IntelTab } from "@/lib/intel"
+import { formatClock, LOCALE_MARK, LOCALES } from "@/lib/i18n"
+import { INTEL_TABS, intelBoard, type IntelItem, type IntelTab } from "@/lib/intel"
 import { formatSpeed } from "@/lib/speed"
 import type { ApproachesResponse, HarbourJourney, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
 import { weatherBar } from "@/lib/warnings"
@@ -36,14 +38,15 @@ const TONE: Record<HarbourJourney["colour"], string> = {
   none: "#C9D2DC",
 }
 
-const BAR_LABEL: Record<string, string> = {
-  CH: "Cross",
-  EH: "Eastern",
-  WH: "Western",
-}
+const BAR_KEY = {
+  CH: "cross",
+  EH: "eastern",
+  WH: "western",
+} as const
 
 export function OpsHud(props: OpsHudProps) {
-  const clock = useHongKongClock()
+  const { locale, setLocale, messages: m } = useI18n()
+  const clock = useHongKongClock(locale)
   const [tab, setTab] = useState<IntelTab>("ranked")
   const open = props.open
   const crossings = bestCrossings(props.approaches?.ok ? props.approaches.points : [])
@@ -64,11 +67,11 @@ export function OpsHud(props: OpsHudProps) {
     warningsReady: props.warningsReady,
     warningsError: props.warningsError,
     conditions: props.conditions,
-  })
+  }, m)
   const intel = board[tab]
   const urgentCount = intel.filter((item) => item.urgent).length
   const marqueeSeconds = Math.max(28, intel.length * 9)
-  const halls = boundaryGlance(props.controlPoints, props.controlError)
+  const halls = boundaryGlance(props.controlPoints, props.controlError, m)
   const weather = weatherBar(props.warnings, props.conditions)
   const incidentCount = props.incidents?.features.length ?? 0
   const firstIncident = board.roads.find((item) => item.kind === "incident" && item.coordinates)
@@ -79,58 +82,71 @@ export function OpsHud(props: OpsHudProps) {
     props.onOpenChange(true)
     if (item?.coordinates) props.onFocus({ id: item.id, coordinates: item.coordinates })
   }
-  const tabLabel = INTEL_TABS.find((item) => item.id === tab)?.label ?? "Ranked"
-
   return (
     <div className="pointer-events-none absolute inset-0 z-[5]">
       <header className="pointer-events-auto absolute top-3 right-3 left-3 flex flex-col gap-1.5 border border-cyan-200/30 bg-[#041018]/80 px-2 py-1.5 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:flex-row sm:items-center lg:right-4 lg:left-16">
         <div className="flex shrink-0 items-center gap-3 pr-1">
           <div>
-            <p className="font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.18em] text-cyan-200/80 uppercase">Hong Kong</p>
-            <p className="font-[family-name:var(--font-hud)] text-sm whitespace-nowrap text-white">Traffic Intelligence</p>
+            <p className="font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.18em] text-cyan-200/80 uppercase">{m.productMark}</p>
+            <p className="font-[family-name:var(--font-hud)] text-sm whitespace-nowrap text-white">{m.productName}</p>
           </div>
           <div className="shrink-0">
             <p className="font-[family-name:var(--font-hud)] text-sm text-cyan-50 tabular-nums">{clock}</p>
             <p className="flex items-center gap-1.5 font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100 uppercase">
               <span className={`size-1.5 rounded-full ${live ? "hud-pulse bg-[#3DDC97]" : "bg-[#FFC857]"}`} />
-              {live ? "Live" : props.trafficLoading ? "Sync" : "Fault"}
-              {props.mapLive ? "" : " · map off"}
+              {live ? m.live : props.trafficLoading ? m.sync : m.fault}
+              {props.mapLive ? "" : ` · ${m.mapOff}`}
             </p>
+          </div>
+          <div className="inline-flex shrink-0 border border-white/15" role="group" aria-label={m.language}>
+            {LOCALES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={locale === item}
+                onClick={() => setLocale(item)}
+                className={`px-1.5 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] ${
+                  locale === item ? "bg-white/10 text-white" : "text-cyan-100/70"
+                }`}
+              >
+                {LOCALE_MARK[item]}
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-nowrap sm:overflow-x-auto">
           {crossings.map((crossing) => (
             <Metric
               key={crossing.code}
-              label={BAR_LABEL[crossing.code] ?? crossing.label}
-              value={`${crossing.minutes} min`}
+              label={BAR_KEY[crossing.code] ? m[BAR_KEY[crossing.code]] : crossing.label}
+              value={m.minutes(crossing.minutes)}
               tone={TONE[crossing.colour]}
-              hint={`${crossing.from}. Show this approach on the map.`}
+              hint={m.approachHint(crossing.from)}
               onClick={() => props.onFocus({ id: `crossing-${crossing.code}`, coordinates: crossing.coordinates })}
             />
           ))}
           {incidentCount > 0 ? (
             <Metric
-              label="Incident"
-              value={incidentCount === 1 ? "1 open" : `${incidentCount} open`}
+              label={m.incident}
+              value={m.incidentsOpen(incidentCount)}
               tone={TONE.red}
-              hint="Open special traffic news"
+              hint={m.incidentHint}
               onClick={() => show("roads", firstIncident)}
             />
           ) : null}
           <Metric
-            label="Boundary"
+            label={m.boundary}
             value={halls.label}
             tone={TONE[halls.tone]}
-            hint="Passenger halls at the eight land control points"
+            hint={m.boundaryHint}
             onClick={() => show("boundary", worstHall)}
           />
           {weather ? (
             <Metric
-              label="Weather"
+              label={m.weather}
               value={weather.label}
               tone={TONE[weather.tone]}
-              hint="Warnings in force, temperature, and rainfall"
+              hint={m.weatherHint}
               onClick={() => show("weather", undefined)}
             />
           ) : null}
@@ -138,15 +154,15 @@ export function OpsHud(props: OpsHudProps) {
             type="button"
             onClick={() => show("roads", worstRoad)}
             className="ml-auto flex shrink-0 items-center gap-1.5 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:block sm:px-2"
-            title={bandTitle(summary)}
+            title={bandTitle(summary, m)}
           >
-            <p className="font-[family-name:var(--font-hud)] text-[0.58rem] tracking-[0.14em] text-cyan-100/80 uppercase">Network</p>
+            <p className="font-[family-name:var(--font-hud)] text-[0.58rem] tracking-[0.14em] text-cyan-100/80 uppercase">{m.network}</p>
             <div className="flex items-center gap-2">
               <p className="font-[family-name:var(--font-hud)] text-sm leading-none text-white tabular-nums sm:text-base">
                 {props.trafficLoading ? "…" : formatSpeed(summary?.meanSpeedKmh ?? null)}
               </p>
               {summary && totalBands > 0 ? (
-                <div className="flex h-1.5 w-14 overflow-hidden bg-white/10" aria-label={bandTitle(summary)}>
+                <div className="flex h-1.5 w-14 overflow-hidden bg-white/10" aria-label={bandTitle(summary, m)}>
                   <span className="bg-[#3DDC97]" style={{ width: `${(summary.free / totalBands) * 100}%` }} />
                   <span className="bg-[#FFC857]" style={{ width: `${(summary.slow / totalBands) * 100}%` }} />
                   <span className="bg-[#FF5D73]" style={{ width: `${(summary.congested / totalBands) * 100}%` }} />
@@ -169,6 +185,7 @@ export function OpsHud(props: OpsHudProps) {
             <>
               <div role="tablist" aria-label="Intel types" className="flex min-w-0 flex-1 flex-wrap gap-0.5">
                 {INTEL_TABS.map((item, index) => {
+                  const tabLabel = item.id === "ranked" ? m.ranked : item.id === "roads" ? m.roads : item.id === "boundary" ? m.boundary : m.weather
                   const selected = tab === item.id
                   const urgent = board[item.id].some((row) => row.urgent)
                   return (
@@ -186,7 +203,7 @@ export function OpsHud(props: OpsHudProps) {
                         selected ? "border-b-2 border-cyan-200 text-white" : "border-b-2 border-transparent text-cyan-100/70"
                       }`}
                     >
-                      {item.label}
+                      {tabLabel}
                       {urgent ? <span className="size-1 rounded-full bg-[#FF5D73]" /> : null}
                     </button>
                   )
@@ -199,13 +216,15 @@ export function OpsHud(props: OpsHudProps) {
                 onClick={() => props.onOpenChange(false)}
                 className="ml-auto shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
               >
-                Hide
+                {m.hide}
               </button>
             </>
           ) : (
             <>
-              <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/70 uppercase">{tabLabel}</span>
-              <IntelMarquee items={intel} empty={INTEL_EMPTY[tab]} seconds={marqueeSeconds} onFocus={props.onFocus} />
+              <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/70 uppercase">
+                {tab === "ranked" ? m.ranked : tab === "roads" ? m.roads : tab === "boundary" ? m.boundary : m.weather}
+              </span>
+              <IntelMarquee items={intel} empty={emptyCopy(tab, m)} seconds={marqueeSeconds} onFocus={props.onFocus} />
               {urgentCount > 0 ? (
                 <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-[#FF5D73] uppercase">{urgentCount}</span>
               ) : null}
@@ -216,7 +235,7 @@ export function OpsHud(props: OpsHudProps) {
                 onClick={() => props.onOpenChange(true)}
                 className="ml-1 shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
               >
-                Intel
+                {m.intel}
               </button>
             </>
           )}
@@ -229,7 +248,7 @@ export function OpsHud(props: OpsHudProps) {
             className="intel-scroll max-h-[min(26rem,46dvh)] overflow-y-auto border-t border-white/10 px-2 py-2"
           >
             {intel.length === 0 ? (
-              <p className="px-1 py-2 text-sm text-zinc-300">{INTEL_EMPTY[tab]}</p>
+              <p className="px-1 py-2 text-sm text-zinc-300">{emptyCopy(tab, m)}</p>
             ) : (
               <ol className="flex flex-col gap-1">
                 {intel.map((item) => (
@@ -262,9 +281,9 @@ function Metric(props: { label: string; value: string; tone: string; hint?: stri
   )
 }
 
-function bandTitle(summary: { free: number; slow: number; congested: number } | null): string {
-  if (!summary) return "Network speed"
-  return `Good ${summary.free}, average ${summary.slow}, bad ${summary.congested}`
+function bandTitle(summary: { free: number; slow: number; congested: number } | null, m: ReturnType<typeof useI18n>["messages"]): string {
+  if (!summary) return m.network
+  return `${m.good} ${summary.free}, ${m.average} ${summary.slow}, ${m.bad} ${summary.congested}`
 }
 
 function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number, setTab: (tab: IntelTab) => void) {
@@ -283,9 +302,10 @@ function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number, setTab
 }
 
 function IntelMarquee(props: { items: IntelItem[]; empty: string; seconds: number; onFocus: OpsHudProps["onFocus"] }) {
-  const items = props.items.length > 0 ? props.items : [quietItem(props.empty)]
+  const { messages } = useI18n()
+  const items = props.items.length > 0 ? props.items : [quietItem(props.empty, messages.clear)]
   return (
-    <div className="min-w-0 flex-1 overflow-hidden" aria-label="Live intel">
+    <div className="min-w-0 flex-1 overflow-hidden" aria-label={messages.intel}>
       <div className="intel-marquee flex w-max" style={{ animationDuration: `${props.seconds}s` }}>
         {[0, 1].map((copy) => (
           <div key={copy} className="intel-marquee-copy flex shrink-0 items-center" aria-hidden={copy === 1}>
@@ -335,13 +355,13 @@ function IntelRow(props: { item: IntelItem; onFocus: OpsHudProps["onFocus"] }) {
   )
 }
 
-function quietItem(title: string): IntelItem {
+function quietItem(title: string, label: string): IntelItem {
   return {
     id: "intel-clear",
     kind: "slow",
     score: 0,
     urgent: false,
-    label: "Clear",
+    label,
     title,
     detail: "",
     tone: "green",
@@ -351,7 +371,24 @@ function quietItem(title: string): IntelItem {
 
 const CLOCK_PLACEHOLDER = "--:--:--"
 
-function useHongKongClock(): string {
+function emptyCopy(tab: IntelTab, m: ReturnType<typeof useI18n>["messages"]): string {
+  switch (tab) {
+    case "ranked":
+      return m.emptyRanked
+    case "roads":
+      return m.emptyRoads
+    case "boundary":
+      return m.emptyBoundary
+    case "weather":
+      return m.emptyWeather
+    default: {
+      const exhaustive: never = tab
+      return exhaustive
+    }
+  }
+}
+
+function useHongKongClock(locale: ReturnType<typeof useI18n>["locale"]): string {
   const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
     const tick = () => setNow(new Date())
@@ -360,11 +397,5 @@ function useHongKongClock(): string {
     return () => window.clearInterval(timer)
   }, [])
   if (!now) return CLOCK_PLACEHOLDER
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Hong_Kong",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).format(now)
+  return formatClock(now, locale)
 }

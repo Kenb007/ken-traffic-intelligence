@@ -5,7 +5,9 @@ import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
 import { LayerDock } from "@/components/layer-dock"
 import { OpsHud } from "@/components/ops-hud"
+import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
+import { hkoLang } from "@/lib/i18n"
 import { EMPTY_CONDITIONS } from "@/lib/warnings"
 import type {
   ApproachesResponse,
@@ -38,6 +40,7 @@ function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
 }
 
 export function Dashboard() {
+  const { locale, messages: m } = useI18n()
   const search = useSearchParams()
   const forceDown = search.get("feed") === "down"
   const mapDown = search.get("map") === "down"
@@ -187,7 +190,7 @@ export function Dashboard() {
     let cancelled = false
     const load = async () => {
       try {
-        const response = await fetch("/api/warnings", { cache: "no-store" })
+        const response = await fetch(`/api/warnings?lang=${hkoLang(locale)}`, { cache: "no-store" })
         const body = (await response.json()) as WarningsResponse
         if (!cancelled) setWarnings(body)
       } catch {
@@ -208,7 +211,7 @@ export function Dashboard() {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [])
+  }, [locale])
 
   const toggleLayer = (layer: WatchLayer) => {
     setLayers((current) => ({ ...current, [layer]: !current[layer] }))
@@ -257,14 +260,14 @@ export function Dashboard() {
         className="pointer-events-auto absolute left-16 z-30 max-w-[calc(100%-6rem)] bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white sm:left-3 sm:max-w-[min(34rem,calc(100%-19rem))]"
         style={{ bottom: "0.4rem" }}
       >
-        Designed and Created by Keith Li —{" "}
+        {m.creditBy}{" "}
         <a
           href="https://www.linkedin.com/in/keithlihk"
           target="_blank"
           rel="noreferrer"
           className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
         >
-          Follow me on LinkedIn
+          {m.creditLink}
         </a>
       </p>
       <LayerDock

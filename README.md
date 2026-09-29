@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
+The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://127.0.0.1:4317). The interface opens in Hong Kong written Traditional Chinese. The language control switches to Simplified Chinese or English.
 
 Add `?feed=down` to force the speed request to fail. The status bar shows the fault and the satellite map stays up. Add `?map=down` to skip the map. Crossing minutes and network speed stay on screen.
 

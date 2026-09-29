@@ -1,14 +1,15 @@
-import { EMPTY_CONDITIONS, parseConditions, parseWarnsum } from "@/lib/warnings"
+import { EMPTY_CONDITIONS, parseConditions, parseWarnsum, type HkoLang } from "@/lib/warnings"
 import type { WarningsResponse, WeatherConditions } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
 
-const WARNSUM_URL = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en"
-const CONDITIONS_URL = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en"
-
-export async function GET() {
-  const [warningsResult, conditionsResult] = await Promise.allSettled([readJson(WARNSUM_URL), readJson(CONDITIONS_URL)])
-  const warnings = warningsResult.status === "fulfilled" ? parseWarnsum(warningsResult.value) : []
+export async function GET(request: Request) {
+  const requested = new URL(request.url).searchParams.get("lang")
+  const lang: HkoLang = requested === "en" || requested === "sc" || requested === "tc" ? requested : "tc"
+  const warnsum = `https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=${lang}`
+  const conditionsUrl = `https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=${lang}`
+  const [warningsResult, conditionsResult] = await Promise.allSettled([readJson(warnsum), readJson(conditionsUrl)])
+  const warnings = warningsResult.status === "fulfilled" ? parseWarnsum(warningsResult.value, lang) : []
   const conditions = conditionsResult.status === "fulfilled" ? parseConditions(conditionsResult.value) : EMPTY_CONDITIONS
   const error = feedError(warningsResult, conditionsResult, conditions)
   const body: WarningsResponse = {

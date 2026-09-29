@@ -18,7 +18,11 @@ export type IncidentMessage = {
   betweenEn: string
   betweenTc: string
   direction: string
+  directionTc: string
+  headingTc: string
+  detailTc: string
   content: string
+  contentTc: string
   announced: string
   closed: boolean
   latitude: number | null
@@ -44,7 +48,9 @@ export function parseIncidents(xml: string): IncidentMessage[] {
       {
         id,
         heading: field(block, "INCIDENT_HEADING_EN") || field(block, "INCIDENT_HEADING_CN"),
+        headingTc: field(block, "INCIDENT_HEADING_CN"),
         detail: field(block, "INCIDENT_DETAIL_EN") || field(block, "INCIDENT_DETAIL_CN"),
+        detailTc: field(block, "INCIDENT_DETAIL_CN"),
         locationEn: field(block, "LOCATION_EN"),
         locationTc: field(block, "LOCATION_CN"),
         landmarkEn: field(block, "NEAR_LANDMARK_EN"),
@@ -52,7 +58,9 @@ export function parseIncidents(xml: string): IncidentMessage[] {
         betweenEn: field(block, "BETWEEN_LANDMARK_EN"),
         betweenTc: field(block, "BETWEEN_LANDMARK_CN"),
         direction: field(block, "DIRECTION_EN") || field(block, "DIRECTION_CN"),
+        directionTc: field(block, "DIRECTION_CN"),
         content: field(block, "CONTENT_EN") || field(block, "CONTENT_CN"),
+        contentTc: field(block, "CONTENT_CN"),
         announced: field(block, "ANNOUNCEMENT_DATE"),
         closed: isClosed(field(block, "INCIDENT_STATUS_EN"), field(block, "INCIDENT_STATUS_CN")),
         latitude,

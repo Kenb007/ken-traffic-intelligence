@@ -6,21 +6,51 @@ export const EMPTY_CONDITIONS: WeatherConditions = {
   rainfallPlace: "",
 }
 
-const SHORT_NAME: Record<string, string> = {
-  WFIRE: "Fire",
-  WFROST: "Frost",
-  WHOT: "Very hot",
-  WCOLD: "Cold",
-  WMSGNL: "Monsoon",
-  WRAIN: "Rainstorm",
-  WFNTSA: "Flooding",
-  WL: "Landslip",
-  WTCSGNL: "Cyclone",
-  WTMW: "Tsunami",
-  WTS: "Thunderstorm",
+export type HkoLang = "en" | "tc" | "sc"
+
+const SHORT_NAME: Record<HkoLang, Record<string, string>> = {
+  en: {
+    WFIRE: "Fire",
+    WFROST: "Frost",
+    WHOT: "Very hot",
+    WCOLD: "Cold",
+    WMSGNL: "Monsoon",
+    WRAIN: "Rainstorm",
+    WFNTSA: "Flooding",
+    WL: "Landslip",
+    WTCSGNL: "Cyclone",
+    WTMW: "Tsunami",
+    WTS: "Thunderstorm",
+  },
+  tc: {
+    WFIRE: "火災",
+    WFROST: "霜凍",
+    WHOT: "酷熱",
+    WCOLD: "寒冷",
+    WMSGNL: "季候風",
+    WRAIN: "暴雨",
+    WFNTSA: "水浸",
+    WL: "山泥傾瀉",
+    WTCSGNL: "熱帶氣旋",
+    WTMW: "海嘯",
+    WTS: "雷暴",
+  },
+  sc: {
+    WFIRE: "火灾",
+    WFROST: "霜冻",
+    WHOT: "酷热",
+    WCOLD: "寒冷",
+    WMSGNL: "季候风",
+    WRAIN: "暴雨",
+    WFNTSA: "水浸",
+    WL: "山泥倾泻",
+    WTCSGNL: "热带气旋",
+    WTMW: "海啸",
+    WTS: "雷暴",
+  },
 }
 
-export function parseWarnsum(payload: unknown): WeatherWarning[] {
+export function parseWarnsum(payload: unknown, lang: HkoLang = "tc"): WeatherWarning[] {
   if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
     throw new Error("Weather warnings were not in the published shape")
   }
@@ -31,15 +61,15 @@ export function parseWarnsum(payload: unknown): WeatherWarning[] {
     const action = text(row.actionCode)
     const code = text(row.code) || key
     if (action === "CANCEL" || code === "CANCEL") continue
-    const name = text(row.name) || SHORT_NAME[key] || "Weather warning"
+    const name = text(row.name) || SHORT_NAME[lang][key] || SHORT_NAME.en[key] || "Weather warning"
     const type = text(row.type)
     const rank = classify(code)
     warnings.push({
       id: `weather-${key}-${code}`,
       code,
       name,
-      shortName: shortName(key, code, type),
-      detail: detailOf(type, text(row.updateTime) || text(row.issueTime)),
+      shortName: shortName(lang, key, code, type),
+      detail: detailOf(lang, type, text(row.updateTime) || text(row.issueTime)),
       tone: rank.tone,
       urgent: rank.urgent,
       score: rank.score,
@@ -52,7 +82,7 @@ export function parseWarnsum(payload: unknown): WeatherWarning[] {
 export function parseConditions(payload: unknown): WeatherConditions {
   if (!isRecord(payload)) throw new Error("Current weather was not in the published shape")
   const temperatures = rowsOf(payload.temperature)
-  const observatory = temperatures.find((row) => /observatory/i.test(text(row.place))) ?? temperatures[0]
+  const observatory = temperatures.find((row) => /observatory|天文台/i.test(text(row.place))) ?? temperatures[0]
   const temperatureC = numberOf(observatory?.value)
   let rainfallMm: number | null = null
   let rainfallPlace = ""
@@ -89,20 +119,41 @@ export function weatherBar(
   return { label: [temperature, rain].filter(Boolean).join(" · "), tone: wet || hot ? "amber" : "green" }
 }
 
-function shortName(key: string, code: string, type: string): string {
-  if (key === "WTCSGNL") return cycloneShort(code)
-  if (key === "WRAIN" && type) return `${type} rain`
-  if (key === "WFIRE" && type) return `${type} fire`
-  return SHORT_NAME[key] ?? "Warning"
+function shortName(lang: HkoLang, key: string, code: string, type: string): string {
+  if (key === "WTCSGNL") return cycloneShort(lang, code)
+  if (key === "WRAIN") return rainShort(lang, type)
+  return SHORT_NAME[lang][key] ?? SHORT_NAME.en[key] ?? "Warning"
 }
 
-function cycloneShort(code: string): string {
-  if (code.startsWith("TC8")) return "Signal 8"
-  if (code === "TC9") return "Signal 9"
-  if (code === "TC10") return "Signal 10"
-  if (code === "TC3") return "Signal 3"
-  if (code === "TC1") return "Signal 1"
-  return "Cyclone"
+function rainShort(lang: HkoLang, type: string): string {
+  const amber = /amber|黃|黄/i.test(type)
+  const red = /red|紅|红/i.test(type)
+  const black = /black|黑/i.test(type)
+  if (lang === "en") {
+    if (amber) return "Amber rain"
+    if (red) return "Red rain"
+    if (black) return "Black rain"
+    return "Rainstorm"
+  }
+  if (lang === "tc") {
+    if (amber) return "黃雨"
+    if (red) return "紅雨"
+    if (black) return "黑雨"
+    return "暴雨"
+  }
+  if (amber) return "黄雨"
+  if (red) return "红雨"
+  if (black) return "黑雨"
+  return "暴雨"
+}
+
+function cycloneShort(lang: HkoLang, code: string): string {
+  const signal = code.startsWith("TC8") ? "8" : code === "TC9" ? "9" : code === "TC10" ? "10" : code === "TC3" ? "3" : code === "TC1" ? "1" : ""
+  if (!signal) return SHORT_NAME[lang].WTCSGNL ?? "Cyclone"
+  if (lang === "en") return `Signal ${signal}`
+  const numeral: Record<string, string> = { "1": "一", "3": "三", "8": "八", "9": "九", "10": "十" }
+  const mark = lang === "tc" ? "號" : "号"
+  return `${numeral[signal] ?? signal}${mark}`
 }
 
 function classify(code: string): { tone: "red" | "amber"; urgent: boolean; score: number } {
@@ -121,18 +172,21 @@ function classify(code: string): { tone: "red" | "amber"; urgent: boolean; score
   return { tone: "amber", urgent: false, score: 200_000 }
 }
 
-function detailOf(type: string, iso: string): string {
-  const clock = clockOf(iso)
-  const when = clock ? `updated ${clock}` : ""
+function detailOf(lang: HkoLang, type: string, iso: string): string {
+  const clock = clockOf(lang, iso)
+  const updated = lang === "en" ? "updated" : "更新"
+  const when = clock ? `${updated} ${clock}` : ""
   const detail = [type, when].filter(Boolean).join(" · ")
-  return detail || "In force"
+  if (detail) return detail
+  return lang === "en" ? "In force" : "生效中"
 }
 
-function clockOf(iso: string): string {
+function clockOf(lang: HkoLang, iso: string): string {
   if (!iso) return ""
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ""
-  return new Intl.DateTimeFormat("en-GB", {
+  const locale = lang === "tc" ? "zh-HK" : lang === "sc" ? "zh-CN" : "en-GB"
+  return new Intl.DateTimeFormat(locale, {
     timeZone: "Asia/Hong_Kong",
     day: "2-digit",
     month: "short",
