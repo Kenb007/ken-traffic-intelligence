@@ -297,7 +297,7 @@ export function CityMap({
                   12,
                 ],
                 "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
-                "fill-extrusion-opacity": 0.94,
+                "fill-extrusion-opacity": 1,
               },
             },
           ],
@@ -357,6 +357,9 @@ export function CityMap({
         attribution: "Road centreline and speeds © Transport Department",
       })
       map.addSource("particles", { type: "geojson", data: emptyCollection() })
+      // MapLibre paints every layer above the first 3D layer on top of the buildings.
+      // Keep the speed lines underneath so a pitched roof hides the road behind it.
+      const underBuildings = "buildings-3d"
       map.addLayer({
         id: "corridor-glow",
         type: "line",
@@ -369,7 +372,7 @@ export function CityMap({
           "line-blur": 4,
         },
         layout: { "line-cap": "round", "line-join": "round" },
-      })
+      }, underBuildings)
       map.addLayer({
         id: "corridor-casing",
         type: "line",
@@ -381,7 +384,7 @@ export function CityMap({
           "line-opacity": 0.45,
         },
         layout: { "line-cap": "round", "line-join": "round" },
-      })
+      }, underBuildings)
       map.addLayer({
         id: "corridor-line",
         type: "line",
@@ -393,7 +396,7 @@ export function CityMap({
           "line-opacity": 0.95,
         },
         layout: { "line-cap": "round", "line-join": "round" },
-      })
+      }, underBuildings)
       map.addLayer({
         id: "corridor-point",
         type: "circle",
@@ -406,7 +409,7 @@ export function CityMap({
           "circle-stroke-width": 1,
           "circle-pitch-alignment": "map",
         },
-      })
+      }, underBuildings)
       map.addLayer({
         id: "traffic-particles",
         type: "circle",
@@ -418,7 +421,7 @@ export function CityMap({
           "circle-stroke-width": 1.6,
           "circle-pitch-alignment": "map",
         },
-      })
+      }, underBuildings)
 
       addWatchLayers(map)
       const showPopup = popupOpener(map)
