@@ -167,6 +167,40 @@ function queueLabel(code: number, visitor: boolean): string {
   }
 }
 
+export type BoundaryGlance = {
+  label: string
+  tone: "red" | "amber" | "green" | "none"
+}
+
+export function boundaryGlance(collection: GeoJSON.FeatureCollection | null, error: string | null): BoundaryGlance {
+  if (error) return { label: "No feed", tone: "amber" }
+  if (!collection) return { label: "…", tone: "none" }
+  let veryBusy = 0
+  let busy = 0
+  let closed = 0
+  let badRoad = 0
+  let slowRoad = 0
+  for (const feature of collection.features) {
+    const worst = feature.properties && typeof feature.properties.worst === "number" ? feature.properties.worst : null
+    const band = feature.properties && typeof feature.properties.vehicleBand === "string" ? feature.properties.vehicleBand : ""
+    if (worst === 2) veryBusy += 1
+    else if (worst === 1) busy += 1
+    else if (worst === 99 || worst === 4) closed += 1
+    if (band === "congested") badRoad += 1
+    else if (band === "slow") slowRoad += 1
+  }
+  if (veryBusy > 0) return { label: countLabel(veryBusy, "very busy"), tone: "red" }
+  if (badRoad > 0) return { label: countLabel(badRoad, "bad approach"), tone: "red" }
+  if (busy > 0) return { label: countLabel(busy, "busy"), tone: "amber" }
+  if (slowRoad > 0) return { label: countLabel(slowRoad, "slow"), tone: "amber" }
+  if (closed > 0) return { label: countLabel(closed, "closed"), tone: "amber" }
+  return { label: "Clear", tone: "green" }
+}
+
+function countLabel(count: number, word: string): string {
+  return count === 1 ? `1 ${word}` : `${count} ${word}`
+}
+
 function busySummary(rows: [string, number][]): string {
   const busy = rows.filter((row) => row[1] === 1 || row[1] === 2)
   if (busy.length > 0) {

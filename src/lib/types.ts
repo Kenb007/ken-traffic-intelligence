@@ -146,6 +146,24 @@ export type ControlPointsResponse = {
   points: GeoJSON.FeatureCollection
 }
 
+export type WeatherWarning = {
+  id: string
+  code: string
+  name: string
+  shortName: string
+  detail: string
+  tone: "red" | "amber"
+  urgent: boolean
+  score: number
+}
+
+export type WarningsResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  warnings: WeatherWarning[]
+}
+
 export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control"
 
 export type WatchLayers = Record<WatchLayer, boolean>

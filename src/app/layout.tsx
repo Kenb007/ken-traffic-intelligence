@@ -19,9 +19,9 @@ const hud = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Harbour corridors · Hong Kong Transport Department",
+  title: "Traffic Intelligence · Hong Kong",
   description:
-    "Live harbour speeds, cameras, road works, and toll points over satellite imagery of Hong Kong.",
+    "Live strategic-road speeds, harbour crossings, land control points, and weather warnings over Hong Kong.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

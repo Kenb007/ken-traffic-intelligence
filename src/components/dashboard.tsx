@@ -13,6 +13,7 @@ import type {
   IncidentsResponse,
   PictureResponse,
   TrafficResponse,
+  WarningsResponse,
   WatchLayer,
   WatchLayers,
   Basemap,
@@ -53,6 +54,7 @@ export function Dashboard() {
   const [pictureError, setPictureError] = useState<string | null>(null)
   const [incidents, setIncidents] = useState<IncidentsResponse | null>(null)
   const [controlPoints, setControlPoints] = useState<ControlPointsResponse | null>(null)
+  const [warnings, setWarnings] = useState<WarningsResponse | null>(null)
   const [focus, setFocus] = useState<{ id: string; coordinates: [number, number] } | null>(null)
   const [intelOpen, setIntelOpen] = useState(true)
 
@@ -223,6 +225,32 @@ export function Dashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const response = await fetch("/api/warnings", { cache: "no-store" })
+        const body = (await response.json()) as WarningsResponse
+        if (!cancelled) setWarnings(body)
+      } catch {
+        if (!cancelled) {
+          setWarnings({
+            ok: false,
+            error: "Weather warnings failed to load.",
+            observedAt: null,
+            warnings: [],
+          })
+        }
+      }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
   const toggleLayer = (layer: WatchLayer) => {
     setLayers((current) => ({ ...current, [layer]: !current[layer] }))
   }
@@ -251,19 +279,23 @@ export function Dashboard() {
         approaches={approaches}
         journey={journey}
         incidents={incidents?.ok ? incidents.incidents : null}
+        incidentsError={incidents && !incidents.ok ? incidents.error ?? "Special traffic news failed." : null}
         works={picture?.works ?? null}
         controlPoints={
-          layers.control && controlPoints?.ok
-            ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : [])
-            : null
+          controlPoints?.ok ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : []) : null
         }
+        controlError={controlPoints && !controlPoints.ok ? controlPoints.error ?? "Control point waiting times failed." : null}
+        warnings={warnings?.ok ? warnings.warnings : []}
+        warningsReady={warnings != null}
+        warningsError={warnings && !warnings.ok ? warnings.error ?? "Weather warnings failed." : null}
+        approachesError={approaches && !approaches.ok ? approaches.error ?? "Crossing approaches failed." : null}
         mapLive={mapLive}
         open={intelOpen}
         onOpenChange={setIntelOpen}
         onFocus={setFocus}
       />
       <p
-        className="pointer-events-auto absolute left-3 z-30 max-w-[min(34rem,calc(100%-19rem))] bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white"
+        className="pointer-events-auto absolute left-16 z-30 max-w-[calc(100%-6rem)] bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white sm:left-3 sm:max-w-[min(34rem,calc(100%-19rem))]"
         style={{ bottom: "0.4rem" }}
       >
         Designed and Created by Keith Li —{" "}

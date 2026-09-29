@@ -1,6 +1,6 @@
-import type { ApproachPoint, Corridor, TrafficResponse } from "@/lib/types"
+import type { ApproachPoint, Corridor, TrafficResponse, WeatherWarning } from "@/lib/types"
 
-export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow"
+export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow" | "weather" | "forecast"
 
 export type IntelTone = "red" | "amber" | "green" | "none"
 
@@ -16,45 +16,99 @@ export type IntelItem = {
   coordinates: [number, number] | null
 }
 
+export type IntelTab = "ranked" | "roads" | "harbour" | "boundary" | "weather"
+
+export const INTEL_TABS: { id: IntelTab; label: string }[] = [
+  { id: "ranked", label: "Ranked" },
+  { id: "roads", label: "Roads" },
+  { id: "harbour", label: "Harbour" },
+  { id: "boundary", label: "Boundary" },
+  { id: "weather", label: "Weather" },
+]
+
+export const INTEL_EMPTY: Record<IntelTab, string> = {
+  ranked: "Nothing urgent on the roads, harbour, boundary, or weather.",
+  roads: "No open incident, bad road, or works.",
+  harbour: "Waiting for crossing minutes.",
+  boundary: "Waiting for the hall feed.",
+  weather: "No weather warning in force.",
+}
+
 export type IntelInput = {
   trafficError: string | null
   traffic: TrafficResponse | null
   incidents: GeoJSON.FeatureCollection | null
+  incidentsError: string | null
   works: GeoJSON.FeatureCollection | null
   controlPoints: GeoJSON.FeatureCollection | null
+  controlError: string | null
   approaches: ApproachPoint[]
+  approachesReady: boolean
+  approachesError: string | null
+  forecast: { eta: string; tunnel: string | null; distance: string | null } | null
+  warnings: WeatherWarning[]
+  warningsReady: boolean
+  warningsError: string | null
 }
 
-const LIST_LIMIT = 6
+const RANKED_LIMIT = 12
 
-// A harbour controller acts on an unplanned blockage first, then a crossing
-// that is failing, then a jammed strategic road, then work that is already
-// occupying a lane. Slow traffic and works still being prepared stay behind those.
+const CROSSING_LABEL: Record<string, string> = {
+  CH: "Cross Harbour",
+  EH: "Eastern Harbour",
+  WH: "Western Harbour",
+}
+
+export function intelBoard(input: IntelInput): Record<IntelTab, IntelItem[]> {
+  const incidents = incidentsOf(input.incidents, 8)
+  const controls = controlPointsOf(input.controlPoints, 8)
+  const crossings = crossingsOf(input.approaches)
+  const jams = jamsOf(input.traffic?.ok ? input.traffic.corridors : [], 8, 3)
+  const works = worksOf(input.works, 6)
+  const warnings = warningsOf(input.warnings)
+  const faults = faultsOf(input)
+  const ranked = [...faults, ...incidents.slice(0, 5), ...controls, ...crossings, ...jams.slice(0, 6), ...works.slice(0, 4), ...warnings]
+  ranked.sort(byScore)
+  return {
+    ranked: ranked.slice(0, RANKED_LIMIT),
+    roads: [...faults.filter((item) => item.id === "fault-speed" || item.id === "fault-incidents"), ...incidents, ...jams, ...works].sort(byScore).slice(0, 16),
+    harbour: harbourOf(input),
+    boundary: boundaryOf(input),
+    weather: weatherOf(input, warnings),
+  }
+}
+
 export function rankIntel(input: IntelInput): IntelItem[] {
+  return intelBoard(input).ranked
+}
+
+function faultsOf(input: IntelInput): IntelItem[] {
   const items: IntelItem[] = []
   if (input.trafficError || (input.traffic && !input.traffic.ok)) {
-    items.push({
-      id: "fault-speed",
-      kind: "fault",
-      score: 1_000_000,
-      urgent: true,
-      label: "Fault",
-      title: "Speed picture unavailable",
-      detail: input.trafficError || input.traffic?.error || "The speed feed did not answer.",
-      tone: "red",
-      coordinates: null,
-    })
+    items.push(fault("fault-speed", 1_000_000, "Speed picture unavailable", input.trafficError || input.traffic?.error || "The speed feed did not answer."))
   }
-  items.push(...incidentsOf(input.incidents))
-  items.push(...controlPointsOf(input.controlPoints))
-  items.push(...crossingsOf(input.approaches))
-  items.push(...jamsOf(input.traffic?.ok ? input.traffic.corridors : []))
-  items.push(...worksOf(input.works))
-  items.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-  return items.slice(0, LIST_LIMIT)
+  if (input.incidentsError) items.push(fault("fault-incidents", 640_000, "Incident feed unavailable", input.incidentsError))
+  if (input.approachesError) items.push(fault("fault-crossings", 620_000, "Crossing minutes unavailable", input.approachesError))
+  if (input.controlError) items.push(fault("fault-boundary", 580_000, "Hall feed unavailable", input.controlError))
+  if (input.warningsError) items.push(fault("fault-weather", 160_000, "Weather warnings unavailable", input.warningsError))
+  return items
 }
 
-function incidentsOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] {
+function fault(id: string, score: number, title: string, detail: string): IntelItem {
+  return {
+    id,
+    kind: "fault",
+    score,
+    urgent: score >= 500_000,
+    label: "Fault",
+    title,
+    detail,
+    tone: score >= 500_000 ? "red" : "amber",
+    coordinates: null,
+  }
+}
+
+function incidentsOf(collection: GeoJSON.FeatureCollection | null, limit: number): IntelItem[] {
   if (!collection) return []
   const rows = collection.features.map((feature, index) => ({
     feature,
@@ -62,7 +116,7 @@ function incidentsOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] 
     index,
   }))
   rows.sort((a, b) => b.announced.localeCompare(a.announced) || a.index - b.index)
-  return rows.slice(0, 3).map((row, index) => {
+  return rows.slice(0, limit).map((row, index) => {
     const location = textProp(row.feature.properties, "locationEn") || textProp(row.feature.properties, "location")
     const direction = textProp(row.feature.properties, "direction")
     return {
@@ -79,7 +133,7 @@ function incidentsOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] 
   })
 }
 
-function controlPointsOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] {
+function controlPointsOf(collection: GeoJSON.FeatureCollection | null, limit: number): IntelItem[] {
   if (!collection) return []
   const rows = collection.features.flatMap((feature) => {
     const worst = numberProp(feature.properties, "worst")
@@ -87,35 +141,99 @@ function controlPointsOf(collection: GeoJSON.FeatureCollection | null): IntelIte
     const passengerHot = worst === 1 || worst === 2
     const vehicleHot = vehicleBand === "congested" || vehicleBand === "slow"
     if (!passengerHot && !vehicleHot) return []
-    const name = textProp(feature.properties, "name") || "Control point"
-    const veryBusy = worst === 2 || vehicleBand === "congested"
-    return [
-      {
-        id: `control-${textProp(feature.properties, "code") || name}`,
-        kind: "control" as const,
-        score: worst === 2 ? 750_000 : vehicleBand === "congested" ? 420_000 : 230_000,
-        urgent: veryBusy,
-        label: "Control",
-        title: name,
-        detail: [textProp(feature.properties, "summary"), textProp(feature.properties, "vehicleLine")]
-          .filter(Boolean)
-          .join(" · "),
-        tone: (veryBusy ? "red" : "amber") as IntelTone,
-        coordinates: pointOf(feature),
-      },
-    ]
+    return [controlItem(feature, worst, vehicleBand)]
   })
-  rows.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-  return rows.slice(0, 3)
+  rows.sort(byScore)
+  return rows.slice(0, limit)
+}
+
+function boundaryOf(input: IntelInput): IntelItem[] {
+  if (input.controlError) return [fault("fault-boundary", 580_000, "Hall feed unavailable", input.controlError)]
+  if (!input.controlPoints) return []
+  return input.controlPoints.features
+    .map((feature) => controlItem(feature, numberProp(feature.properties, "worst"), textProp(feature.properties, "vehicleBand")))
+    .sort(byScore)
+}
+
+function controlItem(feature: GeoJSON.Feature, worst: number | null, vehicleBand: string): IntelItem {
+  const name = textProp(feature.properties, "name") || "Control point"
+  const veryBusy = worst === 2 || vehicleBand === "congested"
+  const score =
+    worst === 2 ? 750_000 : vehicleBand === "congested" ? 420_000 : worst === 1 ? 230_000 : worst === 99 || worst === 4 ? 180_000 : vehicleBand === "slow" ? 60_000 : 1_000
+  return {
+    id: `control-${textProp(feature.properties, "code") || name}`,
+    kind: "control",
+    score,
+    urgent: veryBusy,
+    label: hallLabel(worst, vehicleBand),
+    title: name,
+    detail: [textProp(feature.properties, "summary"), textProp(feature.properties, "vehicleLine")].filter(Boolean).join(" · "),
+    tone: veryBusy ? "red" : worst === 1 || worst === 99 || worst === 4 || vehicleBand === "slow" ? "amber" : "green",
+    coordinates: pointOf(feature),
+  }
+}
+
+function hallLabel(worst: number | null, vehicleBand: string): string {
+  if (worst === 2) return "Very busy"
+  if (vehicleBand === "congested") return "Bad approach"
+  if (worst === 1) return "Busy"
+  if (worst === 99) return "Closed"
+  if (worst === 4) return "Maintenance"
+  if (vehicleBand === "slow") return "Slow approach"
+  return "Normal"
 }
 
 function crossingsOf(points: ApproachPoint[]): IntelItem[] {
+  const best = bestCrossingRows(points)
+  return [...best.entries()].flatMap(([code, row]) => {
+    if (row.tone !== "red" && row.tone !== "amber") return []
+    return [crossingItem(code, row)]
+  })
+}
+
+function harbourOf(input: IntelInput): IntelItem[] {
+  if (input.approachesError) return [fault("fault-crossings", 620_000, "Crossing minutes unavailable", input.approachesError)]
+  if (!input.approachesReady) return []
+  const best = bestCrossingRows(input.approaches)
+  const items: IntelItem[] = ["CH", "EH", "WH"].map((code) => {
+    const row = best.get(code)
+    if (!row) {
+      return {
+        id: `crossing-${code}`,
+        kind: "crossing" as const,
+        score: 0,
+        urgent: false,
+        label: "Crossing",
+        title: `${CROSSING_LABEL[code] ?? code} — no reading`,
+        detail: "",
+        tone: "none" as const,
+        coordinates: null,
+      }
+    }
+    return crossingItem(code, row)
+  })
+  if (input.forecast?.eta) {
+    items.push({
+      id: "forecast-sample",
+      kind: "forecast",
+      score: 0,
+      urgent: false,
+      label: "Sample route",
+      title: input.forecast.eta,
+      detail: [input.forecast.tunnel ? `via ${input.forecast.tunnel}` : "", input.forecast.distance].filter(Boolean).join(" · "),
+      tone: "none",
+      coordinates: null,
+    })
+  }
+  return items
+}
+
+function bestCrossingRows(points: ApproachPoint[]) {
   const best = new Map<string, { minutes: number; from: string; tone: IntelTone; coordinates: [number, number] }>()
   for (const point of points) {
     for (const leg of point.legs) {
       if (leg.minutes == null) continue
       if (leg.code !== "CH" && leg.code !== "EH" && leg.code !== "WH") continue
-      if (leg.colour !== "red" && leg.colour !== "amber") continue
       const current = best.get(leg.code)
       if (current && current.minutes <= leg.minutes) continue
       best.set(leg.code, {
@@ -126,25 +244,27 @@ function crossingsOf(points: ApproachPoint[]): IntelItem[] {
       })
     }
   }
-  const label: Record<string, string> = {
-    CH: "Cross Harbour",
-    EH: "Eastern Harbour",
-    WH: "Western Harbour",
-  }
-  return [...best.entries()].map(([code, row]) => ({
+  return best
+}
+
+function crossingItem(
+  code: string,
+  row: { minutes: number; from: string; tone: IntelTone; coordinates: [number, number] },
+): IntelItem {
+  return {
     id: `crossing-${code}`,
-    kind: "crossing" as const,
-    score: (row.tone === "red" ? 600_000 : 200_000) + row.minutes,
+    kind: "crossing",
+    score: (row.tone === "red" ? 600_000 : row.tone === "amber" ? 200_000 : 10_000) + row.minutes,
     urgent: row.tone === "red",
     label: "Crossing",
-    title: `${label[code] ?? code} ${row.minutes} min`,
+    title: `${CROSSING_LABEL[code] ?? code} ${row.minutes} min`,
     detail: row.from,
     tone: row.tone,
     coordinates: row.coordinates,
-  }))
+  }
 }
 
-function jamsOf(corridors: Corridor[]): IntelItem[] {
+function jamsOf(corridors: Corridor[], jamLimit: number, slowLimit: number): IntelItem[] {
   const roads = new Map<string, { title: string; speed: number; lengthKm: number; coordinates: [number, number] | null; band: "jam" | "slow" }>()
   for (const corridor of corridors) {
     if (corridor.speedKmh == null) continue
@@ -164,18 +284,18 @@ function jamsOf(corridors: Corridor[]): IntelItem[] {
       continue
     }
     current.lengthKm += corridor.lengthKm
+    if (band === "jam") current.band = "jam"
     if (corridor.speedKmh < current.speed) {
       current.speed = corridor.speedKmh
       current.coordinates = midpoint(corridor.coordinates)
-      current.band = band === "jam" ? "jam" : current.band
     }
   }
-  const jams = [...roads.values()].filter((road) => road.band === "jam")
+  const jams = [...roads.values()].filter((road) => road.band === "jam" && road.lengthKm >= 0.05)
   jams.sort((a, b) => a.speed - b.speed || b.lengthKm - a.lengthKm)
-  const slow = [...roads.values()].filter((road) => road.band === "slow")
+  const slow = [...roads.values()].filter((road) => road.band === "slow" && road.lengthKm >= 0.05)
   slow.sort((a, b) => a.speed - b.speed || b.lengthKm - a.lengthKm)
   return [
-    ...jams.slice(0, 3).map((road) => ({
+    ...jams.slice(0, jamLimit).map((road) => ({
       id: `jam-${road.title}`,
       kind: "jam" as const,
       score: 400_000 + (30 - road.speed) * 1_000 + road.lengthKm * 10,
@@ -186,7 +306,7 @@ function jamsOf(corridors: Corridor[]): IntelItem[] {
       tone: "red" as const,
       coordinates: road.coordinates,
     })),
-    ...slow.slice(0, 1).map((road) => ({
+    ...slow.slice(0, slowLimit).map((road) => ({
       id: `slow-${road.title}`,
       kind: "slow" as const,
       score: 50_000 + (50 - road.speed) * 100,
@@ -200,7 +320,7 @@ function jamsOf(corridors: Corridor[]): IntelItem[] {
   ]
 }
 
-function worksOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] {
+function worksOf(collection: GeoJSON.FeatureCollection | null, limit: number): IntelItem[] {
   if (!collection) return []
   const rows = collection.features.flatMap((feature) => {
     const status = textProp(feature.properties, "status")
@@ -223,8 +343,32 @@ function worksOf(collection: GeoJSON.FeatureCollection | null): IntelItem[] {
       },
     ]
   })
-  rows.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-  return rows.slice(0, 2)
+  rows.sort(byScore)
+  return rows.slice(0, limit)
+}
+
+function warningsOf(warnings: WeatherWarning[]): IntelItem[] {
+  return warnings.map((warning) => ({
+    id: warning.id,
+    kind: "weather" as const,
+    score: warning.score,
+    urgent: warning.urgent,
+    label: "Weather",
+    title: warning.name,
+    detail: warning.detail,
+    tone: warning.tone,
+    coordinates: null,
+  }))
+}
+
+function weatherOf(input: IntelInput, warnings: IntelItem[]): IntelItem[] {
+  if (input.warningsError) return [fault("fault-weather", 160_000, "Weather warnings unavailable", input.warningsError)]
+  if (!input.warningsReady) return []
+  return warnings
+}
+
+function byScore(a: IntelItem, b: IntelItem): number {
+  return b.score - a.score || a.title.localeCompare(b.title)
 }
 
 function midpoint(coordinates: [number, number][]): [number, number] | null {
