@@ -151,19 +151,6 @@ export function OpsHud(props: OpsHudProps) {
           </div>
         ) : null}
       </section>
-      <footer className="pointer-events-auto absolute bottom-1 left-3 z-20 max-w-[min(36rem,calc(100%-18rem))]">
-        <p className="font-[family-name:var(--font-hud)] text-[0.68rem] leading-snug text-zinc-200">
-          Designed and Created by Keith Li —{" "}
-          <a
-            href="https://www.linkedin.com/in/keithlihk"
-            target="_blank"
-            rel="noreferrer"
-            className="text-cyan-100 underline decoration-cyan-200/50 underline-offset-2"
-          >
-            Follow me on LinkedIn
-          </a>
-        </p>
-      </footer>
     </div>
   )
 }
