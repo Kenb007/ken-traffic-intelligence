@@ -172,18 +172,6 @@
   background: rgb(186 230 253 / 68%);
 }
 
-.maplibregl-ctrl-bottom-right {
-  right: 0.45rem;
-  bottom: 0.45rem;
-  z-index: 20;
-  max-width: min(48vw, 32rem);
-}
-
-.maplibregl-ctrl-attrib {
-  background: rgb(4 16 24 / 88%);
-  color: #e7eef2;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .hud-pulse {
     animation: none;

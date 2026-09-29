@@ -204,7 +204,7 @@ export function CityMap({
     try {
       map = new Map({
         container,
-        attributionControl: { compact: false },
+        attributionControl: { compact: true },
         maxPitch: 72,
         maxBounds: [
           [113.62, 21.98],
@@ -238,7 +238,7 @@ export function CityMap({
             openmap: {
               type: "vector",
               url: "https://tiles.openfreemap.org/planet",
-              attribution: "© OpenStreetMap © OpenMapTiles © OpenFreeMap",
+              attribution: "© OpenMapTiles © OpenFreeMap",
             },
             terrain: {
               type: "raster-dem",
@@ -363,7 +363,7 @@ export function CityMap({
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
-        attribution: "Road centreline and speeds © Transport Department",
+        attribution: "© Transport Department",
       })
       map.addSource("particles", { type: "geojson", data: emptyCollection() })
       // MapLibre paints every layer above the first 3D layer on top of the buildings.
