@@ -1,5 +1,4 @@
 import type { Messages } from "@/lib/i18n"
-import { bandLabel } from "@/lib/speed"
 import type { SpeedBand } from "@/lib/types"
 
 export type ControlPointCode = "HYW" | "HZM" | "LMC" | "LSC" | "LWS" | "MKT" | "SBC" | "STK"
@@ -41,20 +40,10 @@ export function controlPointFeatures(resident: QueueFile, visitor: QueueFile): G
         code: point.code,
         name: point.name,
         worst,
-        residentArr: queueLabel(residentArr, false),
-        residentDep: queueLabel(residentDep, false),
-        visitorArr: queueLabel(visitorArr, true),
-        visitorDep: queueLabel(visitorDep, true),
         residentArrCode: residentArr,
         residentDepCode: residentDep,
         visitorArrCode: visitorArr,
         visitorDepCode: visitorDep,
-        summary: busySummary([
-          ["Resident arrival", residentArr],
-          ["Resident departure", residentDep],
-          ["Visitor arrival", visitorArr],
-          ["Visitor departure", visitorDep],
-        ]),
       },
       geometry: { type: "Point", coordinates: point.coordinates },
     }
@@ -70,14 +59,10 @@ export function decorateControlPoints(
     features: collection.features.map((feature) => {
       const code = textCode(feature.properties?.code)
       const vehicle = code ? slowestApproach(corridors, VEHICLE_ROADS[code]) : null
-      const vehicleLine = vehicle
-        ? `${vehicle.road} ${Math.round(vehicle.speedKmh)} km/h, ${bandLabel(vehicle.band).toLowerCase()}`
-        : ""
       return {
         ...feature,
         properties: {
           ...feature.properties,
-          vehicleLine,
           vehicleRoadEn: vehicle?.road ?? "",
           vehicleRoadTc: vehicle?.roadTc ?? "",
           vehicleKmh: vehicle?.speedKmh ?? null,
@@ -158,23 +143,6 @@ function severity(code: number): number {
   }
 }
 
-function queueLabel(code: number, visitor: boolean): string {
-  switch (code) {
-    case 0:
-      return visitor ? "Normal, under 30 min" : "Normal, under 15 min"
-    case 1:
-      return visitor ? "Busy, under 45 min" : "Busy, under 30 min"
-    case 2:
-      return visitor ? "Very busy, 45 min or more" : "Very busy, 30 min or more"
-    case 99:
-      return "Closed"
-    case 4:
-      return "Maintenance"
-    default:
-      return "No reading"
-  }
-}
-
 export type BoundaryGlance = {
   label: string
   tone: "red" | "amber" | "green" | "none"
@@ -203,13 +171,4 @@ export function boundaryGlance(collection: GeoJSON.FeatureCollection | null, err
   if (slowRoad > 0) return { label: m.slowCount(slowRoad), tone: "amber" }
   if (closed > 0) return { label: m.closedCount(closed), tone: "amber" }
   return { label: m.clear, tone: "green" }
-}
-
-function busySummary(rows: [string, number][]): string {
-  const busy = rows.filter((row) => row[1] === 1 || row[1] === 2)
-  if (busy.length > 0) {
-    return busy.map(([name, code]) => `${name} ${code === 2 ? "very busy" : "busy"}`).join(" · ")
-  }
-  if (rows.every((row) => row[1] === 99)) return "Closed"
-  return "Passenger halls normal"
 }

@@ -1,0 +1,45 @@
+"use client"
+
+import { useEffect, useState } from "react"
+
+export function useLiveJson<T extends { ok: boolean }>(url: string): { data: T | null; error: string | null } {
+  const [data, setData] = useState<T | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let generation = 0
+
+    const load = async () => {
+      const request = ++generation
+      try {
+        const response = await fetch(url, { cache: "no-store" })
+        const body: unknown = await response.json()
+        if (cancelled || request !== generation) return
+        if (!hasOk(body)) {
+          setError(`Unexpected response (${response.status})`)
+          return
+        }
+        setData(body as T)
+        setError(null)
+      } catch (cause) {
+        if (cancelled || request !== generation) return
+        setError(cause instanceof Error ? cause.message : "Request failed")
+      }
+    }
+
+    void load()
+    const timer = window.setInterval(() => void load(), 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [url])
+
+  return { data, error }
+}
+
+function hasOk(value: unknown): value is { ok: boolean } {
+  if (typeof value !== "object" || value === null || !("ok" in value)) return false
+  return typeof value.ok === "boolean"
+}

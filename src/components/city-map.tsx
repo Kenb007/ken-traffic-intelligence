@@ -714,7 +714,10 @@ function publishCorridors(
   const source = geoJsonSource(map, "corridors")
   if (!source) return
 
-  const features: GeoJSON.Feature[] = corridors.map((corridor) => {
+  const features: GeoJSON.Feature[] = []
+  for (const corridor of corridors) {
+    const origin = corridor.coordinates[0]
+    if (!origin) continue
     const color = BAND_COLOR[corridor.band]
     const properties = {
       name: displayText(m.locale, corridor.roadTc, corridor.roadEn),
@@ -723,20 +726,16 @@ function publishCorridors(
       speed: corridor.speedKmh == null ? m.noReading : m.speedKmh(Math.round(corridor.speedKmh)),
       color,
     }
-    if (corridor.coordinates.length < 2) {
-      return {
-        type: "Feature",
-        properties,
-        geometry: { type: "Point", coordinates: corridor.coordinates[0] ?? [114.15, 22.3] },
-      }
-    }
-    return {
+    features.push({
       type: "Feature",
       properties,
-      geometry: { type: "LineString", coordinates: corridor.coordinates },
-    }
-  })
-  ;(source as GeoJSONSource).setData({ type: "FeatureCollection", features })
+      geometry:
+        corridor.coordinates.length < 2
+          ? { type: "Point", coordinates: origin }
+          : { type: "LineString", coordinates: corridor.coordinates },
+    })
+  }
+  source.setData({ type: "FeatureCollection", features })
 
   const lines: AnimLine[] = []
   corridors.forEach((corridor) => {
@@ -788,23 +787,18 @@ function stepParticles(map: Map, lines: AnimLine[], particles: Particle[], dt: n
     source?.setData(emptyCollection())
     return
   }
-  const features: GeoJSON.Feature[] = particles.map((particle) => {
+  const features: GeoJSON.Feature[] = []
+  for (const particle of particles) {
     const line = lines[particle.line]
-    if (!line) {
-      return {
-        type: "Feature",
-        properties: { color: BAND_COLOR.unknown },
-        geometry: { type: "Point", coordinates: [114.15, 22.3] },
-      }
-    }
+    if (!line) continue
     const pace = Math.max(0.25, line.speed / 50) * 0.075
     particle.t = (particle.t + pace * dt) % 1
-    return {
+    features.push({
       type: "Feature",
       properties: { color: BAND_COLOR[line.band] },
       geometry: { type: "Point", coordinates: pointAlong(line, particle.t) },
-    }
-  })
+    })
+  }
   source.setData({ type: "FeatureCollection", features })
 }
 

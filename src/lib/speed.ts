@@ -22,21 +22,10 @@ export function bandForSpeed(speedKmh: number | null): SpeedBand {
   return "free"
 }
 
-export function bandLabel(band: SpeedBand): string {
-  switch (band) {
-    case "free":
-      return "Good"
-    case "slow":
-      return "Average"
-    case "congested":
-      return "Bad"
-    case "unknown":
-      return "No reading"
-    default: {
-      const exhaustive: never = band
-      return exhaustive
-    }
-  }
+const SPEED_BANDS: readonly SpeedBand[] = ["free", "slow", "congested", "unknown"]
+
+export function isSpeedBand(value: string): value is SpeedBand {
+  return SPEED_BANDS.some((band) => band === value)
 }
 
 export function formatSpeed(speedKmh: number | null): string {

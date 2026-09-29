@@ -1,7 +1,6 @@
 import type { ApproachLeg, ApproachPoint, HarbourJourney } from "@/lib/types"
 
-// Jev scored each journey-time board on whether its road approaches a Victoria Harbour crossing.
-// These ids are the ones at or above 0.7. Boards below that stay off the map.
+// HKeMobility journey-time boards whose roads approach a Victoria Harbour crossing.
 const APPROACH_LOCATION_IDS: ReadonlySet<string> = new Set([
   "H1",
   "H2",

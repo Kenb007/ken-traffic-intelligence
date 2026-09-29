@@ -1,14 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
 import { LayerDock } from "@/components/layer-dock"
 import { OpsHud } from "@/components/ops-hud"
+import { useLiveJson } from "@/components/use-live-json"
 import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
 import { hkoLang } from "@/lib/i18n"
-import { EMPTY_CONDITIONS } from "@/lib/warnings"
 import type {
   ApproachesResponse,
   ControlPointsResponse,
@@ -48,170 +48,26 @@ export function Dashboard() {
   const [mapLive, setMapLive] = useState(!mapDown)
   const [layers, setLayers] = useState<WatchLayers>(LAYERS_ON)
   const [basemap, setBasemap] = useState<Basemap>("satellite")
-  const [traffic, setTraffic] = useState<TrafficResponse | null>(null)
-  const [trafficError, setTrafficError] = useState<string | null>(null)
-  const [trafficLoading, setTrafficLoading] = useState(true)
-  const [approaches, setApproaches] = useState<ApproachesResponse | null>(null)
-  const [picture, setPicture] = useState<PictureResponse | null>(null)
-  const [pictureError, setPictureError] = useState<string | null>(null)
-  const [incidents, setIncidents] = useState<IncidentsResponse | null>(null)
-  const [controlPoints, setControlPoints] = useState<ControlPointsResponse | null>(null)
-  const [warnings, setWarnings] = useState<WarningsResponse | null>(null)
+  const trafficLive = useLiveJson<TrafficResponse>(forceDown ? "/api/traffic?simulate=fail" : "/api/traffic")
+  const approachesLive = useLiveJson<ApproachesResponse>("/api/approaches")
+  const pictureLive = useLiveJson<PictureResponse>("/api/picture")
+  const incidentsLive = useLiveJson<IncidentsResponse>("/api/incidents")
+  const controlLive = useLiveJson<ControlPointsResponse>("/api/control-points")
+  const warningsLive = useLiveJson<WarningsResponse>(`/api/warnings?lang=${hkoLang(locale)}`)
+  const traffic = trafficLive.data
+  const approaches = approachesLive.data
+  const picture = pictureLive.data
+  const incidents = incidentsLive.data
+  const controlPoints = controlLive.data
+  const warnings = warningsLive.data
+  const trafficLoading = traffic === null && trafficLive.error === null
+  const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
+  const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
   const [focus, setFocus] = useState<{ id: string; coordinates: [number, number] } | null>(null)
   const [intelOpen, setIntelOpen] = useState(true)
 
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      const url = forceDown ? "/api/traffic?simulate=fail" : "/api/traffic"
-      try {
-        const response = await fetch(url, { cache: "no-store" })
-        const body = (await response.json()) as TrafficResponse
-        if (cancelled) return
-        setTraffic(body)
-        setTrafficError(body.ok ? null : body.error ?? `Speed feed failed (${response.status})`)
-      } catch (error) {
-        if (cancelled) return
-        setTrafficError(error instanceof Error ? error.message : "Speed feed failed")
-      } finally {
-        if (!cancelled) setTrafficLoading(false)
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [forceDown])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch("/api/approaches", { cache: "no-store" })
-        const body = (await response.json()) as ApproachesResponse
-        if (cancelled) return
-        setApproaches(body)
-      } catch {
-        if (!cancelled) {
-          setApproaches({
-            ok: false,
-            error: "Crossing approaches failed to load.",
-            capturedAt: null,
-            points: [],
-          })
-        }
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch("/api/picture", { cache: "no-store" })
-        const body = (await response.json()) as PictureResponse
-        if (cancelled) return
-        setPicture(body)
-        setPictureError(body.error ?? (body.ok ? null : `Picture failed (${response.status})`))
-      } catch (error) {
-        if (cancelled) return
-        setPictureError(error instanceof Error ? error.message : "Picture failed")
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch("/api/incidents", { cache: "no-store" })
-        const body = (await response.json()) as IncidentsResponse
-        if (!cancelled) setIncidents(body)
-      } catch {
-        if (!cancelled) {
-          setIncidents({
-            ok: false,
-            error: "Special traffic news failed to load.",
-            observedAt: null,
-            incidents: { type: "FeatureCollection", features: [] },
-          })
-        }
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch("/api/control-points", { cache: "no-store" })
-        const body = (await response.json()) as ControlPointsResponse
-        if (!cancelled) setControlPoints(body)
-      } catch {
-        if (!cancelled) {
-          setControlPoints({
-            ok: false,
-            error: "Control point waiting times failed to load.",
-            observedAt: null,
-            points: { type: "FeatureCollection", features: [] },
-          })
-        }
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch(`/api/warnings?lang=${hkoLang(locale)}`, { cache: "no-store" })
-        const body = (await response.json()) as WarningsResponse
-        if (!cancelled) setWarnings(body)
-      } catch {
-        if (!cancelled) {
-          setWarnings({
-            ok: false,
-            error: "Weather warnings failed to load.",
-            observedAt: null,
-            warnings: [],
-            conditions: EMPTY_CONDITIONS,
-          })
-        }
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [locale])
+  const corridors = traffic?.ok ? traffic.corridors : []
+  const boundary = controlPoints?.ok ? decorateControlPoints(controlPoints.points, corridors) : null
 
   const toggleLayer = (layer: WatchLayer) => {
     setLayers((current) => ({ ...current, [layer]: !current[layer] }))
@@ -220,13 +76,11 @@ export function Dashboard() {
   return (
     <main className="relative h-dvh overflow-hidden bg-[#061018]">
       <CityMap
-        corridors={traffic?.ok ? traffic.corridors : []}
+        corridors={corridors}
         approaches={approaches?.ok ? approaches.points : []}
         picture={picture}
         incidents={incidents?.ok ? incidents.incidents : null}
-        controlPoints={
-          controlPoints?.ok ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : []) : null
-        }
+        controlPoints={boundary}
         layers={layers}
         basemap={basemap}
         flyToken={flyToken}
@@ -240,17 +94,15 @@ export function Dashboard() {
         trafficError={trafficError}
         approaches={approaches}
         incidents={incidents?.ok ? incidents.incidents : null}
-        incidentsError={incidents && !incidents.ok ? incidents.error ?? "Special traffic news failed." : null}
+        incidentsError={incidentsLive.error ?? (incidents && !incidents.ok ? incidents.error ?? "Special traffic news failed." : null)}
         works={picture?.works ?? null}
-        controlPoints={
-          controlPoints?.ok ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : []) : null
-        }
-        controlError={controlPoints && !controlPoints.ok ? controlPoints.error ?? "Control point waiting times failed." : null}
+        controlPoints={boundary}
+        controlError={controlLive.error ?? (controlPoints && !controlPoints.ok ? controlPoints.error ?? "Control point waiting times failed." : null)}
         warnings={warnings?.warnings ?? []}
-        warningsReady={warnings != null}
-        warningsError={warnings?.error ?? null}
+        warningsReady={warnings != null || warningsLive.error != null}
+        warningsError={warningsLive.error ?? warnings?.error ?? null}
         conditions={warnings?.conditions ?? null}
-        approachesError={approaches && !approaches.ok ? approaches.error ?? "Crossing approaches failed." : null}
+        approachesError={approachesLive.error ?? (approaches && !approaches.ok ? approaches.error ?? "Crossing approaches failed." : null)}
         mapLive={mapLive}
         open={intelOpen}
         onOpenChange={setIntelOpen}
@@ -264,7 +116,7 @@ export function Dashboard() {
         <a
           href="https://www.linkedin.com/in/keithlihk"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
         >
           {m.creditLink}

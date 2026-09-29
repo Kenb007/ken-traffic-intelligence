@@ -49,58 +49,12 @@ export type TrafficResponse = {
   network: NetworkStatus
 }
 
-export type NoticeItem = {
-  id: string
-  category: string
-  titleEn: string
-  titleTc: string
-  effective: string
-}
-
-export type NoticesResponse = {
-  ok: boolean
-  error?: string
-  notices: NoticeItem[]
-}
-
-export type JourneyAlternate = {
-  tunnel: string
-  distance: string
-  eta: string
-}
-
-export type TdasJourney = {
-  ok: boolean
-  error?: string
-  speedText: string | null
-  eta: string | null
-  distance: string | null
-  tunnel: string | null
-  alternates: JourneyAlternate[]
-}
-
 export type HarbourJourney = {
   from: string
   to: string
   minutes: number | null
   colour: "red" | "amber" | "green" | "none"
   note: string | null
-}
-
-export type JtisSummary = {
-  ok: boolean
-  error?: string
-  capturedAt: string | null
-  red: number
-  amber: number
-  green: number
-  other: number
-  harbour: HarbourJourney[]
-}
-
-export type JourneyResponse = {
-  tdas: TdasJourney
-  jtis: JtisSummary
 }
 
 export type ApproachLeg = {

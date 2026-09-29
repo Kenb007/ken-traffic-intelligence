@@ -1,5 +1,5 @@
 import { controlName, displayText, hallStatus, hallSummary, vehicleSentence, type Messages } from "@/lib/i18n"
-import type { ApproachPoint, Corridor, SpeedBand, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
+import type { ApproachPoint, Corridor, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
 
 export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow" | "weather"
 
@@ -19,19 +19,7 @@ export type IntelItem = {
 
 export type IntelTab = "ranked" | "roads" | "boundary" | "weather"
 
-export const INTEL_TABS: { id: IntelTab; label: string }[] = [
-  { id: "ranked", label: "Ranked" },
-  { id: "roads", label: "Roads" },
-  { id: "boundary", label: "Boundary" },
-  { id: "weather", label: "Weather" },
-]
-
-export const INTEL_EMPTY: Record<IntelTab, string> = {
-  ranked: "Nothing urgent on the roads, boundary, or weather.",
-  roads: "No open incident, bad road, or works.",
-  boundary: "Waiting for the hall feed.",
-  weather: "Waiting for the Observatory.",
-}
+export const INTEL_TABS: readonly IntelTab[] = ["ranked", "roads", "boundary", "weather"]
 
 export type IntelInput = {
   trafficError: string | null
@@ -174,31 +162,17 @@ function controlTitle(feature: GeoJSON.Feature, m: Messages): string {
 
 function controlDetail(feature: GeoJSON.Feature, m: Messages): string {
   const properties = feature.properties
-  const codes = [
-    numberProp(properties, "residentArrCode"),
-    numberProp(properties, "residentDepCode"),
-    numberProp(properties, "visitorArrCode"),
-    numberProp(properties, "visitorDepCode"),
-  ]
-  const summary =
-    codes.every((code) => code == null)
-      ? textProp(properties, "summary")
-      : hallSummary(
-          [
-            [m.residentArrival, codes[0] ?? 4],
-            [m.residentDeparture, codes[1] ?? 4],
-            [m.visitorArrival, codes[2] ?? 4],
-            [m.visitorDeparture, codes[3] ?? 4],
-          ],
-          m,
-        )
-  const band = textProp(properties, "vehicleBand")
+  const rows = (
+    [
+      [m.residentArrival, numberProp(properties, "residentArrCode")],
+      [m.residentDeparture, numberProp(properties, "residentDepCode")],
+      [m.visitorArrival, numberProp(properties, "visitorArrCode")],
+      [m.visitorDeparture, numberProp(properties, "visitorDepCode")],
+    ] as const
+  ).flatMap(([name, code]): [string, number][] => (code == null ? [] : [[name, code]]))
+  const summary = rows.length > 0 ? hallSummary(rows, m) : ""
   const road = displayText(m.locale, textProp(properties, "vehicleRoadTc"), textProp(properties, "vehicleRoadEn"))
-  const kmh = numberProp(properties, "vehicleKmh")
-  const vehicle =
-    road && kmh != null && band
-      ? vehicleSentence(road, kmh, band as SpeedBand, m)
-      : textProp(properties, "vehicleLine")
+  const vehicle = vehicleSentence(road, numberProp(properties, "vehicleKmh"), textProp(properties, "vehicleBand"), m)
   return [summary, vehicle].filter(Boolean).join(" · ")
 }
 

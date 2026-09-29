@@ -4,7 +4,7 @@ import { useEffect, useState, type KeyboardEvent } from "react"
 import { useI18n } from "@/components/locale"
 import { boundaryGlance } from "@/lib/control-points"
 import { bestCrossings } from "@/lib/crossings"
-import { formatClock, LOCALE_MARK, LOCALES } from "@/lib/i18n"
+import { formatClock, LOCALE_MARK, LOCALES, type Messages } from "@/lib/i18n"
 import { INTEL_TABS, intelBoard, type IntelItem, type IntelTab } from "@/lib/intel"
 import { formatSpeed } from "@/lib/speed"
 import type { ApproachesResponse, HarbourJourney, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
@@ -183,27 +183,26 @@ export function OpsHud(props: OpsHudProps) {
         <div className="flex items-center gap-1 px-1.5 py-1">
           {open ? (
             <>
-              <div role="tablist" aria-label="Intel types" className="flex min-w-0 flex-1 flex-wrap gap-0.5">
-                {INTEL_TABS.map((item, index) => {
-                  const tabLabel = item.id === "ranked" ? m.ranked : item.id === "roads" ? m.roads : item.id === "boundary" ? m.boundary : m.weather
-                  const selected = tab === item.id
-                  const urgent = board[item.id].some((row) => row.urgent)
+              <div role="tablist" aria-label={m.intel} className="flex min-w-0 flex-1 flex-wrap gap-0.5">
+                {INTEL_TABS.map((id, index) => {
+                  const selected = tab === id
+                  const urgent = board[id].some((row) => row.urgent)
                   return (
                     <button
-                      key={item.id}
-                      id={`intel-tab-${item.id}`}
+                      key={id}
+                      id={`intel-tab-${id}`}
                       type="button"
                       role="tab"
                       aria-selected={selected}
                       aria-controls="harbour-intel-list"
                       tabIndex={selected ? 0 : -1}
-                      onClick={() => setTab(item.id)}
+                      onClick={() => setTab(id)}
                       onKeyDown={(event) => onTabKey(event, index, setTab)}
                       className={`inline-flex shrink-0 items-center gap-1 px-1.5 py-1 font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.08em] uppercase ${
                         selected ? "border-b-2 border-cyan-200 text-white" : "border-b-2 border-transparent text-cyan-100/70"
                       }`}
                     >
-                      {tabLabel}
+                      {tabLabel(id, m)}
                       {urgent ? <span className="size-1 rounded-full bg-[#FF5D73]" /> : null}
                     </button>
                   )
@@ -281,6 +280,23 @@ function Metric(props: { label: string; value: string; tone: string; hint?: stri
   )
 }
 
+function tabLabel(id: IntelTab, m: Messages): string {
+  switch (id) {
+    case "ranked":
+      return m.ranked
+    case "roads":
+      return m.roads
+    case "boundary":
+      return m.boundary
+    case "weather":
+      return m.weather
+    default: {
+      const exhaustive: never = id
+      return exhaustive
+    }
+  }
+}
+
 function bandTitle(summary: { free: number; slow: number; congested: number } | null, m: ReturnType<typeof useI18n>["messages"]): string {
   if (!summary) return m.network
   return `${m.good} ${summary.free}, ${m.average} ${summary.slow}, ${m.bad} ${summary.congested}`
@@ -295,7 +311,7 @@ function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number, setTab
   else if (event.key === "End") next = last
   else return
   event.preventDefault()
-  const id = INTEL_TABS[next]?.id
+  const id = INTEL_TABS[next]
   if (!id) return
   setTab(id)
   requestAnimationFrame(() => document.getElementById(`intel-tab-${id}`)?.focus())

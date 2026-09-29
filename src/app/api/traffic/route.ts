@@ -94,6 +94,9 @@ export async function GET(request: Request) {
     ])
 
   const segmentParsed = segments.status === "fulfilled" ? parseSegments(segments.value) : null
+  const rawParsed = raw.status === "fulfilled" ? parseRawSpeeds(raw.value) : null
+  const lamppostParsed = lamppostSpeeds.status === "fulfilled" ? parseRawSpeeds(lamppostSpeeds.value) : null
+  const lamppostSites = lampposts.status === "fulfilled" ? parseLampposts(lampposts.value) : null
   const segmentSummary = segmentParsed
     ? segmentParsed.summary
     : failedSegments(segments.status === "rejected" ? reason(segments) : "Segment speeds were empty.")
@@ -103,8 +106,8 @@ export async function GET(request: Request) {
           centerlines.value,
           segmentParsed.byId,
           saturation.status === "fulfilled" ? saturation.value : new Map(),
-          lampposts,
-          lamppostSpeeds,
+          lamppostSites,
+          lamppostParsed?.byId ?? null,
         )
       : null
 
@@ -124,21 +127,21 @@ export async function GET(request: Request) {
   }
 
   const detector =
-    drawn || locations.status === "rejected" || raw.status === "rejected"
+    drawn || locations.status === "rejected" || !rawParsed
       ? null
-      : buildCorridors(parseSites(locations.value), parseRawSpeeds(raw.value).byId)
+      : buildCorridors(parseSites(locations.value), rawParsed.byId)
   const lamppostOnly =
-    drawn || lampposts.status !== "fulfilled" || lamppostSpeeds.status !== "fulfilled"
+    drawn || !lamppostSites || !lamppostParsed
       ? []
-      : lamppostCorridors(parseLampposts(lampposts.value), parseRawSpeeds(lamppostSpeeds.value).byId)
+      : lamppostCorridors(lamppostSites, lamppostParsed.byId)
   const corridors = drawn?.corridors ?? [...(detector?.corridors ?? []), ...lamppostOnly]
   const summary =
     drawn?.summary ??
     summarizeCorridors(corridors, (detector?.summary.detectorCount ?? 0) + lamppostOnly.length)
   const observedAt = drawn
     ? segmentSummary.observedAt
-    : locations.status === "fulfilled" && raw.status === "fulfilled"
-      ? parseRawSpeeds(raw.value).observedAt
+    : locations.status === "fulfilled" && rawParsed
+      ? rawParsed.observedAt
       : null
   const body: TrafficResponse = {
     ok: corridors.length > 0,
@@ -155,14 +158,12 @@ function drawnFromNetwork(
   lines: Awaited<ReturnType<typeof loadCenterlines>>,
   speeds: Map<string, number | null>,
   saturation: Map<string, string>,
-  lampposts: PromiseSettledResult<string>,
-  lamppostSpeeds: PromiseSettledResult<string>,
+  lamppostSites: LamppostSite[] | null,
+  lamppostSpeeds: Map<string, number | null> | null,
 ): { corridors: Corridor[]; summary: SpeedSummary } {
   const segments = corridorsFromSegments(lines, speeds, saturation)
   const points =
-    lampposts.status === "fulfilled" && lamppostSpeeds.status === "fulfilled"
-      ? lamppostCorridors(parseLampposts(lampposts.value), parseRawSpeeds(lamppostSpeeds.value).byId)
-      : []
+    lamppostSites && lamppostSpeeds ? lamppostCorridors(lamppostSites, lamppostSpeeds) : []
   const corridors = [...segments, ...points]
   return {
     corridors,

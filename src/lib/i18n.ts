@@ -1,4 +1,5 @@
 import { Converter } from "opencc-js/t2cn"
+import { isSpeedBand } from "@/lib/speed"
 import type { SpeedBand } from "@/lib/types"
 
 export type Locale = "zh-HK" | "zh-CN" | "en"
@@ -599,9 +600,9 @@ export function hallSummary(rows: [string, number][], m: Messages): string {
   return m.passengerNormal
 }
 
-export function vehicleSentence(road: string, kmh: number | null, band: SpeedBand | "", m: Messages): string {
-  if (!road || kmh == null || !band) return ""
-  const word = bandWord(band as SpeedBand, m)
+export function vehicleSentence(road: string, kmh: number | null, band: string, m: Messages): string {
+  if (!road || kmh == null || !isSpeedBand(band)) return ""
+  const word = bandWord(band, m)
   const sep = m.locale === "en" ? ", " : "，"
   return `${road} ${m.speedKmh(Math.round(kmh))}${sep}${word}`
 }
