@@ -14,7 +14,7 @@ Hong Kong already measures itself in public. The Transport Department publishes 
 
 **The live state, across the top.** The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing sit there with their minutes, and the colour of each number says whether that delay is ordinary or whether it has turned. An open incident sits in the same row. At the far end is the speed of the strategic network as a whole, so a slow crossing can be read against a morning when the whole city is slow. Click a crossing and the map moves to the approach that produced the number.
 
-**The roads, in the department’s own colours.** 暢順, when the road is moving. 緩慢, when it has settled into a delay. 擠塞, when it has stopped being a road and become a place the city is sitting in. The colour is the word the Transport Department already uses.
+**The roads, in the department’s own colours.** Good, when the road is moving. Average, when it has settled into a delay. Bad, when it has stopped being a road and become a place the city is sitting in. Those are the Transport Department’s saturation levels, and they are the words on the English board.
 
 **The cameras, so the city can be seen.** The public snapshots around the harbour stay on the map while you are still zoomed out, and so do the cameras at the mouths of the tunnels. Click the cone and the still image loads. A number says what the feed measured. The picture says what the road looks like.
 
