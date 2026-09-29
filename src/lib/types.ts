@@ -157,11 +157,18 @@ export type WeatherWarning = {
   score: number
 }
 
+export type WeatherConditions = {
+  temperatureC: number | null
+  rainfallMm: number | null
+  rainfallPlace: string
+}
+
 export type WarningsResponse = {
   ok: boolean
   error?: string
   observedAt: string | null
   warnings: WeatherWarning[]
+  conditions: WeatherConditions
 }
 
 export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control"

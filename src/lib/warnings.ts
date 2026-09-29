@@ -1,4 +1,10 @@
-import type { WeatherWarning } from "@/lib/types"
+import type { WeatherConditions, WeatherWarning } from "@/lib/types"
+
+export const EMPTY_CONDITIONS: WeatherConditions = {
+  temperatureC: null,
+  rainfallMm: null,
+  rainfallPlace: "",
+}
 
 const SHORT_NAME: Record<string, string> = {
   WFIRE: "Fire",
@@ -43,14 +49,44 @@ export function parseWarnsum(payload: unknown): WeatherWarning[] {
   return warnings
 }
 
-export function warningGlance(warnings: WeatherWarning[]): { label: string; tone: "red" | "amber" } | null {
-  const first = warnings[0]
-  if (!first) return null
-  const extra = warnings.length - 1
-  return {
-    label: extra > 0 ? `${first.shortName} +${extra}` : first.shortName,
-    tone: first.tone,
+export function parseConditions(payload: unknown): WeatherConditions {
+  if (!isRecord(payload)) throw new Error("Current weather was not in the published shape")
+  const temperatures = rowsOf(payload.temperature)
+  const observatory = temperatures.find((row) => /observatory/i.test(text(row.place))) ?? temperatures[0]
+  const temperatureC = numberOf(observatory?.value)
+  let rainfallMm: number | null = null
+  let rainfallPlace = ""
+  for (const row of rowsOf(payload.rainfall)) {
+    const max = numberOf(row.max)
+    if (max == null) continue
+    if (rainfallMm == null || max > rainfallMm) {
+      rainfallMm = max
+      rainfallPlace = text(row.place)
+    }
   }
+  return { temperatureC, rainfallMm, rainfallPlace }
+}
+
+export function weatherBar(
+  warnings: WeatherWarning[],
+  conditions: WeatherConditions | null,
+): { label: string; tone: "red" | "amber" | "green" } | null {
+  const first = warnings[0]
+  if (first) {
+    const second = warnings[1]
+    const extra = warnings.length - (second ? 2 : 1)
+    const names = second ? `${first.shortName} · ${second.shortName}` : first.shortName
+    return {
+      label: extra > 0 ? `${first.shortName} +${warnings.length - 1}` : names,
+      tone: first.tone,
+    }
+  }
+  if (!conditions || (conditions.temperatureC == null && conditions.rainfallMm == null)) return null
+  const temperature = conditions.temperatureC == null ? "" : `${Math.round(conditions.temperatureC)}°C`
+  const rain = conditions.rainfallMm == null ? "" : conditions.rainfallMm > 0 ? `${conditions.rainfallMm} mm` : "Dry"
+  const wet = conditions.rainfallMm != null && conditions.rainfallMm >= 10
+  const hot = conditions.temperatureC != null && conditions.temperatureC >= 33
+  return { label: [temperature, rain].filter(Boolean).join(" · "), tone: wet || hot ? "amber" : "green" }
 }
 
 function shortName(key: string, code: string, type: string): string {
@@ -108,4 +144,17 @@ function clockOf(iso: string): string {
 
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : ""
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function rowsOf(value: unknown): Record<string, unknown>[] {
+  if (!isRecord(value) || !Array.isArray(value.data)) return []
+  return value.data.flatMap((row) => (isRecord(row) ? [row] : []))
+}
+
+function numberOf(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null
 }

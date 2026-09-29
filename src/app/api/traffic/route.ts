@@ -176,7 +176,7 @@ async function loadSaturation(): Promise<Map<string, string>> {
   if (saturationCache && saturationCache.expires > Date.now()) return saturationCache.levels
   const response = await fetch(SATURATION_URL, {
     cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(40_000),
     headers: {
       Accept: "application/json",
       Referer: "https://www.hkemobility.gov.hk/en/",

@@ -1,6 +1,6 @@
-import type { ApproachPoint, Corridor, TrafficResponse, WeatherWarning } from "@/lib/types"
+import type { ApproachPoint, Corridor, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
 
-export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow" | "weather" | "forecast"
+export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow" | "weather"
 
 export type IntelTone = "red" | "amber" | "green" | "none"
 
@@ -16,22 +16,20 @@ export type IntelItem = {
   coordinates: [number, number] | null
 }
 
-export type IntelTab = "ranked" | "roads" | "harbour" | "boundary" | "weather"
+export type IntelTab = "ranked" | "roads" | "boundary" | "weather"
 
 export const INTEL_TABS: { id: IntelTab; label: string }[] = [
   { id: "ranked", label: "Ranked" },
   { id: "roads", label: "Roads" },
-  { id: "harbour", label: "Harbour" },
   { id: "boundary", label: "Boundary" },
   { id: "weather", label: "Weather" },
 ]
 
 export const INTEL_EMPTY: Record<IntelTab, string> = {
-  ranked: "Nothing urgent on the roads, harbour, boundary, or weather.",
+  ranked: "Nothing urgent on the roads, boundary, or weather.",
   roads: "No open incident, bad road, or works.",
-  harbour: "Waiting for crossing minutes.",
   boundary: "Waiting for the hall feed.",
-  weather: "No weather warning in force.",
+  weather: "Waiting for the Observatory.",
 }
 
 export type IntelInput = {
@@ -43,12 +41,11 @@ export type IntelInput = {
   controlPoints: GeoJSON.FeatureCollection | null
   controlError: string | null
   approaches: ApproachPoint[]
-  approachesReady: boolean
   approachesError: string | null
-  forecast: { eta: string; tunnel: string | null; distance: string | null } | null
   warnings: WeatherWarning[]
   warningsReady: boolean
   warningsError: string | null
+  conditions: WeatherConditions | null
 }
 
 const RANKED_LIMIT = 12
@@ -72,7 +69,6 @@ export function intelBoard(input: IntelInput): Record<IntelTab, IntelItem[]> {
   return {
     ranked: ranked.slice(0, RANKED_LIMIT),
     roads: [...faults.filter((item) => item.id === "fault-speed" || item.id === "fault-incidents"), ...incidents, ...jams, ...works].sort(byScore).slice(0, 16),
-    harbour: harbourOf(input),
     boundary: boundaryOf(input),
     weather: weatherOf(input, warnings),
   }
@@ -189,43 +185,6 @@ function crossingsOf(points: ApproachPoint[]): IntelItem[] {
     if (row.tone !== "red" && row.tone !== "amber") return []
     return [crossingItem(code, row)]
   })
-}
-
-function harbourOf(input: IntelInput): IntelItem[] {
-  if (input.approachesError) return [fault("fault-crossings", 620_000, "Crossing minutes unavailable", input.approachesError)]
-  if (!input.approachesReady) return []
-  const best = bestCrossingRows(input.approaches)
-  const items: IntelItem[] = ["CH", "EH", "WH"].map((code) => {
-    const row = best.get(code)
-    if (!row) {
-      return {
-        id: `crossing-${code}`,
-        kind: "crossing" as const,
-        score: 0,
-        urgent: false,
-        label: "Crossing",
-        title: `${CROSSING_LABEL[code] ?? code} — no reading`,
-        detail: "",
-        tone: "none" as const,
-        coordinates: null,
-      }
-    }
-    return crossingItem(code, row)
-  })
-  if (input.forecast?.eta) {
-    items.push({
-      id: "forecast-sample",
-      kind: "forecast",
-      score: 0,
-      urgent: false,
-      label: "Sample route",
-      title: input.forecast.eta,
-      detail: [input.forecast.tunnel ? `via ${input.forecast.tunnel}` : "", input.forecast.distance].filter(Boolean).join(" · "),
-      tone: "none",
-      coordinates: null,
-    })
-  }
-  return items
 }
 
 function bestCrossingRows(points: ApproachPoint[]) {
@@ -362,9 +321,37 @@ function warningsOf(warnings: WeatherWarning[]): IntelItem[] {
 }
 
 function weatherOf(input: IntelInput, warnings: IntelItem[]): IntelItem[] {
-  if (input.warningsError) return [fault("fault-weather", 160_000, "Weather warnings unavailable", input.warningsError)]
-  if (!input.warningsReady) return []
-  return warnings
+  if (!input.warningsReady && !input.conditions) return []
+  const items: IntelItem[] = []
+  if (input.warningsError) {
+    items.push(fault("fault-weather", 160_000, "Weather warnings unavailable", input.warningsError))
+  }
+  items.push(...warnings)
+  const conditions = conditionsItem(input.conditions)
+  if (conditions) items.push(conditions)
+  return items
+}
+
+function conditionsItem(conditions: WeatherConditions | null): IntelItem | null {
+  if (!conditions) return null
+  const temperature = conditions.temperatureC
+  const rainfall = conditions.rainfallMm
+  if (temperature == null && rainfall == null) return null
+  const hot = temperature != null && temperature >= 33
+  const wet = rainfall != null && rainfall >= 10
+  const rainDetail =
+    rainfall == null ? "" : rainfall <= 0 ? "No rain in the past hour" : `Past hour ${rainfall} mm${conditions.rainfallPlace ? ` in ${conditions.rainfallPlace}` : ""}`
+  return {
+    id: "weather-conditions",
+    kind: "weather",
+    score: 1,
+    urgent: wet && rainfall != null && rainfall >= 30,
+    label: "Conditions",
+    title: temperature == null ? "Observatory rainfall" : `${Math.round(temperature)}°C at the Observatory`,
+    detail: rainDetail,
+    tone: rainfall != null && rainfall >= 30 ? "red" : wet || hot ? "amber" : "green",
+    coordinates: null,
+  }
 }
 
 function byScore(a: IntelItem, b: IntelItem): number {

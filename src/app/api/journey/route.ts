@@ -43,7 +43,7 @@ async function loadTdas(): Promise<TdasJourney> {
     const response = await fetch(TDAS_URL, {
       method: "POST",
       cache: "no-store",
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(40_000),
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(TDAS_BODY),
     })

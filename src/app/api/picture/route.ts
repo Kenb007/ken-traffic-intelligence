@@ -1,4 +1,4 @@
-import { camerasFromWfs, tollsFromWfs, worksFromWfs } from "@/lib/picture"
+import { camerasFromWfs, tollsFromWfs, withPortalCameras, worksFromWfs } from "@/lib/picture"
 import type { PictureResponse } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -28,7 +28,7 @@ export async function GET() {
   const body: PictureResponse = {
     ok: featureCount > 0 || errors.length === 0,
     error: errors.length > 0 ? errors.join(" ") : undefined,
-    cameras: camerasResult.features,
+    cameras: withPortalCameras(camerasResult.features, tollsResult.features),
     works: worksResult.features,
     tolls: tollsResult.features,
   }
@@ -66,7 +66,7 @@ function wfsUrl(typeName: string): string {
 async function readJson(url: string): Promise<unknown> {
   const response = await fetch(url, {
     cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(40_000),
     headers: {
       Accept: "application/json",
       Referer: REFERER,

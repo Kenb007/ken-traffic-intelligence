@@ -6,9 +6,9 @@ import { CityMap } from "@/components/city-map"
 import { LayerDock } from "@/components/layer-dock"
 import { OpsHud } from "@/components/ops-hud"
 import { decorateControlPoints } from "@/lib/control-points"
+import { EMPTY_CONDITIONS } from "@/lib/warnings"
 import type {
   ApproachesResponse,
-  JourneyResponse,
   ControlPointsResponse,
   IncidentsResponse,
   PictureResponse,
@@ -48,7 +48,6 @@ export function Dashboard() {
   const [traffic, setTraffic] = useState<TrafficResponse | null>(null)
   const [trafficError, setTrafficError] = useState<string | null>(null)
   const [trafficLoading, setTrafficLoading] = useState(true)
-  const [journey, setJourney] = useState<JourneyResponse | null>(null)
   const [approaches, setApproaches] = useState<ApproachesResponse | null>(null)
   const [picture, setPicture] = useState<PictureResponse | null>(null)
   const [pictureError, setPictureError] = useState<string | null>(null)
@@ -82,47 +81,6 @@ export function Dashboard() {
       window.clearInterval(timer)
     }
   }, [forceDown])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const response = await fetch("/api/journey", { cache: "no-store" })
-        const body = (await response.json()) as JourneyResponse
-        if (!cancelled) setJourney(body)
-      } catch {
-        if (!cancelled) {
-          setJourney({
-            tdas: {
-              ok: false,
-              error: "Journey forecast failed to load.",
-              speedText: null,
-              eta: null,
-              distance: null,
-              tunnel: null,
-              alternates: [],
-            },
-            jtis: {
-              ok: false,
-              error: "Journey time indicators failed to load.",
-              capturedAt: null,
-              red: 0,
-              amber: 0,
-              green: 0,
-              other: 0,
-              harbour: [],
-            },
-          })
-        }
-      }
-    }
-    void load()
-    const timer = window.setInterval(() => void load(), 60_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -239,6 +197,7 @@ export function Dashboard() {
             error: "Weather warnings failed to load.",
             observedAt: null,
             warnings: [],
+            conditions: EMPTY_CONDITIONS,
           })
         }
       }
@@ -277,7 +236,6 @@ export function Dashboard() {
         trafficLoading={trafficLoading}
         trafficError={trafficError}
         approaches={approaches}
-        journey={journey}
         incidents={incidents?.ok ? incidents.incidents : null}
         incidentsError={incidents && !incidents.ok ? incidents.error ?? "Special traffic news failed." : null}
         works={picture?.works ?? null}
@@ -285,9 +243,10 @@ export function Dashboard() {
           controlPoints?.ok ? decorateControlPoints(controlPoints.points, traffic?.ok ? traffic.corridors : []) : null
         }
         controlError={controlPoints && !controlPoints.ok ? controlPoints.error ?? "Control point waiting times failed." : null}
-        warnings={warnings?.ok ? warnings.warnings : []}
+        warnings={warnings?.warnings ?? []}
         warningsReady={warnings != null}
-        warningsError={warnings && !warnings.ok ? warnings.error ?? "Weather warnings failed." : null}
+        warningsError={warnings?.error ?? null}
+        conditions={warnings?.conditions ?? null}
         approachesError={approaches && !approaches.ok ? approaches.error ?? "Crossing approaches failed." : null}
         mapLive={mapLive}
         open={intelOpen}

@@ -138,3 +138,44 @@ type WfsFeature = {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
+
+const PORTAL_NAME = /tunnel|portal|harbour crossing/i
+const PORTAL_METRES = 400
+
+export function withPortalCameras(
+  cameras: GeoJSON.FeatureCollection,
+  tolls: GeoJSON.FeatureCollection,
+): GeoJSON.FeatureCollection {
+  const portals = tolls.features.flatMap((feature) => {
+    const coordinates = pointCoordinates(feature)
+    return coordinates ? [coordinates] : []
+  })
+  return {
+    type: "FeatureCollection",
+    features: cameras.features.map((feature) => {
+      const name = feature.properties && typeof feature.properties.name === "string" ? feature.properties.name : ""
+      const coordinates = pointCoordinates(feature)
+      const atPortal = coordinates != null && portals.some((point) => metres(coordinates, point) <= PORTAL_METRES)
+      return {
+        ...feature,
+        properties: {
+          ...feature.properties,
+          portal: PORTAL_NAME.test(name) || atPortal ? 1 : 0,
+        },
+      }
+    }),
+  }
+}
+
+function pointCoordinates(feature: GeoJSON.Feature): [number, number] | null {
+  if (feature.geometry?.type !== "Point") return null
+  const [lng, lat] = feature.geometry.coordinates
+  if (typeof lng !== "number" || typeof lat !== "number") return null
+  return [lng, lat]
+}
+
+function metres(a: [number, number], b: [number, number]): number {
+  const dx = (a[0] - b[0]) * 111_320 * Math.cos(((a[1] + b[1]) * Math.PI) / 360)
+  const dy = (a[1] - b[1]) * 110_540
+  return Math.hypot(dx, dy)
+}

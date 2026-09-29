@@ -100,7 +100,6 @@ export function LayerDock(props: LayerDockProps) {
               {band.name}
             </span>
           ))}
-          <span className="text-cyan-100/60">km/h</span>
         </p>
       ) : null}
       {props.pictureError ? (

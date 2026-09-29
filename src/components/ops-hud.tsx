@@ -5,8 +5,8 @@ import { boundaryGlance } from "@/lib/control-points"
 import { bestCrossings } from "@/lib/crossings"
 import { INTEL_EMPTY, INTEL_TABS, intelBoard, type IntelItem, type IntelTab } from "@/lib/intel"
 import { formatSpeed } from "@/lib/speed"
-import type { ApproachesResponse, HarbourJourney, JourneyResponse, TrafficResponse, WeatherWarning } from "@/lib/types"
-import { warningGlance } from "@/lib/warnings"
+import type { ApproachesResponse, HarbourJourney, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
+import { weatherBar } from "@/lib/warnings"
 
 type OpsHudProps = {
   traffic: TrafficResponse | null
@@ -14,7 +14,6 @@ type OpsHudProps = {
   trafficError: string | null
   approaches: ApproachesResponse | null
   approachesError: string | null
-  journey: JourneyResponse | null
   incidents: GeoJSON.FeatureCollection | null
   incidentsError: string | null
   works: GeoJSON.FeatureCollection | null
@@ -23,6 +22,7 @@ type OpsHudProps = {
   warnings: WeatherWarning[]
   warningsReady: boolean
   warningsError: string | null
+  conditions: WeatherConditions | null
   mapLive: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -49,7 +49,6 @@ export function OpsHud(props: OpsHudProps) {
   const crossings = bestCrossings(props.approaches?.ok ? props.approaches.points : [])
   const summary = props.traffic?.ok ? props.traffic.summary : null
   const totalBands = summary ? summary.free + summary.slow + summary.congested : 0
-  const forecast = props.journey?.tdas.ok ? props.journey.tdas : null
   const live = Boolean(summary) && !props.trafficError
   const board = intelBoard({
     trafficError: props.trafficError,
@@ -60,25 +59,31 @@ export function OpsHud(props: OpsHudProps) {
     controlPoints: props.controlPoints,
     controlError: props.controlError,
     approaches: props.approaches?.ok ? props.approaches.points : [],
-    approachesReady: props.approaches != null,
     approachesError: props.approachesError,
-    forecast: forecast?.eta
-      ? { eta: forecast.eta, tunnel: forecast.tunnel, distance: forecast.distance }
-      : null,
     warnings: props.warnings,
     warningsReady: props.warningsReady,
     warningsError: props.warningsError,
+    conditions: props.conditions,
   })
   const intel = board[tab]
   const urgentCount = intel.filter((item) => item.urgent).length
   const marqueeSeconds = Math.max(28, intel.length * 9)
   const halls = boundaryGlance(props.controlPoints, props.controlError)
-  const weather = warningGlance(props.warnings)
+  const weather = weatherBar(props.warnings, props.conditions)
+  const incidentCount = props.incidents?.features.length ?? 0
+  const firstIncident = board.roads.find((item) => item.kind === "incident" && item.coordinates)
+  const worstRoad = board.roads.find((item) => item.coordinates && (item.kind === "jam" || item.kind === "slow" || item.kind === "incident"))
+  const worstHall = board.boundary.find((item) => item.coordinates)
+  const show = (next: IntelTab, item: IntelItem | undefined) => {
+    setTab(next)
+    props.onOpenChange(true)
+    if (item?.coordinates) props.onFocus({ id: item.id, coordinates: item.coordinates })
+  }
   const tabLabel = INTEL_TABS.find((item) => item.id === tab)?.label ?? "Ranked"
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[5]">
-      <header className="absolute top-3 right-3 left-3 flex flex-col gap-1.5 border border-cyan-200/30 bg-[#041018]/80 px-2 py-1.5 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:flex-row sm:items-center lg:right-4 lg:left-16">
+      <header className="pointer-events-auto absolute top-3 right-3 left-3 flex flex-col gap-1.5 border border-cyan-200/30 bg-[#041018]/80 px-2 py-1.5 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:flex-row sm:items-center lg:right-4 lg:left-16">
         <div className="flex shrink-0 items-center gap-3 pr-1">
           <div>
             <p className="font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.18em] text-cyan-200/80 uppercase">Hong Kong</p>
@@ -95,11 +100,46 @@ export function OpsHud(props: OpsHudProps) {
         </div>
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-nowrap sm:overflow-x-auto">
           {crossings.map((crossing) => (
-            <Metric key={crossing.code} label={BAR_LABEL[crossing.code] ?? crossing.label} value={`${crossing.minutes} min`} tone={TONE[crossing.colour]} hint={crossing.from} />
+            <Metric
+              key={crossing.code}
+              label={BAR_LABEL[crossing.code] ?? crossing.label}
+              value={`${crossing.minutes} min`}
+              tone={TONE[crossing.colour]}
+              hint={`${crossing.from}. Show this approach on the map.`}
+              onClick={() => props.onFocus({ id: `crossing-${crossing.code}`, coordinates: crossing.coordinates })}
+            />
           ))}
-          <Metric label="Boundary" value={halls.label} tone={TONE[halls.tone]} hint="Passenger halls at the eight land control points" />
-          {weather ? <Metric label="Weather" value={weather.label} tone={TONE[weather.tone]} hint="Hong Kong Observatory warning in force" /> : null}
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 border border-white/10 bg-black/30 px-1.5 py-1 sm:block sm:px-2" title={bandTitle(summary)}>
+          {incidentCount > 0 ? (
+            <Metric
+              label="Incident"
+              value={incidentCount === 1 ? "1 open" : `${incidentCount} open`}
+              tone={TONE.red}
+              hint="Open special traffic news"
+              onClick={() => show("roads", firstIncident)}
+            />
+          ) : null}
+          <Metric
+            label="Boundary"
+            value={halls.label}
+            tone={TONE[halls.tone]}
+            hint="Passenger halls at the eight land control points"
+            onClick={() => show("boundary", worstHall)}
+          />
+          {weather ? (
+            <Metric
+              label="Weather"
+              value={weather.label}
+              tone={TONE[weather.tone]}
+              hint="Warnings in force, temperature, and rainfall"
+              onClick={() => show("weather", undefined)}
+            />
+          ) : null}
+          <button
+            type="button"
+            onClick={() => show("roads", worstRoad)}
+            className="ml-auto flex shrink-0 items-center gap-1.5 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:block sm:px-2"
+            title={bandTitle(summary)}
+          >
             <p className="font-[family-name:var(--font-hud)] text-[0.58rem] tracking-[0.14em] text-cyan-100/80 uppercase">Network</p>
             <div className="flex items-center gap-2">
               <p className="font-[family-name:var(--font-hud)] text-sm leading-none text-white tabular-nums sm:text-base">
@@ -113,7 +153,7 @@ export function OpsHud(props: OpsHudProps) {
                 </div>
               ) : null}
             </div>
-          </div>
+          </button>
         </div>
       </header>
       <section
@@ -206,14 +246,19 @@ export function OpsHud(props: OpsHudProps) {
   )
 }
 
-function Metric(props: { label: string; value: string; tone: string; hint?: string }) {
+function Metric(props: { label: string; value: string; tone: string; hint?: string; onClick: () => void }) {
   return (
-    <div className="flex shrink-0 items-baseline gap-1 border border-white/10 bg-black/30 px-1.5 py-1 sm:block sm:px-2" title={props.hint}>
+    <button
+      type="button"
+      onClick={props.onClick}
+      title={props.hint}
+      className="flex shrink-0 items-baseline gap-1 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:block sm:px-2"
+    >
       <p className="font-[family-name:var(--font-hud)] text-[0.58rem] tracking-[0.14em] text-cyan-100/80 uppercase">{props.label}</p>
       <p className="font-[family-name:var(--font-hud)] text-sm leading-none whitespace-nowrap tabular-nums sm:text-base" style={{ color: props.tone }}>
         {props.value}
       </p>
-    </div>
+    </button>
   )
 }
 

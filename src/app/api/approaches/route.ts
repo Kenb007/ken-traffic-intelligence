@@ -60,7 +60,7 @@ function detailUrl(id: string): string {
 async function readJson(url: string): Promise<unknown> {
   const response = await fetch(url, {
     cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(40_000),
     headers: {
       Accept: "application/json",
       Referer: "https://www.hkemobility.gov.hk/en/",

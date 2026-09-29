@@ -10,6 +10,7 @@ import {
   Popup,
   setWorkerUrl,
   type ErrorEvent,
+  type FilterSpecification,
   type LngLat,
   type MapGeoJSONFeature,
   type MapMouseEvent,
@@ -110,7 +111,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points"]
+const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -450,6 +451,7 @@ export function CityMap({
       map.on("click", "corridor-point", onCorridorClick)
       const featurePopups: Record<string, (properties: GeoJSON.GeoJsonProperties) => HTMLElement> = {
         "cameras-harbour": cameraPopup,
+        "cameras-portal": cameraPopup,
         "cameras-city": cameraPopup,
         works: workPopup,
         "tolls-portal": tollPopup,
@@ -918,8 +920,9 @@ function addWatchLayers(map: Map) {
     })
   }
   if (!map.hasImage("camera-cone")) return
-  addCameraLayer(map, "cameras-harbour", 1, 11.6)
-  addCameraLayer(map, "cameras-city", 0, 14)
+  addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6)
+  addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6)
+  addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14)
 }
 
 function incidentMark(): ImageData | null {
@@ -955,13 +958,13 @@ function incidentMark(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
-function addCameraLayer(map: Map, id: string, harbour: 0 | 1, minzoom: number) {
+function addCameraLayer(map: Map, id: string, filter: FilterSpecification, minzoom: number) {
   map.addLayer({
     id,
     type: "symbol",
     source: "cameras",
     minzoom,
-    filter: ["==", ["get", "harbour"], harbour],
+    filter,
     layout: {
       "icon-image": "camera-cone",
       "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.42, 14, 0.85, 16, 1.05],
@@ -1008,7 +1011,7 @@ function layerIds(kind: WatchLayer): string[] {
     case "speed":
       return ["corridor-glow", "corridor-casing", "corridor-line", "corridor-point", "traffic-particles"]
     case "cameras":
-      return ["cameras-harbour", "cameras-city"]
+      return ["cameras-harbour", "cameras-portal", "cameras-city"]
     case "works":
       return ["works"]
     case "tolls":

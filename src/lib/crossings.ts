@@ -16,6 +16,7 @@ export type CrossingBest = {
   minutes: number
   from: string
   colour: HarbourJourney["colour"]
+  coordinates: [number, number]
 }
 
 export function bestCrossings(points: ApproachPoint[]): CrossingBest[] {
@@ -31,6 +32,7 @@ export function bestCrossings(points: ApproachPoint[]): CrossingBest[] {
         minutes: leg.minutes,
         from: shortPlace(point.name),
         colour: leg.colour,
+        coordinates: point.coordinates,
       })
     }
   }
