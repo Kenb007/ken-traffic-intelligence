@@ -11,14 +11,26 @@ export type Centerline = {
   coordinates: [number, number][]
 }
 
-// One shift per road name, shared by every segment, so the pieces stay joined.
+// The road network file stores Hong Kong 1980 latitude and longitude. Plotted as
+// WGS84, every road sits upper-left of the map. Lands Department constants for
+// the territory: WGS84 longitude = HK80 longitude + 8.8″, WGS84 latitude = HK80 latitude − 5.5″.
+const HK80_TO_WGS84_LNG = 8.8 / 3600
+const HK80_TO_WGS84_LAT = -5.5 / 3600
+
 let geometry: Promise<Centerline[]> | null = null
 
 export function loadCenterlines(): Promise<Centerline[]> {
   geometry ??= readFile(path.join(process.cwd(), "data/strategic-centerlines.json"), "utf8").then(
-    (text) => JSON.parse(text) as Centerline[],
+    (text) => seatOnWgs84(JSON.parse(text) as Centerline[]),
   )
   return geometry
+}
+
+function seatOnWgs84(lines: Centerline[]): Centerline[] {
+  return lines.map((line) => ({
+    ...line,
+    coordinates: line.coordinates.map(([lng, lat]) => [lng + HK80_TO_WGS84_LNG, lat + HK80_TO_WGS84_LAT]),
+  }))
 }
 
 export function corridorsFromSegments(lines: Centerline[], speeds: Map<string, number | null>): Corridor[] {
