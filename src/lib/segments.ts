@@ -11,6 +11,8 @@ export type Centerline = {
   coordinates: [number, number][]
 }
 
+// Vertices are shifted onto the OpenStreetMap road of the same English name so the
+// drawn line sits under that road's label on every basemap.
 let geometry: Promise<Centerline[]> | null = null
 
 export function loadCenterlines(): Promise<Centerline[]> {
