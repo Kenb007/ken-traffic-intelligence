@@ -150,6 +150,12 @@
   animation-play-state: paused;
 }
 
+.maplibregl-ctrl-bottom-right {
+  bottom: 0.35rem;
+  right: 0.45rem;
+  max-width: min(52vw, 34rem);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hud-pulse {
     animation: none;

@@ -108,8 +108,8 @@ export function OpsHud(props: OpsHudProps) {
         id="harbour-intel"
         className={
           open
-            ? "pointer-events-auto absolute right-3 bottom-28 z-[6] w-[min(24rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-4"
-            : "pointer-events-auto absolute inset-x-0 bottom-0 z-[6] border-t border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md"
+            ? "pointer-events-auto absolute right-3 bottom-36 z-[6] w-[min(24rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-14"
+            : "pointer-events-auto absolute inset-x-0 bottom-12 z-[6] border-t border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md"
         }
       >
         <div className="flex items-center gap-2 px-2 py-1.5">
@@ -151,6 +151,19 @@ export function OpsHud(props: OpsHudProps) {
           </div>
         ) : null}
       </section>
+      <footer className="pointer-events-auto absolute bottom-1 left-3 z-20 max-w-[min(36rem,calc(100%-18rem))]">
+        <p className="font-[family-name:var(--font-hud)] text-[0.68rem] leading-snug text-zinc-200">
+          Designed and Created by Keith Li —{" "}
+          <a
+            href="https://www.linkedin.com/in/keithlihk"
+            target="_blank"
+            rel="noreferrer"
+            className="text-cyan-100 underline decoration-cyan-200/50 underline-offset-2"
+          >
+            Follow me on LinkedIn
+          </a>
+        </p>
+      </footer>
     </div>
   )
 }

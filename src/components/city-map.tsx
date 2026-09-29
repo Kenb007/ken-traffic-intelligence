@@ -202,7 +202,7 @@ export function CityMap({
     try {
       map = new Map({
         container,
-        attributionControl: { compact: true },
+        attributionControl: { compact: false },
         maxPitch: 72,
         maxBounds: [
           [113.62, 21.98],
