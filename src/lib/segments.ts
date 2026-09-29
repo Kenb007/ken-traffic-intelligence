@@ -1,5 +1,4 @@
-import { readFile } from "node:fs/promises"
-import path from "node:path"
+import centerlinesJson from "../../data/strategic-centerlines.json"
 import { bandForSaturation, bandForSpeed } from "@/lib/speed"
 import type { Corridor, SpeedSummary } from "@/lib/types"
 
@@ -20,9 +19,7 @@ const HK80_TO_WGS84_LAT = -5.5 / 3600
 let geometry: Promise<Centerline[]> | null = null
 
 export function loadCenterlines(): Promise<Centerline[]> {
-  geometry ??= readFile(path.join(process.cwd(), "data/strategic-centerlines.json"), "utf8").then(
-    (text) => seatOnWgs84(JSON.parse(text) as Centerline[]),
-  )
+  geometry ??= Promise.resolve(seatOnWgs84(centerlinesJson as Centerline[]))
   return geometry
 }
 

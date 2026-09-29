@@ -47,3 +47,6 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 scripts/ask-jev.mjs
+/dist/
+.vinext/
+.cloudflare/

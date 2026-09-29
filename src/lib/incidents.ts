@@ -1,5 +1,4 @@
-import { readFile } from "node:fs/promises"
-import path from "node:path"
+import roadPointsJson from "../../data/road-points.json"
 
 export type RoadPoints = {
   en: string
@@ -32,9 +31,7 @@ export type IncidentMessage = {
 let roadsPromise: Promise<RoadPoints[]> | null = null
 
 export function loadRoadPoints(): Promise<RoadPoints[]> {
-  roadsPromise ??= readFile(path.join(process.cwd(), "data/road-points.json"), "utf8").then(
-    (text) => JSON.parse(text) as RoadPoints[],
-  )
+  roadsPromise ??= Promise.resolve(roadPointsJson as RoadPoints[])
   return roadsPromise
 }
 
