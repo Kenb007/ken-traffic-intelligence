@@ -29,9 +29,9 @@ const LAYERS: { id: WatchLayer; label: string; swatch: string }[] = [
 ]
 
 const SPEED_KEY = [
-  { color: "#3DDC97", name: "Moving", detail: "50+" },
-  { color: "#FFC857", name: "Slow", detail: "30–49" },
-  { color: "#FF5D73", name: "Jammed", detail: "under 30" },
+  { color: "#3DDC97", name: "Good" },
+  { color: "#FFC857", name: "Average" },
+  { color: "#FF5D73", name: "Bad" },
 ] as const
 
 export function LayerDock(props: LayerDockProps) {
@@ -91,12 +91,12 @@ export function LayerDock(props: LayerDockProps) {
       {props.layers.speed ? (
         <p
           className="basis-full flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-hud)] text-[0.68rem] tracking-[0.06em] text-cyan-50/90 uppercase"
-          aria-label="Road speed in kilometres per hour. Moving is 50 or faster, slow is 30 to 49, jammed is under 30."
+          aria-label="Official traffic class. Good, average, and bad are the Transport Department saturation levels."
         >
           {SPEED_KEY.map((band) => (
             <span key={band.name} className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-4 rounded-full" style={{ background: band.color }} />
-              {band.name} {band.detail}
+              {band.name}
             </span>
           ))}
           <span className="text-cyan-100/60">km/h</span>

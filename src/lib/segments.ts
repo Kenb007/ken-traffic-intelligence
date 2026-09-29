@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
-import { bandForSpeed } from "@/lib/speed"
+import { bandForSaturation, bandForSpeed } from "@/lib/speed"
 import type { Corridor, SpeedSummary } from "@/lib/types"
 
 export type Centerline = {
@@ -33,7 +33,11 @@ function seatOnWgs84(lines: Centerline[]): Centerline[] {
   }))
 }
 
-export function corridorsFromSegments(lines: Centerline[], speeds: Map<string, number | null>): Corridor[] {
+export function corridorsFromSegments(
+  lines: Centerline[],
+  speeds: Map<string, number | null>,
+  saturation: Map<string, string> = new Map(),
+): Corridor[] {
   return lines.map((line) => {
     const speedKmh = speeds.get(line.id) ?? null
     return {
@@ -42,7 +46,7 @@ export function corridorsFromSegments(lines: Centerline[], speeds: Map<string, n
       roadEn: line.roadEn,
       direction: "",
       speedKmh,
-      band: bandForSpeed(speedKmh),
+      band: bandForSaturation(saturation.get(line.id)) ?? bandForSpeed(speedKmh),
       lengthKm: lengthKm(line.coordinates),
       detectorCount: 0,
       coordinates: line.coordinates,

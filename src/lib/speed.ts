@@ -1,6 +1,20 @@
 import type { SpeedBand } from "@/lib/types"
 
-/** Display bands for this dashboard. Not an official Transport Department legend. */
+/** Official Transport Department saturation on the live speed lines. */
+export function bandForSaturation(level: string | null | undefined): SpeedBand | null {
+  switch (level) {
+    case "TRAFFIC GOOD":
+      return "free"
+    case "TRAFFIC AVERAGE":
+      return "slow"
+    case "TRAFFIC BAD":
+      return "congested"
+    default:
+      return null
+  }
+}
+
+/** Speed bands used only where the official saturation class is missing. */
 export function bandForSpeed(speedKmh: number | null): SpeedBand {
   if (speedKmh == null || Number.isNaN(speedKmh)) return "unknown"
   if (speedKmh < 30) return "congested"
@@ -11,11 +25,11 @@ export function bandForSpeed(speedKmh: number | null): SpeedBand {
 export function bandLabel(band: SpeedBand): string {
   switch (band) {
     case "free":
-      return "Free-flow"
+      return "Good"
     case "slow":
-      return "Slow"
+      return "Average"
     case "congested":
-      return "Congested"
+      return "Bad"
     case "unknown":
       return "No reading"
     default: {

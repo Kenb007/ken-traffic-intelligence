@@ -15,11 +15,11 @@ The dev server listens on `0.0.0.0:4317`. Open [http://127.0.0.1:4317](http://12
 
 Add `?feed=down` to force the speed request to fail. The status bar shows the fault and the satellite map stays up. Add `?map=down` to skip the map. Crossing minutes and network speed stay on screen.
 
-Buttons along the bottom switch the picture between the pitched satellite view, a flat OpenStreetMap, and a pitched OpenFreeMap city with extruded buildings, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is moving at 50 km/h or faster, slow at 30 to 49, and jammed under 30.
+Buttons along the bottom switch the picture between the pitched satellite view, a flat OpenStreetMap, and a pitched OpenFreeMap city with extruded buildings, and turn road speed, cameras, road works, toll points, and open incidents on and off. The speed key is the official class: good, average, and bad.
 
 ## What the map uses
 
-Road names stay as published, usually Traditional Chinese. The interface copy is English. Centreline speeds use bands for this view: moving is 50 km/h or faster, slow is 30 to 49, jammed is under 30. They are not an official Transport Department colour legend.
+Road names stay as published, usually Traditional Chinese. The interface copy is English. Centreline colours are the Transport Department saturation class: good, average, and bad. A segment with no class falls back to 50 km/h and 30 km/h.
 
 | Source | Record | What this app uses it for |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Road names stay as published, usually Traditional Chinese. The interface copy is
 | OpenFreeMap buildings | [OpenFreeMap](https://openfreemap.org) | Pitched 3D buildings from OpenStreetMap heights, with no API key. The Buildings button zooms in and extrudes them. © OpenStreetMap © OpenMapTiles © OpenFreeMap. |
 | Road Network (2nd generation) | [hk-td-tis_15-road-network-v2](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) | Centreline geometry for the strategic-road segments. `ROUTE_ID` matches the live segment id. Positions are Hong Kong 1980 latitude and longitude. The map adds 8.8 arcseconds of longitude and subtracts 5.5 arcseconds of latitude, the Lands Department constants, so the network sits on the WGS84 roads. |
 | Traffic Data Analytics System | [hk-td-tis_28-traffic-data-tdas](https://data.gov.hk/en-data/dataset/hk-td-tis_28-traffic-data-tdas) | One shortest-time forecast, using the sample coordinates in the TDAS specification. The response has route ids, not a line. |
-| Traffic Data of Strategic / Major Roads | [hk-td-sm_4-traffic-data-strategic-major-roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) | Processed segment speeds (about every two minutes) colour the centreline. Raw detector speeds remain the fallback if that geometry is missing. |
+| Traffic Data of Strategic / Major Roads | [hk-td-sm_4-traffic-data-strategic-major-roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) | Processed segment speeds (about every two minutes) sit on the centreline. The line colour is the official saturation class from HKeMobility, good, average, or bad. Raw detector speeds remain the fallback if that geometry is missing. |
 | Journey time indicators (2nd generation) | [hk-td-sm_8-journey-time-indicators-v2](https://data.gov.hk/en-data/dataset/hk-td-sm_8-journey-time-indicators-v2) | Related live feed from the same strategic-roads theme. Harbour indicator rows and the citywide colour tally. |
 | HKeMobility journey-time boards | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Board positions and live minutes to the Cross Harbour Tunnel, Eastern Harbour Crossing, and Western Harbour Crossing. The map pill is the fastest of those three. |
 | HKeMobility speed map | [HKeMobility](https://www.hkemobility.gov.hk/en/) | Not drawn. The published image is a neon green, yellow, and red stroke with no speed key, and it sat on top of the detector lines. |

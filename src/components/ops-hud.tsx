@@ -96,7 +96,7 @@ export function OpsHud(props: OpsHudProps) {
             {props.trafficLoading ? "…" : formatSpeed(summary?.meanSpeedKmh ?? null)}
           </p>
           {summary && totalBands > 0 ? (
-            <div className="mt-1.5 flex h-1.5 overflow-hidden bg-white/10" title="Free-flow, slow, and congested corridors">
+            <div className="mt-1.5 flex h-1.5 overflow-hidden bg-white/10" title="Traffic good, average, and bad">
               <span className="bg-[#3DDC97]" style={{ width: `${(summary.free / totalBands) * 100}%` }} />
               <span className="bg-[#FFC857]" style={{ width: `${(summary.slow / totalBands) * 100}%` }} />
               <span className="bg-[#FF5D73]" style={{ width: `${(summary.congested / totalBands) * 100}%` }} />

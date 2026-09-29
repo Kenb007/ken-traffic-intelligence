@@ -19,9 +19,11 @@ const SEGMENT_SPEEDS = "https://resource.data.one.gov.hk/td/traffic-detectors/ir
 const NETWORK_DATE = "https://static.data.gov.hk/td/road-network-v2/DATA_LAST_UPDATED_DATE.csv"
 const LAMPPOSTS = "https://static.data.gov.hk/td/traffic-data-slp/info/traffic_speed_volume_occ_info-slp.csv"
 const LAMPPOST_SPEEDS = "https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol_SLP-all.xml"
+const SATURATION_URL =
+  "https://www.hkemobility.gov.hk/api/drss/layer/map?service=WFS&version=1.0.0&request=GetFeature&typeName=DRSS:VW_IRN_AVG_SPEED_MAP&outputFormat=application/json&propertyName=SEGMENT_ID,ROAD_SATURATION_LEVEL"
 
 const NETWORK_DRAWN =
-  "Strategic-road speeds follow the 2nd-generation centreline. Each live segment id is that centreline's ROUTE_ID. Smart-lamppost speeds are drawn as separate points."
+  "Strategic-road colours follow the official traffic class, good, average, or bad, on the 2nd-generation centreline. Each live segment id is that centreline's ROUTE_ID. Smart-lamppost speeds are drawn as separate points."
 const NETWORK_FALLBACK =
   "The centreline file was not available, so speeds are traced through detector coordinates."
 
@@ -79,15 +81,17 @@ export async function GET(request: Request) {
     return Response.json(body, { status: 502 })
   }
 
-  const [locations, raw, segments, network, centerlines, lampposts, lamppostSpeeds] = await Promise.allSettled([
-    fetchText(LOCATIONS, 6 * 60 * 60 * 1000),
-    fetchText(RAW_SPEEDS, 45_000),
-    fetchText(SEGMENT_SPEEDS, 45_000),
-    fetchText(NETWORK_DATE, 6 * 60 * 60 * 1000),
-    loadCenterlines(),
-    fetchText(LAMPPOSTS, 6 * 60 * 60 * 1000),
-    fetchText(LAMPPOST_SPEEDS, 45_000),
-  ])
+  const [locations, raw, segments, network, centerlines, lampposts, lamppostSpeeds, saturation] =
+    await Promise.allSettled([
+      fetchText(LOCATIONS, 6 * 60 * 60 * 1000),
+      fetchText(RAW_SPEEDS, 45_000),
+      fetchText(SEGMENT_SPEEDS, 45_000),
+      fetchText(NETWORK_DATE, 6 * 60 * 60 * 1000),
+      loadCenterlines(),
+      fetchText(LAMPPOSTS, 6 * 60 * 60 * 1000),
+      fetchText(LAMPPOST_SPEEDS, 45_000),
+      loadSaturation(),
+    ])
 
   const segmentParsed = segments.status === "fulfilled" ? parseSegments(segments.value) : null
   const segmentSummary = segmentParsed
@@ -95,7 +99,13 @@ export async function GET(request: Request) {
     : failedSegments(segments.status === "rejected" ? reason(segments) : "Segment speeds were empty.")
   const drawn =
     centerlines.status === "fulfilled" && segmentParsed && segmentParsed.byId.size > 0
-      ? drawnFromNetwork(centerlines.value, segmentParsed.byId, lampposts, lamppostSpeeds)
+      ? drawnFromNetwork(
+          centerlines.value,
+          segmentParsed.byId,
+          saturation.status === "fulfilled" ? saturation.value : new Map(),
+          lampposts,
+          lamppostSpeeds,
+        )
       : null
 
   if (!drawn && (locations.status === "rejected" || raw.status === "rejected")) {
@@ -144,10 +154,11 @@ export async function GET(request: Request) {
 function drawnFromNetwork(
   lines: Awaited<ReturnType<typeof loadCenterlines>>,
   speeds: Map<string, number | null>,
+  saturation: Map<string, string>,
   lampposts: PromiseSettledResult<string>,
   lamppostSpeeds: PromiseSettledResult<string>,
 ): { corridors: Corridor[]; summary: SpeedSummary } {
-  const segments = corridorsFromSegments(lines, speeds)
+  const segments = corridorsFromSegments(lines, speeds, saturation)
   const points =
     lampposts.status === "fulfilled" && lamppostSpeeds.status === "fulfilled"
       ? lamppostCorridors(parseLampposts(lampposts.value), parseRawSpeeds(lamppostSpeeds.value).byId)
@@ -157,6 +168,43 @@ function drawnFromNetwork(
     corridors,
     summary: summarizeCorridors(corridors, points.length),
   }
+}
+
+let saturationCache: { expires: number; levels: Map<string, string> } | null = null
+
+async function loadSaturation(): Promise<Map<string, string>> {
+  if (saturationCache && saturationCache.expires > Date.now()) return saturationCache.levels
+  const response = await fetch(SATURATION_URL, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+    headers: {
+      Accept: "application/json",
+      Referer: "https://www.hkemobility.gov.hk/en/",
+    },
+  })
+  if (!response.ok) throw new Error(`HTTP ${response.status} from the traffic class feed`)
+  const payload: unknown = await response.json()
+  const levels = new Map<string, string>()
+  if (isFeatureCollection(payload)) {
+    for (const feature of payload.features) {
+      const properties = feature.properties
+      if (!properties) continue
+      const id = properties.SEGMENT_ID
+      const level = properties.ROAD_SATURATION_LEVEL
+      if (typeof id !== "string" && typeof id !== "number") continue
+      if (typeof level !== "string" || level.length === 0) continue
+      levels.set(String(id), level)
+    }
+  }
+  saturationCache = { expires: Date.now() + 60_000, levels }
+  return levels
+}
+
+function isFeatureCollection(value: unknown): value is {
+  features: { properties: Record<string, unknown> | null }[]
+} {
+  if (typeof value !== "object" || value === null || !("features" in value)) return false
+  return Array.isArray(value.features)
 }
 
 function reason(result: PromiseRejectedResult): string {
