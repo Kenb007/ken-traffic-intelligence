@@ -131,9 +131,34 @@
   animation: hud-pulse 1.8s ease-in-out infinite;
 }
 
+@keyframes intel-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.intel-marquee {
+  animation-name: intel-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.intel-marquee:hover {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hud-pulse {
     animation: none;
+  }
+  .intel-marquee {
+    animation: none;
+  }
+  .intel-marquee-copy + .intel-marquee-copy {
+    display: none;
   }
 }
 
