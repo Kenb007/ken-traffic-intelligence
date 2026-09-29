@@ -11,6 +11,7 @@ export type Centerline = {
   coordinates: [number, number][]
 }
 
+// One shift per road name, shared by every segment, so the pieces stay joined.
 let geometry: Promise<Centerline[]> | null = null
 
 export function loadCenterlines(): Promise<Centerline[]> {
