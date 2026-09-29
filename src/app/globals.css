@@ -150,6 +150,28 @@
   animation-play-state: paused;
 }
 
+.intel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(186 230 253 / 42%) transparent;
+}
+
+.intel-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.intel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.intel-scroll::-webkit-scrollbar-thumb {
+  background: rgb(186 230 253 / 38%);
+  border-radius: 999px;
+}
+
+.intel-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(186 230 253 / 68%);
+}
+
 .maplibregl-ctrl-bottom-right {
   right: 0.45rem;
   bottom: 0.45rem;

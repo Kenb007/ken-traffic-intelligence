@@ -113,30 +113,48 @@ export function OpsHud(props: OpsHudProps) {
         }
       >
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls="harbour-intel-list"
-            onClick={() => props.onOpenChange(!open)}
-            className="shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
-          >
-            {open ? "Hide" : "Intel"}
-          </button>
-          {urgentCount > 0 ? (
-            <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-[#FF5D73] uppercase">
-              {urgentCount}
-            </span>
-          ) : null}
           {open ? (
-            <p className="font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.16em] text-cyan-100/80 uppercase">
-              Ranked live
-            </p>
+            <>
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls="harbour-intel-list"
+                onClick={() => props.onOpenChange(false)}
+                className="shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
+              >
+                Hide
+              </button>
+              {urgentCount > 0 ? (
+                <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-[#FF5D73] uppercase">
+                  {urgentCount}
+                </span>
+              ) : null}
+              <p className="font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.16em] text-cyan-100/80 uppercase">
+                Ranked live
+              </p>
+            </>
           ) : (
-            <IntelMarquee items={intel} seconds={marqueeSeconds} onFocus={props.onFocus} />
+            <>
+              <IntelMarquee items={intel} seconds={marqueeSeconds} onFocus={props.onFocus} />
+              {urgentCount > 0 ? (
+                <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-[#FF5D73] uppercase">
+                  {urgentCount}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls="harbour-intel-list"
+                onClick={() => props.onOpenChange(true)}
+                className="ml-1 shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
+              >
+                Intel
+              </button>
+            </>
           )}
         </div>
         {open ? (
-          <div id="harbour-intel-list" className="max-h-[min(26rem,46dvh)] overflow-y-auto border-t border-white/10 px-2 py-2">
+          <div id="harbour-intel-list" className="intel-scroll max-h-[min(26rem,46dvh)] overflow-y-auto border-t border-white/10 px-2 py-2">
             {intel.length === 0 ? (
               <p className="px-1 py-2 text-sm text-zinc-300">No open incident, jam, or delayed crossing.</p>
             ) : (
