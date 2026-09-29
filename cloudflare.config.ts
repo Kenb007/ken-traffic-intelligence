@@ -2,7 +2,7 @@ import { bindings, defineConfig, defineWorker } from "cf/config";
 
 export default defineConfig({
   worker: defineWorker({
-    name: "hk-traffic-dashboard",
+    name: "hktraffic",
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-09-29",
     compatibilityFlags: ["nodejs_compat"],
