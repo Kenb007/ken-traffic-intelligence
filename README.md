@@ -2,33 +2,39 @@
 
 # HK Traffic Intelligence
 
-A smart city dashboard for Hong Kong, built on the open data APIs the city already publishes.
+A smart city dashboard for Hong Kong. It reads the open data APIs the city already publishes, and draws them as one live picture of the place.
+
+The board is running at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). You do not need an account, and you do not need to install anything to look.
 
 ![The harbour crossings, the coloured roads, the cameras, and the evening’s warnings on one screen](docs/board.png)
 
-Hong Kong already measures itself in public. The Transport Department publishes the harbour crossings, the strategic roads, the cameras, the works, and the incidents. The Immigration Department publishes the eight land control points. The Observatory publishes the warnings and the weather. Each of those is an open data API, and each of them was built to feed its own page. This dashboard reads those APIs and draws them as one city, so the live state of the place is visible together: how the crossings are moving, how the roads are coloured, what the cameras show, how the boundary halls are doing, and what the weather is doing over all of it.
+Open it and the harbour is the first reading. The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing each carry a number of minutes. The colour of that number is how the journey is going. In the same row you can see an incident that is still open, the passenger halls at the eight land control points, every Observatory warning that is in force, and the speed of the strategic road network as a whole. A slow crossing means something different on a morning when the whole city is slow. The number on its own cannot say that. The row can.
+
+Under the row, the map is the city. The roads are coloured the way the Transport Department colours them. The cameras can be opened. The works on the fast roads are marked. The tunnels are there to be found. Click a crossing and the map moves to the approach that produced the minutes.
+
+This is a dashboard for reading the city, and for showing how public APIs become a picture a person can use. It is not a navigation aid for someone driving. The board opens in Traditional Chinese, the written Chinese of a Hong Kong notice. English is beside the clock.
 
 [What is on the screen](#what-is-on-the-screen) · [Run it](#run-it) · [Where the numbers come from](#where-the-numbers-come-from) · [How it was made](#how-it-was-made)
 
 ## What is on the screen
 
-**The live state, across the top.** The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing sit there with their minutes, and the colour of each number says whether that delay is ordinary or whether it has turned. An open incident sits in the same row. At the far end is the speed of the strategic network as a whole, so a slow crossing can be read against a morning when the whole city is slow. Click a crossing and the map moves to the approach that produced the number.
+**The three harbour crossings.** Each minute-count is the journey time from a real approach road, not a guess painted on the tunnel. Click it and you are taken to that approach. From there the card names the road, the direction, what it is near, and the minutes to each crossing that the board is measuring. Green is an ordinary run. Amber is a delay that has settled in. Red is a crossing that has turned.
 
-**The roads, in the department’s own colours.** Good, when the road is moving. Average, when it has settled into a delay. Bad, when it has stopped being a road and become a place the city is sitting in. Those are the Transport Department’s saturation levels, and they are the words on the English board.
+**The strategic roads, in the department’s own words.** On the English board those words are Good, Average, and Bad. Good is a road that is moving. Average is a road that has settled into a delay. Bad is a road that has stopped behaving like a road. The colour is the Transport Department’s saturation class, taken from the live feed. Where a segment has no class, the dashboard falls back to the speed itself: under 30 km/h, from 30 to 50, and 50 or faster. The legend does not pretend those bands are the official names.
 
-**The cameras, so the city can be seen.** The public snapshots around the harbour stay on the map while you are still zoomed out, and so do the cameras at the mouths of the tunnels. Click the cone and the still image loads. A number says what the feed measured. The picture says what the road looks like.
+**The cameras.** These are the public snapshots the Transport Department already publishes, including the ones at the mouths of the tunnels. Harbour cameras and tunnel-mouth cameras stay on the map while you are still zoomed out. The rest of the city appears as you come closer. Click a camera and the card separates what the feed had glued into one English sentence: the road, the direction, the place it is near, the district, the region, which way the lens is facing, and the camera number. Then the still image. The Traditional Chinese name comes from the department’s own Chinese layer, not from a translation invented for the card.
 
-**The eight land control points.** For each of them the Immigration Department publishes how the passenger hall is doing, for residents and for visitors, coming in and going out. Beside that, the vehicle side is the live speed on the strategic road that feeds the port, which is what the public speed API can say about vehicles. Lo Wu reports the hall. It is a passenger crossing. The public file has no private-car queue, so the dashboard leaves that blank.
+**The eight land control points.** The Immigration Department publishes the passenger hall at each of them: residents and visitors, arriving and departing. The vehicle line beside that is the live speed on the strategic road that feeds the port, which is as much as the public speed API can say. Lo Wu reports the hall. It is a passenger crossing. The public file has no private-car queue, so the card leaves that blank rather than inventing one.
 
-**The weather, on the same row.** Every Observatory warning that is in force is listed, and a severe one is placed where it will be seen. When the sky is quiet, the dashboard still shows the temperature at the Observatory and whether the past hour brought rain.
+**The weather.** Every Observatory warning in force is listed, and a severe one is placed where it will be seen. When the sky is quiet, the row still shows the temperature at the Observatory and whether the past hour brought rain. The city and the sky are on the same board because a warning changes how you read a slow road.
 
-**A ranked list of what the feeds are saying.** The card on the lower right has already sorted what is worth reading first. You can hide it. It becomes a line moving along the bottom, so the urgent items stay in view while you look at the city. Along that edge you can change the ground under the roads: the satellite picture, a flat street map, or the buildings stood up. You can turn the speeds, the cameras, the works, the tunnels, the incidents, and the control points on and off.
-
-The words on the screen are written the way a Hong Kong notice is written. The board opens in Traditional Chinese. English is beside the clock.
+**The list of what the feeds are saying.** The panel on the lower right has already sorted what is worth reading first: an open incident, a road that has gone bad, a hall that is very busy, a warning. You can hide it. It becomes a line moving along the bottom, so the urgent items stay in view while you look at the map. Along that edge you can change the ground under the roads — the satellite picture, a street map, or the buildings stood up — and you can turn the speeds, the cameras, the works, the tunnels, the incidents, and the control points on and off. The buildings button toggles. Press it again and you are back on the map you had.
 
 ## Run it
 
-You need Node.js. From this folder:
+The public copy is [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev).
+
+To run it yourself you need Node.js. From this folder:
 
 ```bash
 npm install
@@ -37,20 +43,20 @@ npm run dev
 
 Then open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 
-If you are working on the dashboard, add `?feed=down` and you can see the screen when the speed API fails. Add `?map=down` and the bar stays up while the map is absent. The numbers stand on their own.
+If you are changing the dashboard, add `?feed=down` and you can see the screen when the speed API fails. Add `?map=down` and the bar stays up while the map is absent. The numbers are meant to stand on their own. A map that did not start is not a reason to hide the city.
 
 ## Where the numbers come from
 
-Every number on the screen comes from an open data API Hong Kong had already published. The departments publish them as separate feeds, for separate readers. What this dashboard does is read those feeds and draw them as one city.
+Every number on the screen comes from an open data API Hong Kong had already published. The departments publish them as separate feeds, for separate pages. The work of this dashboard is to read those feeds and draw them as one city.
 
-The roads are the Transport Department’s strategic centreline. The file is stored in Hong Kong 1980 latitude and longitude. Plot those numbers on a modern map and every road sits a little up and to the left of the real street. The Lands Department published the correction for the whole territory: add 8.8 arcseconds of longitude, and subtract 5.5 arcseconds of latitude. After that, the line lies on the road. The colour of the line is the department’s own saturation class. When a segment has no class, the dashboard falls back to a plain reading: under 30 km/h, between 30 and 50, and 50 or faster. The hills under the satellite picture are the public Terrarium surface, smoothed so that a tile only a few metres wide does not turn a small radar jump into a cliff. If that surface fails to arrive, the map stays pitched over the satellite image, and the bar is still there.
+The roads are the Transport Department’s strategic centreline. The file is stored in Hong Kong 1980 grid coordinates. Plot those numbers on a modern map and every road sits a little up and to the left of the real street. The Lands Department published the correction for the whole territory: add 8.8 arcseconds of longitude, and subtract 5.5 arcseconds of latitude. After that, the line lies on the road. The colour is the department’s saturation class. The hills under the satellite picture are the public Terrarium surface, smoothed so that a tile only a few metres wide does not turn a small radar jump into a cliff. If that surface fails to arrive, the map stays pitched over the satellite image, and the bar is still there.
 
 | What you are looking at | The open data |
 | --- | --- |
 | Which strategic roads are moving, and the official colour of that movement | [Traffic data of strategic and major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads), classed on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
 | The geometry of those roads | [Road Network, second generation](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) |
 | How many minutes the three harbour crossings are taking | Journey-time boards on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
-| The public cameras, including the ones at the tunnel mouths | Cameras on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| The public cameras, in English and in Traditional Chinese | Snapshot layers on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
 | Where a fast road is opened up | Road works on [HKeMobility](https://www.hkemobility.gov.hk/en/), for roads with a limit of 70 km/h or above |
 | Where the tunnel itself is | Toll points on [HKeMobility](https://www.hkemobility.gov.hk/en/) for the three harbour crossings and Tai Lam Tunnel |
 | What has just gone wrong | [Special traffic news](https://data.gov.hk/en-data/dataset/hk-td-tis_19-special-traffic-news-v2) |
