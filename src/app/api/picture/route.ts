@@ -1,4 +1,4 @@
-import { camerasFromWfs, tollsFromWfs, withPortalCameras, worksFromWfs } from "@/lib/picture"
+import { camerasFromWfs, tollsFromWfs, withPortalCameras, withTraditionalText, worksFromWfs } from "@/lib/picture"
 import type { PictureResponse } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -12,9 +12,11 @@ export async function GET() {
     return Response.json(cache.body)
   }
 
-  const [camerasResult, worksResult, tollsResult] = await Promise.all([
+  const [camerasResult, camerasTcResult, worksResult, worksTcResult, tollsResult] = await Promise.all([
     loadLayer("DRSS:VW_SNAPSHOT_IMAGE_EN", camerasFromWfs),
+    loadLayer("DRSS:VW_SNAPSHOT_IMAGE_TC", camerasFromWfs),
     loadLayer("DRSS:VW_ROAD_WORK_EN", worksFromWfs),
+    loadLayer("DRSS:VW_ROAD_WORK_TC", worksFromWfs),
     loadLayer("DRSS:DRSS_TOLL_POINT", tollsFromWfs),
   ])
 
@@ -28,8 +30,19 @@ export async function GET() {
   const body: PictureResponse = {
     ok: featureCount > 0 || errors.length === 0,
     error: errors.length > 0 ? errors.join(" ") : undefined,
-    cameras: withPortalCameras(camerasResult.features, tollsResult.features),
-    works: worksResult.features,
+    cameras: withPortalCameras(
+      withTraditionalText(camerasResult.features, camerasTcResult.features, ["name", "district", "region"]),
+      tollsResult.features,
+    ),
+    works: withTraditionalText(worksResult.features, worksTcResult.features, [
+      "road",
+      "place",
+      "status",
+      "kind",
+      "lane",
+      "bound",
+      "district",
+    ]),
     tolls: tollsResult.features,
   }
   cache = { expires: Date.now() + (body.ok ? 30_000 : 10_000), body }

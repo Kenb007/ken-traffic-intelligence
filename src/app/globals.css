@@ -173,152 +173,119 @@
 }
 
 .city-popup .maplibregl-popup-content {
-  padding: 0;
-  background: #07141c;
-  border: 1px solid rgb(165 243 252 / 42%);
-  border-radius: 2px;
-  box-shadow:
-    0 22px 48px rgb(0 0 0 / 48%),
-    inset 0 1px 0 rgb(255 255 255 / 8%);
-  color: #f4fbff;
+  padding: 10px 10px 12px;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+  color: #102033;
 }
 
 .city-popup .maplibregl-popup-close-button {
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  color: rgb(226 247 255 / 78%);
-  font-size: 1.05rem;
-  line-height: 1.75rem;
+  color: #102033;
+  font-size: 16px;
 }
 
 .city-popup .maplibregl-popup-close-button:hover {
   background: transparent;
-  color: white;
+  color: #102033;
 }
 
 .city-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
 .city-popup.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
 .city-popup.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-  border-bottom-color: #07141c;
+  border-bottom-color: #fff;
 }
 
 .city-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
 .city-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
 .city-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-  border-top-color: #07141c;
+  border-top-color: #fff;
 }
 
 .city-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: #07141c;
+  border-right-color: #fff;
 }
 
 .city-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: #07141c;
+  border-left-color: #fff;
 }
 
 .city-card {
-  width: min(20.5rem, 78vw);
-  font-family: var(--font-hud), "Outfit", sans-serif;
+  width: 300px;
+  max-width: 78vw;
+  color: #102033;
+  font: 13px/1.4 var(--font-sans), "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", sans-serif;
+}
+
+html[data-locale="zh-CN"] .city-card {
+  font-family: var(--font-sans), "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
 }
 
 .city-card-head {
-  padding: 0.75rem 1.9rem 0.65rem 0.8rem;
-  border-bottom: 1px solid rgb(165 243 252 / 16%);
-  background:
-    linear-gradient(90deg, rgb(125 211 232 / 18%), transparent 42%),
-    #07141c;
+  padding-right: 14px;
 }
 
-.city-card-kicker {
-  display: block;
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  color: rgb(165 243 252 / 88%);
+.city-card-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .city-card-title {
-  margin: 0.15rem 0 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: white;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.city-card-sub {
-  margin: 0.15rem 0 0;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  color: rgb(203 213 225 / 78%);
+.city-card-ref,
+.city-card-meta {
+  color: #526170;
 }
 
-.city-card-body {
+.city-card-ref {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-card-detail,
+.city-card-reading,
+.city-card-meta,
+.city-card-copy,
+.city-card-note {
+  margin: 0;
+}
+
+.city-card-body:empty {
+  display: none;
+}
+
+.city-card-fact {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.65rem 0.8rem 0.8rem;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.city-card-row {
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 0.6rem;
-  align-items: baseline;
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.city-card-label {
-  color: rgb(165 243 252 / 62%);
-}
-
-.city-card-value {
-  color: #f8fafc;
+.city-card-fact-value {
   font-variant-numeric: tabular-nums;
   text-align: end;
 }
 
-.city-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
-}
-
-.city-chip i {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 999px;
-  box-shadow: 0 0 8px currentColor;
-}
-
-.city-card-copy,
 .city-card-note {
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
-.city-card-copy {
-  color: rgb(226 232 240 / 92%);
-}
-
-.city-card-note {
-  padding: 0 0.8rem 0.8rem;
-  color: #fecaca;
+  color: #9f1239;
 }
 
 .city-card-figure {
-  margin: 0;
-  border-top: 1px solid rgb(165 243 252 / 16%);
-  background: #041018;
+  margin: 6px 0 0;
 }
 
 .city-card-figure img {
   display: block;
   width: 100%;
-  max-height: 13.5rem;
-  object-fit: cover;
+  height: auto;
+  background: #d7dee6;
 }
 
 html[data-locale^="zh-"] {

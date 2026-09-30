@@ -6,11 +6,17 @@ export const dynamic = "force-dynamic"
 const LOCATIONS_URL =
   "https://www.hkemobility.gov.hk/api/drss/layer/map?service=WFS&version=1.0.0&request=GetFeature&typeName=DRSS:VW_JOURNEY_TIME_LOCATION_EN&outputFormat=application/json&srsName=EPSG:4326"
 
+const LOCATIONS_TC_URL =
+  "https://www.hkemobility.gov.hk/api/drss/layer/map?service=WFS&version=1.0.0&request=GetFeature&typeName=DRSS:VW_JOURNEY_TIME_LOCATION_TC&outputFormat=application/json&srsName=EPSG:4326"
+
 const DETAIL_IDS = ["H1", "H2", "H3", "H4", "H11", "K02", "K03", "K07", "K08"]
 
 export async function GET() {
   try {
-    const locations = await readJson(LOCATIONS_URL)
+    const [locations, traditional] = await Promise.all([
+      readJson(LOCATIONS_URL),
+      readJson(LOCATIONS_TC_URL).catch(() => null),
+    ])
     const details = await Promise.all(
       DETAIL_IDS.map(async (id) => {
         try {
@@ -31,7 +37,7 @@ export async function GET() {
       detailsById[id] = body
     }
 
-    const { points, capturedAt } = readApproachPoints(locations, detailsById)
+    const { points, capturedAt } = readApproachPoints(locations, detailsById, traditional)
     const body: ApproachesResponse = {
       ok: points.length > 0,
       error:

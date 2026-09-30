@@ -1,3 +1,4 @@
+import { standardHan } from "@/lib/camera-place"
 import type { ApproachLeg, ApproachPoint, HarbourJourney } from "@/lib/types"
 
 // HKeMobility journey-time boards whose roads approach a Victoria Harbour crossing.
@@ -24,7 +25,9 @@ const CROSSING_NAMES: Record<(typeof CROSSING_ORDER)[number], string> = {
 export function readApproachPoints(
   wfs: unknown,
   detailsById: Readonly<Record<string, unknown>>,
+  traditionalWfs: unknown = null,
 ): { points: ApproachPoint[]; capturedAt: string | null } {
+  const traditional = locationNames(traditionalWfs)
   const points: ApproachPoint[] = []
   let capturedAt: string | null = null
 
@@ -42,6 +45,7 @@ export function readApproachPoints(
     points.push({
       id,
       name: named || id,
+      nameTc: standardHan(traditional.get(id) ?? ""),
       coordinates,
       legs,
     })
@@ -49,6 +53,16 @@ export function readApproachPoints(
 
   points.sort((a, b) => a.id.localeCompare(b.id, "en"))
   return { points, capturedAt }
+}
+
+function locationNames(wfs: unknown): Map<string, string> {
+  const names = new Map<string, string>()
+  for (const feature of featuresOf(wfs)) {
+    const id = text(feature.properties?.LOCATION_ID)
+    const name = text(feature.properties?.LOCATION)
+    if (id && name) names.set(id, name)
+  }
+  return names
 }
 
 function featuresOf(wfs: unknown): Feature[] {

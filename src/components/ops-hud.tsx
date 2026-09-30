@@ -4,7 +4,7 @@ import { useEffect, useState, type KeyboardEvent } from "react"
 import { useI18n } from "@/components/locale"
 import { boundaryGlance } from "@/lib/control-points"
 import { bestCrossings } from "@/lib/crossings"
-import { formatClock, LOCALE_MARK, LOCALES, type Messages } from "@/lib/i18n"
+import { displayText, formatClock, LOCALE_MARK, LOCALES, type Messages } from "@/lib/i18n"
 import { INTEL_TABS, intelBoard, type IntelItem, type IntelTab } from "@/lib/intel"
 import { formatSpeed } from "@/lib/speed"
 import type { ApproachesResponse, HarbourJourney, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
@@ -121,7 +121,7 @@ export function OpsHud(props: OpsHudProps) {
               label={BAR_KEY[crossing.code] ? m[BAR_KEY[crossing.code]] : crossing.label}
               value={m.minutes(crossing.minutes)}
               tone={TONE[crossing.colour]}
-              hint={m.approachHint(crossing.from)}
+              hint={m.approachHint(displayText(m.locale, crossing.fromTc, crossing.from))}
               onClick={() => props.onFocus({ id: `crossing-${crossing.code}`, coordinates: crossing.coordinates })}
             />
           ))}

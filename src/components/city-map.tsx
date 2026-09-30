@@ -586,7 +586,7 @@ export function CityMap({
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
     const markers = approaches.map((point) => {
-      const popup = new Popup({ className: "city-popup", closeButton: true, maxWidth: "340px", offset: 16 }).setDOMContent(
+      const popup = new Popup({ className: "city-popup", closeButton: true, maxWidth: "360px", offset: 16 }).setDOMContent(
         approachPopup(point, messages),
       )
       popup.on("open", () => keepCardInView(map, popup))
@@ -667,7 +667,7 @@ function approachButton(point: ApproachPoint, m: Messages): HTMLButtonElement {
   button.type = "button"
   button.className = "approach-time"
   button.textContent = minutes == null ? "—" : m.minutes(minutes)
-  button.setAttribute("aria-label", `${displayText(m.locale, "", point.name)}, ${button.textContent}`)
+  button.setAttribute("aria-label", `${displayText(m.locale, point.nameTc, point.name)}, ${button.textContent}`)
   button.style.cssText = [
     "border:0",
     "border-radius:999px",
@@ -721,6 +721,7 @@ function publishCorridors(
       nameEn: m.locale === "en" ? "" : corridor.roadEn,
       direction: corridor.direction,
       speed: corridor.speedKmh == null ? m.noReading : m.speedKmh(Math.round(corridor.speedKmh)),
+      band: corridor.band,
       color,
     }
     features.push({
@@ -1032,7 +1033,7 @@ function popupOpener(map: Map) {
   let active: Popup | null = null
   return (lngLat: LngLat, content: HTMLElement) => {
     active?.remove()
-    active = new Popup({ className: "city-popup", closeButton: true, maxWidth: "340px", offset: 16 })
+    active = new Popup({ className: "city-popup", closeButton: true, maxWidth: "360px", offset: 16 })
       .setLngLat(lngLat)
       .setDOMContent(content)
       .addTo(map)

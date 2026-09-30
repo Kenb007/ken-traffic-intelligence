@@ -1,3 +1,4 @@
+import { roadOf } from "@/lib/camera-place"
 import type { ApproachPoint, HarbourJourney } from "@/lib/types"
 
 const CODES = ["CH", "EH", "WH"] as const
@@ -15,6 +16,7 @@ export type CrossingBest = {
   label: string
   minutes: number
   from: string
+  fromTc: string
   colour: HarbourJourney["colour"]
   coordinates: [number, number]
 }
@@ -30,7 +32,8 @@ export function bestCrossings(points: ApproachPoint[]): CrossingBest[] {
         code: leg.code,
         label: LABEL[leg.code],
         minutes: leg.minutes,
-        from: shortPlace(point.name),
+        from: roadOf(point.name),
+        fromTc: point.nameTc ? roadOf(point.nameTc) : "",
         colour: leg.colour,
         coordinates: point.coordinates,
       })
@@ -44,9 +47,4 @@ export function bestCrossings(points: ApproachPoint[]): CrossingBest[] {
 
 function isCrossing(code: string): code is CrossingCode {
   return code === "CH" || code === "EH" || code === "WH"
-}
-
-function shortPlace(name: string): string {
-  const [road] = name.split(/\s+(?:east|west|north|south)bound\b/i)
-  return road && road.length > 0 ? road : name
 }

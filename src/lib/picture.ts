@@ -1,3 +1,5 @@
+import { standardHan } from "@/lib/camera-place"
+
 const HARBOUR_DISTRICTS: ReadonlySet<string> = new Set([
   "Central & Western",
   "Wan Chai",
@@ -36,6 +38,7 @@ export function camerasFromWfs(wfs: unknown): GeoJSON.FeatureCollection {
         id,
         name: text(feature.properties?.DESCRIPTION) || id,
         district,
+        region: text(feature.properties?.TD_REGION),
         url: isCameraSnapshotUrl(url) ? url : "",
         rotation: rotationOf(feature.properties?.ROTATION),
         harbour: HARBOUR_DISTRICTS.has(district) ? 1 : 0,
@@ -61,6 +64,8 @@ export function worksFromWfs(wfs: unknown): GeoJSON.FeatureCollection {
         status: text(feature.properties?.WORKS_STATUS) || "Road work",
         kind: text(feature.properties?.WORKS_TYPE),
         lane: text(feature.properties?.LANE),
+        bound: text(feature.properties?.BOUND),
+        district: text(feature.properties?.DISTRICT),
         start: text(feature.properties?.START_TIME),
         end: text(feature.properties?.END_TIME),
       },
@@ -92,6 +97,36 @@ export function tollsFromWfs(wfs: unknown): GeoJSON.FeatureCollection {
     })
   }
   return { type: "FeatureCollection", features }
+}
+
+export function withTraditionalText(
+  english: GeoJSON.FeatureCollection,
+  traditional: GeoJSON.FeatureCollection,
+  fields: readonly string[],
+): GeoJSON.FeatureCollection {
+  const byId = new Map<string, GeoJSON.GeoJsonProperties>()
+  for (const feature of traditional.features) {
+    const id = propertyText(feature.properties, "id")
+    if (id) byId.set(id, feature.properties)
+  }
+  return {
+    type: "FeatureCollection",
+    features: english.features.map((feature) => {
+      const id = propertyText(feature.properties, "id")
+      const translated = id ? byId.get(id) : null
+      const properties: GeoJSON.GeoJsonProperties = { ...feature.properties }
+      for (const field of fields) {
+        const value = translated ? propertyText(translated, field) : ""
+        if (properties) properties[`${field}Tc`] = value ? standardHan(value) : ""
+      }
+      return { ...feature, properties }
+    }),
+  }
+}
+
+function propertyText(properties: GeoJSON.GeoJsonProperties, key: string): string {
+  const value = properties?.[key]
+  return typeof value === "string" ? value.trim() : ""
 }
 
 function rotationOf(value: unknown): number {

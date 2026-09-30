@@ -1,3 +1,4 @@
+import { roadOf } from "@/lib/camera-place"
 import { controlName, displayText, hallStatus, hallSummary, vehicleSentence, type Messages } from "@/lib/i18n"
 import type { ApproachPoint, Corridor, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
 
@@ -177,14 +178,14 @@ function controlDetail(feature: GeoJSON.Feature, m: Messages): string {
 }
 
 function crossingsOf(points: ApproachPoint[], m: Messages): IntelItem[] {
-  const best = bestCrossingRows(points)
+  const best = bestCrossingRows(points, m)
   return [...best.entries()].flatMap(([code, row]) => {
     if (row.tone !== "red" && row.tone !== "amber") return []
     return [crossingItem(code, row, m)]
   })
 }
 
-function bestCrossingRows(points: ApproachPoint[]) {
+function bestCrossingRows(points: ApproachPoint[], m: Messages) {
   const best = new Map<string, { minutes: number; from: string; tone: IntelTone; coordinates: [number, number] }>()
   for (const point of points) {
     for (const leg of point.legs) {
@@ -194,7 +195,7 @@ function bestCrossingRows(points: ApproachPoint[]) {
       if (current && current.minutes <= leg.minutes) continue
       best.set(leg.code, {
         minutes: leg.minutes,
-        from: point.name,
+        from: displayText(m.locale, point.nameTc ? roadOf(point.nameTc) : "", roadOf(point.name)),
         tone: leg.colour,
         coordinates: point.coordinates,
       })
@@ -285,8 +286,8 @@ function worksOf(collection: GeoJSON.FeatureCollection | null, limit: number, m:
     const live = /in progress/i.test(status)
     const preparing = /preparation/i.test(status)
     if (!live && !preparing) return []
-    const road = textProp(feature.properties, "road") || m.roadWork
-    const place = textProp(feature.properties, "place")
+    const road = displayText(m.locale, textProp(feature.properties, "roadTc"), textProp(feature.properties, "road")) || m.roadWork
+    const place = displayText(m.locale, textProp(feature.properties, "placeTc"), textProp(feature.properties, "place"))
     return [
       {
         id: `works-${textProp(feature.properties, "id") || road}`,

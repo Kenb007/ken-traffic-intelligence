@@ -122,6 +122,8 @@ export type Messages = {
   mapFailed: string
   snapshotFailed: string
   near: (place: string) => string
+  facing: (direction: string) => string
+  towards: (name: string) => string
   tunnel: string
   tunnelPortal: string
   controlPoint: string
@@ -234,6 +236,8 @@ const en: Messages = {
   mapFailed: "The satellite map did not start. Crossing minutes and network speed stay on screen.",
   snapshotFailed: "Snapshot did not load.",
   near: (place) => `Near ${place}`,
+  facing: (direction) => `Facing ${direction}`,
+  towards: (name) => `Towards ${name}`,
   tunnel: "Tunnel",
   tunnelPortal: "Tunnel portal",
   controlPoint: "Control point",
@@ -346,6 +350,8 @@ const zhHK: Messages = {
   mapFailed: "衛星地圖未能啟動。過海時間與路網車速仍會顯示。",
   snapshotFailed: "快拍未能載入。",
   near: (place) => `近${place}`,
+  facing: (direction) => `鏡頭朝${direction}`,
+  towards: (name) => `往${name}`,
   tunnel: "隧道",
   tunnelPortal: "隧道口",
   controlPoint: "管制站",
@@ -454,6 +460,8 @@ const zhCN: Messages = {
   mapFailed: "卫星地图未能启动。过海时间与路网车速仍会显示。",
   snapshotFailed: "快拍未能载入。",
   near: (place) => `近${place}`,
+  facing: (direction) => `镜头朝${direction}`,
+  towards: (name) => `往${name}`,
   tunnel: "隧道",
   tunnelPortal: "隧道口",
   controlPoint: "管制站",
@@ -543,6 +551,18 @@ export function controlName(locale: Locale, code: string, english: string): stri
 
 export function districtName(locale: Locale, english: string): string {
   const traditional = DISTRICTS[english]
+  if (!traditional) return displayText(locale, "", english)
+  return displayText(locale, traditional, english)
+}
+
+const REGIONS: Record<string, string> = {
+  "Hong Kong Island": "香港島",
+  Kowloon: "九龍",
+  "New Territories": "新界",
+}
+
+export function regionName(locale: Locale, english: string): string {
+  const traditional = REGIONS[english]
   if (!traditional) return displayText(locale, "", english)
   return displayText(locale, traditional, english)
 }

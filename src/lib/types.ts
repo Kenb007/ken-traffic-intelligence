@@ -67,6 +67,7 @@ export type ApproachLeg = {
 export type ApproachPoint = {
   id: string
   name: string
+  nameTc: string
   coordinates: [number, number]
   legs: ApproachLeg[]
 }
