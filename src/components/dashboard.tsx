@@ -119,8 +119,7 @@ export function Dashboard() {
         onFocus={setFocus}
       />
       <p
-        className="pointer-events-auto absolute left-16 z-30 max-w-[calc(100%-6rem)] bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white sm:left-3 sm:max-w-[min(34rem,calc(100%-19rem))]"
-        style={{ bottom: "0.4rem" }}
+        className="pointer-events-auto absolute right-2 bottom-1 left-2 z-30 bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white sm:right-auto sm:bottom-[0.4rem] sm:left-3 sm:max-w-[min(34rem,calc(100%-19rem))]"
       >
         {m.creditBy}{" "}
         <a

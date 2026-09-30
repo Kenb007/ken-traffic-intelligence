@@ -74,7 +74,7 @@ export function LayerDock(props: LayerDockProps) {
   return (
     <div
       className={`pointer-events-auto absolute left-4 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2 lg:left-16 ${
-        props.aboveMarquee ? "bottom-28" : "bottom-14 lg:max-w-[calc(100%-30rem)]"
+        props.aboveMarquee ? "bottom-36 sm:bottom-28" : "bottom-28 sm:bottom-14 lg:max-w-[calc(100%-30rem)]"
       }`}
     >
       <div className="inline-flex border border-white/15" role="group" aria-label={m.basemap}>

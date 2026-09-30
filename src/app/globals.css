@@ -172,6 +172,17 @@
   background: rgb(186 230 253 / 68%);
 }
 
+@media (max-width: 760px) {
+  .maplibregl-map .maplibregl-ctrl-bottom-right {
+    bottom: 2.75rem;
+    max-width: calc(100% - 0.75rem);
+  }
+
+  .maplibregl-map .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact {
+    max-width: 100%;
+  }
+}
+
 .city-popup .maplibregl-popup-content {
   position: relative;
   overflow: hidden;
