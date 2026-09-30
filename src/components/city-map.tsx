@@ -336,6 +336,7 @@ export function CityMap({
     }
     map.addControl(new NavigationControl({ visualizePitch: true }), "top-left")
     mapRef.current = map
+    holdDataCreditOpen(map)
 
     let terrainFailed = false
     let removed = false
@@ -653,6 +654,23 @@ export function CityMap({
       ) : null}
     </>
   )
+}
+
+function holdDataCreditOpen(map: Map) {
+  const root = map.getContainer().querySelector<HTMLElement>(".maplibregl-ctrl-attrib")
+  const button = root?.querySelector<HTMLElement>("summary")
+  if (!root || !button) return
+  let closedByUser = false
+  const show = () => {
+    if (closedByUser) return
+    root.classList.add("maplibregl-compact", "maplibregl-compact-show")
+    root.setAttribute("open", "")
+  }
+  show()
+  button.addEventListener("click", () => {
+    closedByUser = !root.classList.contains("maplibregl-compact-show")
+  })
+  map.on("drag", show)
 }
 
 function isGpuFailure(error: unknown): boolean {
