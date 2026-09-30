@@ -46,6 +46,23 @@ const OPENING = {
   bearing: -20,
 }
 
+function narrowScreen(): boolean {
+  return window.matchMedia("(max-width: 760px)").matches
+}
+
+function mapPixelRatio(): number {
+  const ratio = window.devicePixelRatio || 1
+  if (narrowScreen()) return Math.min(ratio, 2)
+  return ratio
+}
+
+function rasterTileSize(): number {
+  // The satellite source is 256 px tiles. On a phone the pitched view asks for the
+  // next zoom level across most of the screen. Treating each tile as 512 px asks
+  // for the coarser zoom, so the first picture is about a quarter of the images.
+  return narrowScreen() ? 512 : 256
+}
+
 const CITY_LAYERS = ["city-land", "city-water", "city-roads", "buildings-3d"]
 
 function showBasemap(map: Map, basemap: Basemap) {
@@ -221,6 +238,7 @@ export function CityMap({
     try {
       map = new Map({
         container,
+        pixelRatio: mapPixelRatio(),
         attributionControl: { compact: true },
         maxPitch: 72,
         maxBounds: [
@@ -235,7 +253,7 @@ export function CityMap({
               tiles: [
                 "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
               ],
-              tileSize: 256,
+              tileSize: rasterTileSize(),
               attribution: "Imagery © Esri",
             },
             labels: {
@@ -243,12 +261,12 @@ export function CityMap({
               tiles: [
                 "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
               ],
-              tileSize: 256,
+              tileSize: rasterTileSize(),
             },
             osm: {
               type: "raster",
               tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-              tileSize: 256,
+              tileSize: rasterTileSize(),
               maxzoom: 19,
               attribution: "© OpenStreetMap contributors",
             },
@@ -535,6 +553,8 @@ export function CityMap({
     const timeouts: number[] = []
     const start = window.setTimeout(() => {
       if (cancelled) return
+      const automatic = flyToken === 0
+      if (automatic && (narrowScreen() || window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return
       let index = 0
       const run = () => {
         if (cancelled || index >= FLYOVER.length) return
