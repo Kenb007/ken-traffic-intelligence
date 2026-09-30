@@ -48,6 +48,7 @@ export function OpsHud(props: OpsHudProps) {
   const { locale, setLocale, messages: m } = useI18n()
   const clock = useHongKongClock(locale)
   const [tab, setTab] = useState<IntelTab>("ranked")
+  const [barOpen, setBarOpen] = useState(true)
   const open = props.open
   const crossings = bestCrossings(props.approaches?.ok ? props.approaches.points : [])
   const summary = props.traffic?.ok ? props.traffic.summary : null
@@ -84,13 +85,27 @@ export function OpsHud(props: OpsHudProps) {
   }
   return (
     <div className="pointer-events-none absolute inset-0 z-[5]">
-      <header className="pointer-events-auto absolute top-3 right-3 left-3 flex flex-col gap-1.5 border border-cyan-200/30 bg-[#041018]/80 px-2 py-1.5 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:flex-row sm:items-center lg:right-4 lg:left-16">
-        <div className="flex shrink-0 items-center gap-3 pr-1">
+      {barOpen ? null : (
+        <button
+          type="button"
+          aria-expanded={false}
+          onClick={() => setBarOpen(true)}
+          className="pointer-events-auto absolute top-2 left-2 border border-cyan-200/30 bg-[#041018]/88 px-2 py-1 font-[family-name:var(--font-hud)] text-sm text-white sm:hidden"
+        >
+          {m.productName}
+        </button>
+      )}
+      <header
+        className={`pointer-events-auto absolute top-2 right-2 left-2 flex flex-col gap-1 border border-cyan-200/30 bg-[#041018]/80 px-1.5 py-1 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:top-3 sm:right-3 sm:left-3 sm:gap-1.5 sm:px-2 sm:py-1.5 sm:flex-row sm:items-center lg:right-4 lg:left-16 ${
+          barOpen ? "" : "max-sm:hidden"
+        }`}
+      >
+        <div className="flex shrink-0 items-center gap-2 pr-1 sm:gap-3">
           <div>
-            <p className="font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.18em] text-cyan-200/80 uppercase">{m.productMark}</p>
+            <p className="hidden font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.18em] text-cyan-200/80 uppercase sm:block">{m.productMark}</p>
             <p className="font-[family-name:var(--font-hud)] text-sm whitespace-nowrap text-white">{m.productName}</p>
           </div>
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-2 sm:block">
             <p className="font-[family-name:var(--font-hud)] text-sm text-cyan-50 tabular-nums">{clock}</p>
             <p className="flex items-center gap-1.5 font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100 uppercase">
               <span className={`size-1.5 rounded-full ${live ? "hud-pulse bg-[#3DDC97]" : "bg-[#FFC857]"}`} />
@@ -113,8 +128,16 @@ export function OpsHud(props: OpsHudProps) {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            aria-expanded={barOpen}
+            onClick={() => setBarOpen(false)}
+            className="ml-auto shrink-0 border border-white/15 px-1.5 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] text-cyan-50 sm:hidden"
+          >
+            {m.hide}
+          </button>
         </div>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-nowrap sm:overflow-x-auto">
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-auto sm:gap-1.5">
           {crossings.map((crossing) => (
             <Metric
               key={crossing.code}
