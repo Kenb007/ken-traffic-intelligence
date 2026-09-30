@@ -123,7 +123,17 @@ export type Messages = {
   snapshotFailed: string
   near: (place: string) => string
   facing: (direction: string) => string
+  facingLabel: string
   towards: (name: string) => string
+  boundLabel: string
+  laneLabel: string
+  classLabel: string
+  statusLabel: string
+  districtLabel: string
+  regionLabel: string
+  referenceLabel: string
+  announcedLabel: string
+  whenLabel: string
   tunnel: string
   tunnelPortal: string
   controlPoint: string
@@ -236,8 +246,18 @@ const en: Messages = {
   mapFailed: "The satellite map did not start. Crossing minutes and network speed stay on screen.",
   snapshotFailed: "Snapshot did not load.",
   near: (place) => `Near ${place}`,
-  facing: (direction) => `Facing ${direction}`,
+  facing: (direction) => direction,
+  facingLabel: "Facing",
   towards: (name) => `Towards ${name}`,
+  boundLabel: "Direction",
+  laneLabel: "Lane",
+  classLabel: "Class",
+  statusLabel: "Status",
+  districtLabel: "District",
+  regionLabel: "Region",
+  referenceLabel: "Camera",
+  announcedLabel: "Announced",
+  whenLabel: "Time",
   tunnel: "Tunnel",
   tunnelPortal: "Tunnel portal",
   controlPoint: "Control point",
@@ -350,8 +370,18 @@ const zhHK: Messages = {
   mapFailed: "衛星地圖未能啟動。過海時間與路網車速仍會顯示。",
   snapshotFailed: "快拍未能載入。",
   near: (place) => `近${place}`,
-  facing: (direction) => `鏡頭朝${direction}`,
+  facing: (direction) => `朝${direction}`,
+  facingLabel: "鏡頭",
   towards: (name) => `往${name}`,
+  boundLabel: "方向",
+  laneLabel: "行車線",
+  classLabel: "狀況",
+  statusLabel: "狀態",
+  districtLabel: "地區",
+  regionLabel: "區域",
+  referenceLabel: "編號",
+  announcedLabel: "公布",
+  whenLabel: "時間",
   tunnel: "隧道",
   tunnelPortal: "隧道口",
   controlPoint: "管制站",
@@ -460,8 +490,18 @@ const zhCN: Messages = {
   mapFailed: "卫星地图未能启动。过海时间与路网车速仍会显示。",
   snapshotFailed: "快拍未能载入。",
   near: (place) => `近${place}`,
-  facing: (direction) => `镜头朝${direction}`,
+  facing: (direction) => `朝${direction}`,
+  facingLabel: "镜头",
   towards: (name) => `往${name}`,
+  boundLabel: "方向",
+  laneLabel: "行车线",
+  classLabel: "状况",
+  statusLabel: "状态",
+  districtLabel: "地区",
+  regionLabel: "区域",
+  referenceLabel: "编号",
+  announcedLabel: "公布",
+  whenLabel: "时间",
   tunnel: "隧道",
   tunnelPortal: "隧道口",
   controlPoint: "管制站",

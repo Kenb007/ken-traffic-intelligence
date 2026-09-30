@@ -12,7 +12,7 @@ import {
 } from "@/lib/i18n"
 import { isCameraSnapshotUrl } from "@/lib/picture"
 import { isSpeedBand } from "@/lib/speed"
-import type { ApproachPoint } from "@/lib/types"
+import type { ApproachPoint, HarbourJourney, SpeedBand } from "@/lib/types"
 
 const TUNNEL_TC: Record<string, string> = {
   "Western Harbour Crossing": "西區海底隧道",
@@ -35,6 +35,13 @@ const BOUND_EN: Record<string, string> = {
   南行: "Southbound",
 }
 
+const SHORT_BOUND: Record<string, string> = {
+  east: "eastbound",
+  west: "westbound",
+  north: "northbound",
+  south: "southbound",
+}
+
 export function approachPopup(point: ApproachPoint, m: Messages): HTMLElement {
   const place = parsePlace(displayText(m.locale, point.nameTc, point.name))
   const card = openCard(place.road || displayText(m.locale, point.nameTc, point.name))
@@ -43,7 +50,7 @@ export function approachPopup(point: ApproachPoint, m: Messages): HTMLElement {
   for (const leg of point.legs) {
     const name = crossingLegName(leg.code, leg.name, m)
     const value = leg.minutes == null ? m.noReading : m.minutes(leg.minutes)
-    card.body.append(fact(name, value))
+    card.body.append(fact(name, value, minuteTone(leg.colour)))
   }
   return card.root
 }
@@ -54,28 +61,24 @@ export function corridorPopup(properties: GeoJSON.GeoJsonProperties, m: Messages
   if (direction) card.head.append(paragraph("city-card-detail", direction))
   const speed = textProp(properties, "speed")
   const band = textProp(properties, "band")
-  if (speed) {
-    const word = isSpeedBand(band) && band !== "unknown" && speed !== m.noReading ? bandWord(band, m) : ""
-    card.head.append(paragraph("city-card-reading", word ? `${speed} · ${word}` : speed))
-  }
+  if (speed) card.body.append(fact(m.speedLayer, speed))
+  if (isSpeedBand(band) && band !== "unknown") card.body.append(fact(m.classLabel, bandWord(band, m), bandTone(band)))
   return card.root
 }
 
 export function cameraPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
   const description = displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "name"))
   const place = parsePlace(description)
-  const card = openCard(place.road || description || m.cameras, place.reference)
+  const card = openCard(place.road || description || m.cameras)
   const detail = placeLine(place, m)
   if (detail) card.head.append(paragraph("city-card-detail", detail))
-  const where = [
-    localName(textProp(properties, "districtTc"), textProp(properties, "district"), districtName, m),
-    localName(textProp(properties, "regionTc"), textProp(properties, "region"), regionName, m),
-  ]
-    .filter(Boolean)
-    .join(" · ")
-  if (where) card.head.append(paragraph("city-card-meta", where))
+  const district = localName(textProp(properties, "districtTc"), textProp(properties, "district"), districtName, m)
+  const region = localName(textProp(properties, "regionTc"), textProp(properties, "region"), regionName, m)
+  if (district) card.body.append(fact(m.districtLabel, district))
+  if (region) card.body.append(fact(m.regionLabel, region))
   const rotation = numberProp(properties, "rotation")
-  if (rotation != null) card.head.append(paragraph("city-card-meta", m.facing(facingWord(rotation, m.locale))))
+  if (rotation != null) card.body.append(fact(m.facingLabel, m.facing(facingWord(rotation, m.locale))))
+  if (place.reference) card.body.append(fact(m.referenceLabel, place.reference))
   const url = textProp(properties, "url")
   if (!isCameraSnapshotUrl(url)) return card.root
   const figure = document.createElement("figure")
@@ -95,7 +98,7 @@ export function cameraPopup(properties: GeoJSON.GeoJsonProperties, m: Messages):
 export function controlPointPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
   const title = controlName(m.locale, textProp(properties, "code"), textProp(properties, "name") || m.controlPoint)
   const card = openCard(title)
-  card.head.append(paragraph("city-card-meta", m.passengerClearance))
+  card.head.append(paragraph("city-card-detail", m.passengerClearance))
   const rows = [
     [m.residentArrival, "residentArrCode", false],
     [m.residentDeparture, "residentDepCode", false],
@@ -114,7 +117,7 @@ export function controlPointPopup(properties: GeoJSON.GeoJsonProperties, m: Mess
     roadName && typeof kmh === "number" && band
       ? vehicleSentence(roadName, kmh, band, m)
       : ""
-  card.body.append(paragraph("city-card-copy", vehicle || m.noVehicleApproach))
+  card.body.append(fact(m.vehicles, vehicle || m.noVehicleApproach))
   return card.root
 }
 
@@ -133,7 +136,7 @@ export function incidentPopup(properties: GeoJSON.GeoJsonProperties, m: Messages
   const content = displayText(m.locale, textProp(properties, "contentTc"), textProp(properties, "content"))
   if (content) card.body.append(paragraph("city-card-copy", content))
   const announced = clock(hongKongStamp(textProp(properties, "announced")), m.locale)
-  if (announced) card.body.append(paragraph("city-card-meta", announced))
+  if (announced) card.body.append(fact(m.announcedLabel, announced))
   return card.root
 }
 
@@ -141,24 +144,20 @@ export function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): H
   const road = displayText(m.locale, textProp(properties, "roadTc"), textProp(properties, "road")) || m.roadWork
   const card = openCard(road)
   const place = displayText(m.locale, textProp(properties, "placeTc"), textProp(properties, "place"))
-  const bound = displayText(m.locale, textProp(properties, "boundTc"), textProp(properties, "bound"))
+  const bound = presentBound(displayText(m.locale, textProp(properties, "boundTc"), textProp(properties, "bound")), m.locale)
   const lane = displayText(m.locale, textProp(properties, "laneTc"), textProp(properties, "lane"))
   const extra = placeRemainder(road, place)
-  const locationBits = [
-    extra,
-    bound && !extra.includes(bound) ? bound : "",
-    lane && !extra.includes(lane) ? lane : "",
-  ].filter(Boolean)
-  const location = locationBits.join(" · ")
-  if (location) card.head.append(paragraph("city-card-detail", location))
+  if (extra) card.head.append(paragraph("city-card-detail", extra))
+  if (bound && !extra.includes(bound)) card.body.append(fact(m.boundLabel, bound))
+  if (lane && !extra.includes(lane)) card.body.append(fact(m.laneLabel, lane))
   const kind = displayText(m.locale, textProp(properties, "kindTc"), textProp(properties, "kind"))
+  if (kind) card.body.append(fact(m.works, kind))
   const status = workStatus(properties, m)
-  const job = [kind, status].filter(Boolean).join(" · ")
-  if (job) card.head.append(paragraph("city-card-detail", job))
+  if (status) card.body.append(fact(m.statusLabel, status))
   const district = localName(textProp(properties, "districtTc"), textProp(properties, "district"), districtName, m)
-  if (district) card.head.append(paragraph("city-card-meta", district))
+  if (district) card.body.append(fact(m.districtLabel, district))
   const when = timeRange(textProp(properties, "start"), textProp(properties, "end"), m.locale)
-  if (when) card.head.append(paragraph("city-card-meta", when))
+  if (when) card.body.append(fact(m.whenLabel, when))
   return card.root
 }
 
@@ -187,7 +186,9 @@ function placeLine(place: CameraPlace, m: Messages): string {
 }
 
 function presentBound(bound: string, locale: Locale): string {
-  const match = bound.match(/^([東南西北东]行|(?:east|west|north|south)bound)(?:\s+(\(\d+\)))?$/i)
+  const expanded = SHORT_BOUND[bound.trim().toLowerCase()]
+  const source = expanded ?? bound
+  const match = source.match(/^([東南西北东]行|(?:east|west|north|south)bound)(?:\s+(\(\d+\)))?$/i)
   if (!match?.[1]) return bound
   const index = match[2] ? ` ${match[2]}` : ""
   const token = match[1].toLowerCase()
@@ -227,27 +228,25 @@ function placeRemainder(road: string, place: string): string {
   return rest
 }
 
-function openCard(title: string, reference = ""): { root: HTMLElement; head: HTMLElement; body: HTMLElement } {
+function openCard(title: string): { root: HTMLElement; head: HTMLElement; body: HTMLElement } {
   const root = document.createElement("article")
   root.className = "city-card"
   const head = document.createElement("header")
   head.className = "city-card-head"
-  const row = document.createElement("div")
-  row.className = "city-card-title-row"
-  row.append(text("h2", "city-card-title", title))
-  if (reference) row.append(text("span", "city-card-ref", reference))
-  head.append(row)
+  head.append(text("h2", "city-card-title", title))
   const body = document.createElement("div")
   body.className = "city-card-body"
   root.append(head, body)
   return { root, head, body }
 }
 
-function fact(label: string, value: string): HTMLElement {
+function fact(label: string, value: string, tone?: string): HTMLElement {
   const row = document.createElement("div")
   row.className = "city-card-fact"
   row.append(text("span", "city-card-fact-label", label))
-  row.append(text("span", "city-card-fact-value", value))
+  const valueNode = text("span", "city-card-fact-value", value)
+  if (tone) valueNode.style.color = tone
+  row.append(valueNode)
   return row
 }
 
@@ -260,6 +259,40 @@ function text<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, 
   node.className = className
   if (value) node.textContent = value
   return node
+}
+
+function minuteTone(colour: HarbourJourney["colour"]): string {
+  switch (colour) {
+    case "red":
+      return "#b42318"
+    case "amber":
+      return "#8a5a00"
+    case "green":
+      return "#0b7a45"
+    case "none":
+      return "#102033"
+    default: {
+      const exhaustive: never = colour
+      return exhaustive
+    }
+  }
+}
+
+function bandTone(band: SpeedBand): string {
+  switch (band) {
+    case "free":
+      return "#0b7a45"
+    case "slow":
+      return "#8a5a00"
+    case "congested":
+      return "#b42318"
+    case "unknown":
+      return "#102033"
+    default: {
+      const exhaustive: never = band
+      return exhaustive
+    }
+  }
 }
 
 function timeRange(start: string, end: string, locale: Locale): string {

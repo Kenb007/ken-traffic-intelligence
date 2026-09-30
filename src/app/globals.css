@@ -173,20 +173,35 @@
 }
 
 .city-popup .maplibregl-popup-content {
-  padding: 10px 10px 12px;
+  position: relative;
+  overflow: hidden;
+  padding: 12px 14px 14px;
   background: #fff;
-  border-radius: 3px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(16 24 32 / 16%);
   color: #102033;
 }
 
 .city-popup .maplibregl-popup-close-button {
-  color: #102033;
-  font-size: 16px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #526170;
+  font: 18px/1 var(--font-sans), sans-serif;
+  text-align: center;
 }
 
 .city-popup .maplibregl-popup-close-button:hover {
-  background: transparent;
+  background: #eef1f4;
   color: #102033;
 }
 
@@ -214,7 +229,7 @@
   width: 300px;
   max-width: 78vw;
   color: #102033;
-  font: 13px/1.4 var(--font-sans), "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", sans-serif;
+  font: 13px/1.45 var(--font-sans), "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", sans-serif;
 }
 
 html[data-locale="zh-CN"] .city-card {
@@ -222,50 +237,47 @@ html[data-locale="zh-CN"] .city-card {
 }
 
 .city-card-head {
-  padding-right: 14px;
-}
-
-.city-card-title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  padding-right: 32px;
 }
 
 .city-card-title {
-  min-width: 0;
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
 }
 
-.city-card-ref,
-.city-card-meta {
-  color: #526170;
+.city-card-detail {
+  margin: 2px 0 0;
 }
 
-.city-card-ref {
-  flex: none;
-  font-variant-numeric: tabular-nums;
+.city-card-copy {
+  margin: 6px 0 0;
 }
 
-.city-card-detail,
-.city-card-reading,
-.city-card-meta,
-.city-card-copy,
-.city-card-note {
-  margin: 0;
+.city-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
 }
 
 .city-card-body:empty {
   display: none;
+  margin: 0;
 }
 
 .city-card-fact {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
+}
+
+.city-card-fact-label {
+  flex: none;
+  color: #526170;
 }
 
 .city-card-fact-value {
@@ -274,11 +286,13 @@ html[data-locale="zh-CN"] .city-card {
 }
 
 .city-card-note {
+  margin: 8px 0 0;
   color: #9f1239;
 }
 
 .city-card-figure {
-  margin: 6px 0 0;
+  width: calc(100% + 28px);
+  margin: 10px -14px -14px;
 }
 
 .city-card-figure img {
