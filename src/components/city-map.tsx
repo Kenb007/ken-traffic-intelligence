@@ -64,40 +64,57 @@ function rasterTileSize(): number {
 }
 
 const CITY_LAYERS = ["city-land", "city-water", "city-roads", "buildings-3d"]
+const STREET_VECTOR = ["city-land", "city-water", "city-roads"]
 
 function showBasemap(map: Map, basemap: Basemap) {
+  const phone = narrowScreen()
   switch (basemap) {
     case "street":
-      setRasterVisible(map, "osm", true)
       setRasterVisible(map, "satellite", false)
       setRasterVisible(map, "places", false)
       setCityVisible(map, false)
       map.setTerrain(null)
-      map.easeTo({ pitch: 0, bearing: 0, duration: 650, essential: true })
+      if (phone) {
+        setRasterVisible(map, "osm", false)
+        setStreetVector(map, true)
+        paintStreetRoads(map, true)
+      } else {
+        setRasterVisible(map, "osm", true)
+        paintStreetRoads(map, false)
+      }
+      map.easeTo({ pitch: 0, bearing: 0, duration: phone ? 200 : 650, essential: true })
       return
     case "satellite":
       setRasterVisible(map, "osm", false)
+      setStreetVector(map, false)
       setRasterVisible(map, "satellite", true)
       setRasterVisible(map, "places", true)
       setCityVisible(map, false)
-      try {
-        map.setTerrain({ source: "terrain", exaggeration: 1 })
-      } catch {
+      paintStreetRoads(map, false)
+      if (phone) {
         map.setTerrain(null)
+      } else {
+        try {
+          map.setTerrain({ source: "terrain", exaggeration: 1 })
+        } catch {
+          map.setTerrain(null)
+        }
       }
-      map.easeTo({ pitch: OPENING.pitch, bearing: OPENING.bearing, duration: 650, essential: true })
+      map.easeTo({ pitch: OPENING.pitch, bearing: OPENING.bearing, duration: phone ? 200 : 650, essential: true })
       return
     case "buildings":
       setRasterVisible(map, "osm", false)
       setRasterVisible(map, "satellite", false)
       setRasterVisible(map, "places", false)
+      setStreetVector(map, false)
       setCityVisible(map, true)
+      paintStreetRoads(map, phone)
       map.setTerrain(null)
       map.easeTo({
-        pitch: 64,
+        pitch: phone ? 46 : 64,
         bearing: -18,
-        zoom: Math.max(map.getZoom(), 15.4),
-        duration: 800,
+        zoom: Math.max(map.getZoom(), phone ? 14.05 : 15.4),
+        duration: phone ? 200 : 800,
         essential: true,
       })
       return
@@ -106,6 +123,15 @@ function showBasemap(map: Map, basemap: Basemap) {
       return exhaustive
     }
   }
+}
+
+function setStreetVector(map: Map, visible: boolean) {
+  for (const layerId of STREET_VECTOR) setRasterVisible(map, layerId, visible)
+}
+
+function paintStreetRoads(map: Map, readable: boolean) {
+  if (!map.getLayer("city-roads")) return
+  map.setPaintProperty("city-roads", "line-color", readable ? "#6e8496" : "#f7f4ee")
 }
 
 function setCityVisible(map: Map, visible: boolean) {
@@ -381,10 +407,14 @@ export function CityMap({
 
     map.on("load", () => {
       map.resize()
-      try {
-        map.setTerrain({ source: "terrain", exaggeration: 1 })
-      } catch {
+      if (narrowScreen()) {
         map.setTerrain(null)
+      } else {
+        try {
+          map.setTerrain({ source: "terrain", exaggeration: 1 })
+        } catch {
+          map.setTerrain(null)
+        }
       }
 
       map.addSource("cameras", { type: "geojson", data: emptyCollection() })
@@ -582,8 +612,8 @@ export function CityMap({
     map.stop()
     map.flyTo({
       center: focus.coordinates,
-      zoom: Math.max(map.getZoom(), basemapRef.current === "buildings" ? 15.6 : 14.2),
-      duration: 900,
+      zoom: Math.max(map.getZoom(), basemapRef.current === "buildings" && !narrowScreen() ? 15.6 : 14.2),
+      duration: narrowScreen() ? 250 : 900,
       essential: true,
     })
   }, [disabled, focus, mapReady])
