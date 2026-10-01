@@ -311,6 +311,30 @@ html[data-locale="zh-CN"] .city-card {
   flex-direction: column;
   max-height: min(42vh, 280px);
   overflow: auto;
+  padding-inline-end: 12px;
+  scrollbar-color: rgb(16 32 51 / 35%) transparent;
+  scrollbar-width: thin;
+}
+
+.city-card-board::-webkit-scrollbar {
+  width: 8px;
+}
+
+.city-card-board::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+  width: 0;
+}
+
+.city-card-board::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.city-card-board::-webkit-scrollbar-thumb {
+  background-color: rgb(16 32 51 / 35%);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
 }
 
 .city-card-call {
