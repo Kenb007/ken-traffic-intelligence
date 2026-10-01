@@ -42,7 +42,7 @@ function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
 }
 
 export function Dashboard() {
-  const { locale } = useI18n()
+  const { locale, messages: m } = useI18n()
   const search = useSearchParams()
   const forceDown = search.get("feed") === "down"
   const mapDown = search.get("map") === "down"
@@ -123,6 +123,20 @@ export function Dashboard() {
         onOpenChange={setIntelOpen}
         onFocus={setFocus}
       />
+      <p
+        data-map-chrome="bottom"
+        className="pointer-events-auto absolute bottom-1 left-2 z-30 max-w-[calc(100%-1rem)] whitespace-nowrap bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white sm:bottom-[0.4rem] sm:left-3 sm:max-w-[min(22rem,calc(100%-26rem))]"
+      >
+        {m.creditBy}{" "}
+        <a
+          href="https://www.linkedin.com/in/keithlihk"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
+        >
+          {m.creditLink}
+        </a>
+      </p>
       <LayerDock
         layers={layers}
         basemap={basemap}

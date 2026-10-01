@@ -172,14 +172,21 @@
   background: rgb(186 230 253 / 68%);
 }
 
+.maplibregl-map .maplibregl-ctrl-bottom-right {
+  bottom: 0.35rem;
+  max-width: min(42vw, 22rem);
+}
+
+.maplibregl-map .maplibregl-ctrl-attrib-inner {
+  white-space: nowrap;
+}
+
 @media (max-width: 760px) {
   .maplibregl-map .maplibregl-ctrl-bottom-right {
-    bottom: 0.4rem;
-    max-width: calc(100% - 0.75rem);
-  }
-
-  .maplibregl-map .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact {
-    max-width: 100%;
+    right: 0.5rem;
+    bottom: 2.15rem;
+    left: 0.5rem;
+    max-width: none;
   }
 }
 
