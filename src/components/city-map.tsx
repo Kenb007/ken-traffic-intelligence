@@ -601,19 +601,28 @@ export function CityMap({
 
     let frame = 0
     let last = performance.now()
+    let drewParticles = false
     const tick = (now: number) => {
       const elapsed = Math.max(0, (now - last) / 1000)
       last = now
       const dt = Math.min(0.05, elapsed)
       const current = mapRef.current
       if (current && readyRef.current && !document.hidden) {
-        stepParticles(current, linesRef.current, particlesRef.current, dt)
-        if (current.getLayer("control-points-ring")) {
+        const particles = geoJsonSource(current, "particles")
+        const particlesMoving = layerShown(current, "traffic-particles") && linesRef.current.length > 0 && particlesRef.current.length > 0
+        if (particles && particlesMoving) {
+          stepParticles(current, linesRef.current, particlesRef.current, dt)
+          drewParticles = true
+        } else if (particles && drewParticles) {
+          particles.setData(emptyCollection())
+          drewParticles = false
+        }
+        if (layerShown(current, "control-points-ring")) {
           const pulse = 0.15 + 0.2 * (0.5 + 0.5 * Math.sin(now / 320))
           current.setPaintProperty("control-points-ring", "circle-opacity", pulse)
         }
         const trains = geoJsonSource(current, "mtr-trains")
-        if (trains && current.getLayoutProperty("mtr-trains", "visibility") !== "none") {
+        if (trains && layerShown(current, "mtr-trains")) {
           const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
           if (!reduced) runsRef.current = advanceRuns(runsRef.current, Math.min(1, elapsed), stationPoint)
           trains.setData(runCollection(runsRef.current, stationPoint))
@@ -938,12 +947,13 @@ function harbourDistance(coords: [number, number][]): number {
   return Math.hypot(dLng, dLat)
 }
 
+function layerShown(map: Map, layerId: string): boolean {
+  return Boolean(map.getLayer(layerId)) && map.getLayoutProperty(layerId, "visibility") !== "none"
+}
+
 function stepParticles(map: Map, lines: AnimLine[], particles: Particle[], dt: number) {
   const source = geoJsonSource(map, "particles")
-  if (!source || lines.length === 0) {
-    source?.setData(emptyCollection())
-    return
-  }
+  if (!source || lines.length === 0 || particles.length === 0) return
   const features: GeoJSON.Feature[] = []
   for (const particle of particles) {
     const line = lines[particle.line]
