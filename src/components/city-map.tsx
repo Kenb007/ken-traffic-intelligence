@@ -1033,6 +1033,7 @@ function addWatchLayers(map: Map) {
     addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6)
     addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14)
   }
+  const underBuildings = "buildings-3d"
   map.addLayer({
     id: "mtr-track-casing",
     type: "line",
@@ -1043,7 +1044,7 @@ function addWatchLayers(map: Map) {
       "line-opacity": 0.55,
     },
     layout: { "line-cap": "round", "line-join": "round" },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "mtr-track",
     type: "line",
@@ -1054,7 +1055,7 @@ function addWatchLayers(map: Map) {
       "line-opacity": 0.92,
     },
     layout: { "line-cap": "round", "line-join": "round" },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "mtr-stations",
     type: "circle",
@@ -1066,7 +1067,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "mtr-trains",
     type: "circle",
@@ -1078,7 +1079,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
 }
 
 function incidentMark(): ImageData | null {
