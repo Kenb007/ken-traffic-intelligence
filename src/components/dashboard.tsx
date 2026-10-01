@@ -13,6 +13,7 @@ import type {
   ApproachesResponse,
   ControlPointsResponse,
   IncidentsResponse,
+  MtrResponse,
   PictureResponse,
   TrafficResponse,
   WarningsResponse,
@@ -28,6 +29,7 @@ const LAYERS_ON: WatchLayers = {
   tolls: true,
   incidents: true,
   control: true,
+  mtr: true,
 }
 
 function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
@@ -55,12 +57,14 @@ export function Dashboard() {
   const incidentsLive = useLiveJson<IncidentsResponse>("/api/incidents")
   const controlLive = useLiveJson<ControlPointsResponse>("/api/control-points")
   const warningsLive = useLiveJson<WarningsResponse>(`/api/warnings?lang=${hkoLang(locale)}`)
+  const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
   const traffic = trafficLive.data
   const approaches = approachesLive.data
   const picture = pictureLive.data
   const incidents = incidentsLive.data
   const controlPoints = controlLive.data
   const warnings = warningsLive.data
+  const mtr = mtrLive.data
   const trafficLoading = traffic === null && trafficLive.error === null
   const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
   const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
@@ -91,6 +95,7 @@ export function Dashboard() {
         picture={picture}
         incidents={incidents?.ok ? incidents.incidents : null}
         controlPoints={boundary}
+        mtr={mtr?.ok ? mtr : null}
         layers={layers}
         basemap={basemap}
         flyToken={flyToken}
@@ -140,6 +145,7 @@ export function Dashboard() {
           works: picture ? picture.works.features.length : null,
           tolls: picture ? tunnelCount(picture.tolls) : null,
           incidents: incidents ? incidents.incidents.features.length : null,
+          mtr: mtr?.ok ? mtr.trains.length : null,
           control: controlPoints?.ok
             ? controlPoints.points.features.filter((feature) => {
                 const worst = feature.properties && feature.properties.worst
@@ -152,6 +158,7 @@ export function Dashboard() {
         onReplay={() => setFlyToken((value) => value + 1)}
         mapLive={mapLive}
         pictureError={pictureError}
+        mtrError={mtrLive.error ?? (mtr && !mtr.ok ? mtr.error ?? "Next train feed failed" : null)}
         aboveMarquee={!intelOpen}
       />
     </main>

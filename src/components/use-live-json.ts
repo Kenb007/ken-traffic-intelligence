@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-export function useLiveJson<T extends { ok: boolean }>(url: string): { data: T | null; error: string | null } {
+export function useLiveJson<T extends { ok: boolean }>(url: string, intervalMs = 60_000): { data: T | null; error: string | null } {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -29,12 +29,12 @@ export function useLiveJson<T extends { ok: boolean }>(url: string): { data: T |
     }
 
     void load()
-    const timer = window.setInterval(() => void load(), 60_000)
+    const timer = window.setInterval(() => void load(), intervalMs)
     return () => {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [url])
+  }, [intervalMs, url])
 
   return { data, error }
 }

@@ -23,11 +23,14 @@ import {
   controlPointPopup,
   corridorPopup,
   incidentPopup,
+  stationPopup,
   tollPopup,
+  trainPopup,
   workPopup,
 } from "@/components/map-cards"
 import { displayText, type Messages } from "@/lib/i18n"
-import type { ApproachPoint, Basemap, Corridor, HarbourJourney, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
+import { mtrStationCollection, mtrTrackCollection, mtrTrainCollection } from "@/lib/mtr-network"
+import type { ApproachPoint, Basemap, Corridor, HarbourJourney, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
@@ -164,7 +167,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points"]
+const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -181,6 +184,7 @@ type CityMapProps = {
   picture: PictureResponse | null
   incidents: GeoJSON.FeatureCollection | null
   controlPoints: GeoJSON.FeatureCollection | null
+  mtr: MtrResponse | null
   layers: WatchLayers
   basemap: Basemap
   flyToken: number
@@ -202,6 +206,7 @@ export function CityMap({
   picture,
   incidents,
   controlPoints,
+  mtr,
   layers,
   basemap,
   flyToken,
@@ -216,6 +221,7 @@ export function CityMap({
   const linesRef = useRef<AnimLine[]>([])
   const particlesRef = useRef<Particle[]>([])
   const corridorsRef = useRef(corridors)
+  const mtrRef = useRef(mtr)
   const onMapRef = useRef(onMap)
   const readyRef = useRef(false)
   const basemapRef = useRef(basemap)
@@ -244,6 +250,10 @@ export function CityMap({
   useEffect(() => {
     onMapRef.current = onMap
   }, [onMap])
+
+  useEffect(() => {
+    mtrRef.current = mtr
+  }, [mtr])
 
   useEffect(() => {
     basemapRef.current = basemap
@@ -426,6 +436,13 @@ export function CityMap({
         data: emptyCollection(),
         attribution: "Passenger clearance © Immigration Department",
       })
+      map.addSource("mtr-track", {
+        type: "geojson",
+        data: mtrTrackCollection(),
+        attribution: "Next train © MTR Corporation | Stations © Lands Department",
+      })
+      map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
+      map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
@@ -523,6 +540,8 @@ export function CityMap({
         "tolls-overview": tollPopup,
         incidents: incidentPopup,
         "control-points": controlPointPopup,
+        "mtr-stations": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
+        "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
       }
       for (const layerId of watchLayers) {
         const render = featurePopups[layerId]
@@ -545,6 +564,8 @@ export function CityMap({
 
     let frame = 0
     let last = performance.now()
+    let lastTrainDraw = 0
+    let lastTrainStamp = ""
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
@@ -554,6 +575,18 @@ export function CityMap({
         if (current.getLayer("control-points-ring")) {
           const pulse = 0.15 + 0.2 * (0.5 + 0.5 * Math.sin(now / 320))
           current.setPaintProperty("control-points-ring", "circle-opacity", pulse)
+        }
+        const trains = geoJsonSource(current, "mtr-trains")
+        const snapshot = mtrRef.current
+        if (trains && snapshot?.ok && current.getLayoutProperty("mtr-trains", "visibility") !== "none") {
+          const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          const stamp = snapshot.observedAt ?? ""
+          const due = reduced ? stamp !== lastTrainStamp : now - lastTrainDraw > 250
+          if (due) {
+            lastTrainDraw = now
+            lastTrainStamp = stamp
+            trains.setData(mtrTrainCollection(snapshot.trains, Date.now()))
+          }
         }
       }
       frame = requestAnimationFrame(tick)
@@ -660,12 +693,13 @@ export function CityMap({
     geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
     geoJsonSource(map, "incidents")?.setData(incidents ?? emptyCollection())
     geoJsonSource(map, "control-points")?.setData(controlPoints ?? emptyCollection())
-  }, [controlPoints, disabled, incidents, mapReady, picture])
+    geoJsonSource(map, "mtr-trains")?.setData(mtr?.ok ? mtrTrainCollection(mtr.trains, Date.now()) : emptyCollection())
+  }, [controlPoints, disabled, incidents, mapReady, mtr, picture])
 
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control"]
+    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control", "mtr"]
     for (const kind of kinds) {
       for (const layerId of layerIds(kind)) {
         if (!map.getLayer(layerId)) continue
@@ -989,10 +1023,57 @@ function addWatchLayers(map: Map) {
       },
     })
   }
-  if (!map.hasImage("camera-cone")) return
-  addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6)
-  addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6)
-  addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14)
+  if (map.hasImage("camera-cone")) {
+    addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6)
+    addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6)
+    addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14)
+  }
+  map.addLayer({
+    id: "mtr-track-casing",
+    type: "line",
+    source: "mtr-track",
+    paint: {
+      "line-color": "#041018",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3.2, 14, 5],
+      "line-opacity": 0.55,
+    },
+    layout: { "line-cap": "round", "line-join": "round" },
+  })
+  map.addLayer({
+    id: "mtr-track",
+    type: "line",
+    source: "mtr-track",
+    paint: {
+      "line-color": ["get", "color"],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.6, 14, 2.6],
+      "line-opacity": 0.92,
+    },
+    layout: { "line-cap": "round", "line-join": "round" },
+  })
+  map.addLayer({
+    id: "mtr-stations",
+    type: "circle",
+    source: "mtr-stations",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 5.5],
+      "circle-color": "#f7fbff",
+      "circle-stroke-color": "#041018",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  })
+  map.addLayer({
+    id: "mtr-trains",
+    type: "circle",
+    source: "mtr-trains",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 4.5, 14, 7],
+      "circle-color": ["get", "color"],
+      "circle-stroke-color": "#f7fbff",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  })
 }
 
 function incidentMark(): ImageData | null {
@@ -1090,6 +1171,8 @@ function layerIds(kind: WatchLayer): string[] {
       return ["incidents"]
     case "control":
       return ["control-points", "control-points-ring"]
+    case "mtr":
+      return ["mtr-track-casing", "mtr-track", "mtr-stations", "mtr-trains"]
     default: {
       const exhaustive: never = kind
       return exhaustive

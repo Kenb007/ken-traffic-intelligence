@@ -141,6 +141,20 @@ export type Messages = {
   openStreet: string
   satelliteMap: string
   buildingsMap: string
+  mtr: string
+  mtrFailed: string
+  mtrArriving: string
+  mtrDelayed: string
+  mtrNoTrain: string
+  mtrNext: string
+  mtrPlatform: string
+  mtrPosition: string
+  mtrMethod: string
+  mtrBetween: (from: string, to: string) => string
+  mtrHere: (name: string) => string
+  mtrHeld: (name: string) => string
+  mtrDeparts: (n: number) => string
+  mtrDue: (when: string, platform: string) => string
 }
 
 const en: Messages = {
@@ -265,6 +279,20 @@ const en: Messages = {
   openStreet: "OpenStreetMap of Hong Kong",
   satelliteMap: "Satellite map of Hong Kong",
   buildingsMap: "3D building map of Hong Kong",
+  mtr: "MTR",
+  mtrFailed: "Next train times did not load.",
+  mtrArriving: "Arriving",
+  mtrDelayed: "Delayed",
+  mtrNoTrain: "No train on the board",
+  mtrNext: "Next stop",
+  mtrPlatform: "Platform",
+  mtrPosition: "Position",
+  mtrMethod: "Estimated from the published minutes and the distance between stations. MTR does not publish a train position.",
+  mtrBetween: (from, to) => `Between ${from} and ${to}`,
+  mtrHere: (name) => `At ${name}`,
+  mtrHeld: (name) => `Held at ${name}`,
+  mtrDeparts: (n) => `Departs in ${n} min`,
+  mtrDue: (when, platform) => (platform ? `${when} · platform ${platform}` : when),
 }
 
 const zhHK: Messages = {
@@ -389,6 +417,20 @@ const zhHK: Messages = {
   openStreet: "香港街道圖",
   satelliteMap: "香港衛星地圖",
   buildingsMap: "香港三維樓宇地圖",
+  mtr: "港鐵",
+  mtrFailed: "未能取得港鐵到站時間。",
+  mtrArriving: "到站",
+  mtrDelayed: "延誤",
+  mtrNoTrain: "班次表沒有列車",
+  mtrNext: "下一站",
+  mtrPlatform: "月台",
+  mtrPosition: "位置",
+  mtrMethod: "按公布的到站分鐘，沿車站之間的距離推算。港鐵沒有公布列車位置。",
+  mtrBetween: (from, to) => `${from}至${to}之間`,
+  mtrHere: (name) => `在${name}`,
+  mtrHeld: (name) => `停在${name}`,
+  mtrDeparts: (n) => `${n} 分鐘後開出`,
+  mtrDue: (when, platform) => (platform ? `${when} · ${platform} 號月台` : when),
 }
 
 const zhCN: Messages = {
@@ -509,6 +551,15 @@ const zhCN: Messages = {
   openStreet: "香港街道图",
   satelliteMap: "香港卫星地图",
   buildingsMap: "香港三维楼宇地图",
+  mtr: "港铁",
+  mtrFailed: "未能取得港铁到站时间。",
+  mtrDelayed: "延误",
+  mtrNoTrain: "班次表没有列车",
+  mtrPlatform: "站台",
+  mtrMethod: "按公布的到站分钟，沿车站之间的距离推算。港铁没有公布列车位置。",
+  mtrBetween: (from, to) => `${from}至${to}之间`,
+  mtrDeparts: (n) => `${n} 分钟后开出`,
+  mtrDue: (when, platform) => (platform ? `${when} · ${platform} 号站台` : when),
 }
 
 export const MESSAGES: Record<Locale, Messages> = {

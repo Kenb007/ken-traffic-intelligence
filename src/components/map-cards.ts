@@ -10,9 +10,11 @@ import {
   type Locale,
   type Messages,
 } from "@/lib/i18n"
+import type { TrainSpot } from "@/lib/mtr-estimate"
+import { lineRecord, linesThrough, projectNetworkTrain, stationRecord } from "@/lib/mtr-network"
 import { isCameraSnapshotUrl } from "@/lib/picture"
 import { isSpeedBand } from "@/lib/speed"
-import type { ApproachPoint, HarbourJourney, SpeedBand } from "@/lib/types"
+import type { ApproachPoint, HarbourJourney, MtrCalling, MtrResponse, SpeedBand } from "@/lib/types"
 
 const TUNNEL_TC: Record<string, string> = {
   "Western Harbour Crossing": "西區海底隧道",
@@ -161,11 +163,99 @@ export function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): H
   return card.root
 }
 
+export function stationPopup(properties: GeoJSON.GeoJsonProperties, snapshot: MtrResponse | null, m: Messages): HTMLElement {
+  const code = textProp(properties, "code")
+  const record = stationRecord(code)
+  const title = record ? displayText(m.locale, record.tc, record.en) : code || m.mtr
+  const card = openCard(title)
+  const lines = linesThrough(code)
+  const lineNames = lines.map((line) => lineLabel(line, m)).filter(Boolean)
+  if (lineNames.length > 0) card.head.append(paragraph("city-card-detail", lineNames.join(m.locale === "en" ? ", " : "、")))
+  if (!snapshot?.ok) {
+    card.body.append(paragraph("city-card-copy", m.mtrFailed))
+    return card.root
+  }
+  let anyTrain = false
+  for (const line of lines) {
+    const board = snapshot.boards.find((item) => item.line === line && item.station === code)
+    if (lines.length > 1) card.body.append(paragraph("city-card-copy", lineLabel(line, m)))
+    if (!board) {
+      card.body.append(paragraph("city-card-copy", m.noReading))
+      continue
+    }
+    if (board.message) card.body.append(paragraph("city-card-copy", board.message))
+    const callings = nextByDest(board?.trains ?? [])
+    if (callings.length === 0) {
+      card.body.append(paragraph("city-card-copy", m.mtrNoTrain))
+      continue
+    }
+    anyTrain = true
+    for (const calling of callings) {
+      const dest = stationRecord(calling.dest)
+      const destName = dest ? displayText(m.locale, dest.tc, dest.en) : calling.dest
+      const when = calling.timeType === "D" ? m.mtrDeparts(calling.ttnt) : calling.ttnt <= 0 ? m.mtrArriving : m.minutes(calling.ttnt)
+      card.body.append(fact(m.towards(destName), m.mtrDue(when, calling.plat), calling.delay ? "#8a5a00" : undefined))
+    }
+  }
+  if (!anyTrain && lines.length === 0) card.body.append(paragraph("city-card-copy", m.mtrNoTrain))
+  return card.root
+}
+
+export function trainPopup(properties: GeoJSON.GeoJsonProperties, snapshot: MtrResponse | null, m: Messages): HTMLElement {
+  const train = snapshot?.trains.find((item) => item.id === textProp(properties, "id"))
+  const dest = train ? stationRecord(train.dest) : null
+  const destName = dest ? displayText(m.locale, dest.tc, dest.en) : train?.dest || m.mtr
+  const card = openCard(train ? m.towards(destName) : m.mtr)
+  if (!train) {
+    card.body.append(paragraph("city-card-copy", m.mtrNoTrain))
+    return card.root
+  }
+  const line = lineLabel(train.line, m)
+  if (line) card.head.append(paragraph("city-card-detail", line))
+  const spot = projectNetworkTrain(train, Date.now())
+  const anchor = stationRecord(train.anchor)
+  const anchorName = anchor ? displayText(m.locale, anchor.tc, anchor.en) : train.anchor
+  if (train.timeType !== "D") card.body.append(fact(m.mtrNext, anchorName))
+  const minutes = spot ? Math.max(0, Math.round(spot.minutes)) : train.ttnt
+  const when = train.timeType === "D" ? m.mtrDeparts(minutes) : minutes <= 0 ? m.mtrArriving : m.minutes(minutes)
+  card.body.append(fact(m.whenLabel, when, train.delay ? "#8a5a00" : undefined))
+  if (train.plat) card.body.append(fact(m.mtrPlatform, train.plat))
+  if (spot) card.body.append(fact(m.mtrPosition, positionSentence(spot, m)))
+  if (train.delay) card.body.append(fact(m.statusLabel, m.mtrDelayed, "#8a5a00"))
+  card.body.append(paragraph("city-card-copy", m.mtrMethod))
+  return card.root
+}
+
 export function tollPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
   const name = textProp(properties, "name")
   const card = openCard(displayText(m.locale, TUNNEL_TC[name] ?? "", name) || m.tunnel)
   if (textProp(properties, "band") === "portal") card.head.append(paragraph("city-card-detail", m.tunnelPortal))
   return card.root
+}
+
+function lineLabel(code: string, m: Messages): string {
+  const line = lineRecord(code)
+  if (!line) return code
+  return displayText(m.locale, line.tc, line.en)
+}
+
+function nextByDest(trains: MtrCalling[]): MtrCalling[] {
+  const best = new Map<string, MtrCalling>()
+  for (const train of trains) {
+    const current = best.get(train.dest)
+    if (!current || train.ttnt < current.ttnt) best.set(train.dest, train)
+  }
+  return [...best.values()].sort((a, b) => a.ttnt - b.ttnt || (a.dest < b.dest ? -1 : 1))
+}
+
+function positionSentence(spot: TrainSpot, m: Messages): string {
+  const from = stationRecord(spot.from)
+  const to = stationRecord(spot.to)
+  const fromName = from ? displayText(m.locale, from.tc, from.en) : spot.from
+  const toName = to ? displayText(m.locale, to.tc, to.en) : spot.to
+  if (spot.clamp === "junction") return m.mtrHeld(toName)
+  if (spot.from === spot.to || spot.clamp === "origin") return m.mtrHere(toName)
+  return m.mtrBetween(fromName, toName)
 }
 
 function crossingLegName(code: string, fallback: string, m: Messages): string {

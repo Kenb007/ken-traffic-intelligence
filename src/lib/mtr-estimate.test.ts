@@ -1,0 +1,176 @@
+import assert from "node:assert/strict"
+import {
+  estimateTrains,
+  metresBetween,
+  pathsToward,
+  projectTrain,
+  segmentMinutes,
+  viaRacecourse,
+  type EstimateRoute,
+  type GeoPoint,
+  type TrainObservation,
+} from "./mtr-estimate.ts"
+
+const now = Date.parse("2026-10-01T05:40:00Z")
+
+const places: Record<string, GeoPoint> = {}
+place("A", 0)
+place("B", 1440)
+place("C", 2880)
+place("LOW", 0)
+place("LMC", 0)
+place("SHS", 1440)
+place("FAN", 2880)
+place("ADM", 4320)
+place("SHT", 0)
+place("FOT", 1440)
+place("UNI", 2880)
+place("RAC", 1440)
+
+const line = routes("TML", [
+  ["UP", ["A", "B", "C"]],
+  ["DOWN", ["C", "B", "A"]],
+])
+const eastRail = routes("EAL", [
+  ["UT", ["LOW", "SHS", "FAN", "ADM"]],
+  ["LMC-UT", ["LMC", "SHS", "FAN", "ADM"]],
+  ["DT", ["ADM", "FAN", "SHS", "LOW"]],
+  ["LMC-DT", ["ADM", "FAN", "SHS", "LMC"]],
+])
+
+const oneTrain = estimateTrains(line, [obs("B", "C", 1, 1), obs("C", "C", 3, 3)], locate)
+assert.equal(oneTrain.length, 1)
+const oneSpot = projectTrain(oneTrain[0]!, locate, now)
+assert.ok(oneSpot)
+assert.equal(oneSpot.from, "A")
+assert.equal(oneSpot.to, "B")
+assert.equal(oneSpot.clamp, "none")
+assert.ok(Math.abs(oneSpot.lat - midpoint("A", "B")) < 1e-4)
+
+const twoTrains = estimateTrains(
+  line,
+  [obs("B", "C", 1, 1), obs("B", "C", 5, 5), obs("C", "C", 3, 3), obs("C", "C", 7, 7)],
+  locate,
+)
+assert.equal(twoTrains.length, 2)
+
+const branchOnly = estimateTrains(eastRail, [obs("FAN", "ADM", 10, 10, "EAL")], locate)
+assert.equal(branchOnly.length, 1)
+const held = projectTrain(branchOnly[0]!, locate, now)
+assert.ok(held)
+assert.equal(held.from, "SHS")
+assert.equal(held.to, "SHS")
+assert.equal(held.clamp, "junction")
+assert.equal(branchOnly[0]!.path.includes("LOW") || branchOnly[0]!.path.includes("LMC"), true)
+assert.equal(branchOnly[0]!.hold.includes("LOW"), false)
+assert.equal(branchOnly[0]!.hold.includes("LMC"), false)
+
+const fromLoWu = estimateTrains(eastRail, [obs("LOW", "ADM", 1, 1, "EAL")], locate)
+assert.equal(fromLoWu.length, 1)
+assert.equal(fromLoWu[0]!.path[0], "LOW")
+assert.equal(fromLoWu[0]!.hold.includes("LOW"), true)
+
+const departure = estimateTrains(
+  line,
+  [{ ...obs("B", "C", 2, 2), timeType: "D" }],
+  locate,
+)
+assert.equal(departure.length, 1)
+assert.equal(departure[0]!.timeType, "D")
+const atPlatform = projectTrain(departure[0]!, locate, now)
+assert.ok(atPlatform)
+assert.equal(atPlatform.from, "B")
+assert.equal(atPlatform.to, "B")
+assert.equal(atPlatform.clamp, "none")
+
+const coarse = estimateTrains(line, [obs("B", "C", 1, 1), obs("C", "C", 5, 5)], locate)
+assert.equal(coarse.length, 1)
+
+const differentTrains = estimateTrains(line, [obs("B", "C", 1, 1), obs("C", "C", 8, 8)], locate)
+assert.equal(differentTrains.length, 2)
+
+const queued = estimateTrains(line, [obs("A", "C", 3, 3), obs("A", "C", 7, 7), obs("A", "C", 11, 11)], locate)
+assert.equal(queued.length, 1)
+assert.equal(queued[0]!.ttnt, 3)
+
+const departures = estimateTrains(
+  line,
+  [
+    { ...obs("B", "C", 2, 2), timeType: "D" },
+    { ...obs("B", "C", 9, 9), timeType: "D" },
+  ],
+  locate,
+)
+assert.equal(departures.length, 1)
+assert.equal(departures[0]!.ttnt, 2)
+
+const island: EstimateRoute[] = [
+  { id: "ISL-UT", line: "ISL", stations: ["KET", "CEN", "CHW"] },
+  { id: "ISL-DT", line: "ISL", stations: ["CHW", "CEN", "KET"] },
+]
+assert.deepEqual(pathsToward(island, "ISL", "CHW"), [["KET", "CEN", "CHW"]])
+assert.deepEqual(pathsToward(island, "ISL", "KET"), [["CHW", "CEN", "KET"]])
+
+const shaTin: EstimateRoute[] = [
+  { id: "EAL-UT", line: "EAL", stations: ["SHT", "FOT", "UNI"] },
+  { id: "EAL-DT", line: "EAL", stations: ["UNI", "FOT", "SHT"] },
+]
+assert.deepEqual(viaRacecourse(["SHT", "FOT", "UNI"]), ["SHT", "RAC", "UNI"])
+assert.deepEqual(viaRacecourse(["UNI", "FOT", "SHT"]), ["UNI", "RAC", "SHT"])
+assert.deepEqual(pathsToward(shaTin, "EAL", "RAC"), [
+  ["SHT", "RAC"],
+  ["UNI", "RAC"],
+])
+
+const segment = segmentMinutes(metresBetween(places.A!, places.B!))
+assert.ok(Math.abs(segment - 2) < 0.05)
+
+console.log("mtr estimate ok")
+
+function obs(
+  station: string,
+  dest: string,
+  ttnt: number,
+  dueMinutes: number,
+  lineCode = "TML",
+): TrainObservation {
+  return {
+    line: lineCode,
+    station,
+    dest,
+    plat: "1",
+    ttnt,
+    dueAt: now + dueMinutes * 60_000,
+    observedAt: now,
+    delay: false,
+    timeType: "A",
+    viaRacecourse: false,
+  }
+}
+
+function routes(lineCode: string, legs: [string, string[]][]): EstimateRoute[] {
+  return legs.map(([direction, stations]) => ({ id: `${lineCode}-${direction}`, line: lineCode, stations }))
+}
+
+function place(code: string, metresNorth: number) {
+  places[code] = { lng: 114, lat: latNorth(metresNorth) }
+}
+
+function latNorth(metres: number): number {
+  let delta = metres / 111_320
+  const origin = 22.2
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const got = metresBetween({ lng: 114, lat: origin }, { lng: 114, lat: origin + delta })
+    if (got === 0) break
+    delta *= metres / got
+  }
+  return origin + delta
+}
+
+function locate(code: string): GeoPoint | null {
+  return places[code] ?? null
+}
+
+function midpoint(from: string, to: string): number {
+  return ((places[from]?.lat ?? 0) + (places[to]?.lat ?? 0)) / 2
+}

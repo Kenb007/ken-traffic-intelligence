@@ -126,7 +126,46 @@ export type WarningsResponse = {
   conditions: WeatherConditions
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control"
+export type MtrTimeType = "A" | "D"
+
+export type MtrTrain = {
+  id: string
+  line: string
+  dest: string
+  plat: string
+  ttnt: number
+  observedAt: string
+  delay: boolean
+  timeType: MtrTimeType
+  anchor: string
+  path: string[]
+  hold: string[]
+}
+
+export type MtrCalling = {
+  dest: string
+  plat: string
+  ttnt: number
+  delay: boolean
+  timeType: MtrTimeType
+}
+
+export type MtrBoard = {
+  line: string
+  station: string
+  message: string
+  trains: MtrCalling[]
+}
+
+export type MtrResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  trains: MtrTrain[]
+  boards: MtrBoard[]
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 
