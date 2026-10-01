@@ -246,18 +246,20 @@ export function stationPopup(properties: GeoJSON.GeoJsonProperties, snapshot: Mt
     card.body.append(paragraph("city-card-copy", m.mtrFailed))
     return card.root
   }
+  const board = document.createElement("div")
+  board.className = "city-card-board"
   let anyTrain = false
   for (const line of lines) {
-    const board = snapshot.boards.find((item) => item.line === line && item.station === code)
-    if (lines.length > 1) card.body.append(paragraph("city-card-copy", lineLabel(line, m)))
-    if (!board) {
-      card.body.append(paragraph("city-card-copy", m.noReading))
+    const listing = snapshot.boards.find((item) => item.line === line && item.station === code)
+    if (lines.length > 1) board.append(paragraph("city-card-section", lineLabel(line, m)))
+    if (!listing) {
+      board.append(paragraph("city-card-copy", m.noReading))
       continue
     }
-    if (board.message) card.body.append(paragraph("city-card-copy", board.message))
-    const callings = nextByDest(board?.trains ?? [])
+    if (listing.message) board.append(paragraph("city-card-copy", listing.message))
+    const callings = nextByDest(listing.trains ?? [])
     if (callings.length === 0) {
-      card.body.append(paragraph("city-card-copy", m.mtrNoTrain))
+      board.append(paragraph("city-card-copy", m.mtrNoTrain))
       continue
     }
     anyTrain = true
@@ -265,10 +267,12 @@ export function stationPopup(properties: GeoJSON.GeoJsonProperties, snapshot: Mt
       const dest = stationRecord(calling.dest)
       const destName = dest ? displayText(m.locale, dest.tc, dest.en) : calling.dest
       const when = calling.timeType === "D" ? m.mtrDeparts(calling.ttnt) : calling.ttnt <= 0 ? m.mtrArriving : m.minutes(calling.ttnt)
-      card.body.append(fact(m.towards(destName), m.mtrDue(when, calling.plat), calling.delay ? "#8a5a00" : undefined))
+      const platform = calling.plat ? m.mtrDue("", calling.plat).replace(/^\s*·\s*/, "") : ""
+      board.append(serviceRow(m.towards(destName), when, platform, calling.delay ? "#8a5a00" : undefined))
     }
   }
   if (!anyTrain && lines.length === 0) card.body.append(paragraph("city-card-copy", m.mtrNoTrain))
+  else card.body.append(board)
   return card.root
 }
 
@@ -309,7 +313,7 @@ export function trainPopup(properties: GeoJSON.GeoJsonProperties, snapshot: MtrR
   if (plat) card.body.append(fact(m.mtrPlatform, plat))
   if (shown) card.body.append(fact(m.mtrPosition, positionSentence(shown, m)))
   if (delay) card.body.append(fact(m.statusLabel, m.mtrDelayed, "#8a5a00"))
-  card.body.append(paragraph("city-card-copy", m.mtrMethod))
+  card.body.append(paragraph("city-card-aside", m.mtrMethod))
   return card.root
 }
 
@@ -415,6 +419,16 @@ function openCard(title: string): { root: HTMLElement; head: HTMLElement; body: 
   body.className = "city-card-body"
   root.append(head, body)
   return { root, head, body }
+}
+
+function serviceRow(primary: string, when: string, kind = "", tone?: string): HTMLElement {
+  const row = document.createElement("div")
+  row.className = "city-card-call city-card-call-plain"
+  const whenNode = text("span", "city-card-call-when", when)
+  if (tone) whenNode.style.color = tone
+  row.append(text("span", "city-card-call-dest", primary), whenNode)
+  if (kind) row.append(text("span", "city-card-call-kind", kind))
+  return row
 }
 
 function fact(label: string, value: string, tone?: string): HTMLElement {
