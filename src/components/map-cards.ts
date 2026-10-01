@@ -163,6 +163,63 @@ export function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): H
   return card.root
 }
 
+export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  const title = displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn")) || m.kmb
+  const card = openCard(title)
+  card.head.append(paragraph("city-card-detail", m.kmb))
+  const calls = kmbBoard(properties)
+  if (calls.length === 0) {
+    card.body.append(paragraph("city-card-copy", m.kmbNone))
+    return card.root
+  }
+  for (const call of calls) {
+    const dest = displayText(m.locale, call.destTc, call.destEn)
+    const when = call.minutes == null ? clock(call.eta, m.locale) : m.minutes(call.minutes)
+    const kind = call.scheduled ? m.kmbScheduled : m.kmbEstimate
+    card.body.append(fact(`${call.route} ${m.towards(dest)}`, [when, kind].filter(Boolean).join(" · ")))
+  }
+  return card.root
+}
+
+export function kmbBusPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  const dest = displayText(m.locale, textProp(properties, "destTc"), textProp(properties, "destEn"))
+  const card = openCard(`${textProp(properties, "route")} ${m.towards(dest)}`.trim())
+  card.head.append(paragraph("city-card-detail", m.kmbMethod))
+  const stop = displayText(m.locale, textProp(properties, "stopTc"), textProp(properties, "stopEn"))
+  const from = displayText(m.locale, textProp(properties, "fromTc"), textProp(properties, "fromEn"))
+  if (stop) card.body.append(fact(m.kmb, from ? `${from} → ${stop}` : stop))
+  const minutes = numberProp(properties, "minutes")
+  if (minutes != null) card.body.append(fact(m.kmbEstimate, m.minutes(minutes)))
+  const due = clock(textProp(properties, "eta"), m.locale)
+  if (due) card.body.append(fact(m.whenLabel, due))
+  return card.root
+}
+
+function kmbBoard(properties: GeoJSON.GeoJsonProperties): { route: string; destTc: string; destEn: string; eta: string; minutes: number | null; scheduled: boolean }[] {
+  const raw = textProp(properties, "board")
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((item) => {
+      if (typeof item !== "object" || item === null) return []
+      const row = item as Record<string, unknown>
+      const route = typeof row.route === "string" ? row.route : ""
+      if (!route) return []
+      return [{
+        route,
+        destTc: typeof row.destTc === "string" ? row.destTc : "",
+        destEn: typeof row.destEn === "string" ? row.destEn : "",
+        eta: typeof row.eta === "string" ? row.eta : "",
+        minutes: typeof row.minutes === "number" ? row.minutes : null,
+        scheduled: row.scheduled === true,
+      }]
+    })
+  } catch {
+    return []
+  }
+}
+
 export function stationPopup(properties: GeoJSON.GeoJsonProperties, snapshot: MtrResponse | null, m: Messages): HTMLElement {
   const code = textProp(properties, "code")
   const record = stationRecord(code)

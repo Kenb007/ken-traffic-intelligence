@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react"
 
-export function useLiveJson<T extends { ok: boolean }>(url: string, intervalMs = 60_000): { data: T | null; error: string | null } {
+export function useLiveJson<T extends { ok: boolean }>(url: string | null, intervalMs = 60_000): { data: T | null; error: string | null } {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!url) return
     let cancelled = false
     let generation = 0
 
@@ -36,6 +37,7 @@ export function useLiveJson<T extends { ok: boolean }>(url: string, intervalMs =
     }
   }, [intervalMs, url])
 
+  if (!url) return { data: null, error: null }
   return { data, error }
 }
 

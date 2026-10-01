@@ -165,7 +165,49 @@ export type MtrResponse = {
   boards: MtrBoard[]
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr"
+export type KmbCall = {
+  route: string
+  destTc: string
+  destEn: string
+  eta: string
+  minutes: number | null
+  scheduled: boolean
+}
+
+export type KmbStopBoard = {
+  id: string
+  nameTc: string
+  nameEn: string
+  lng: number
+  lat: number
+  calls: KmbCall[]
+}
+
+export type KmbBus = {
+  id: string
+  route: string
+  destTc: string
+  destEn: string
+  stopId: string
+  stopTc: string
+  stopEn: string
+  fromTc: string
+  fromEn: string
+  lng: number
+  lat: number
+  minutes: number
+  eta: string
+}
+
+export type KmbResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  stops: KmbStopBoard[]
+  buses: KmbBus[]
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 

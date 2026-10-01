@@ -8,11 +8,13 @@ import { OpsHud } from "@/components/ops-hud"
 import { useLiveJson } from "@/components/use-live-json"
 import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
+import { KMB_MIN_ZOOM, KMB_POLL_MS } from "@/lib/kmb-view"
 import { hkoLang } from "@/lib/i18n"
 import type {
   ApproachesResponse,
   ControlPointsResponse,
   IncidentsResponse,
+  KmbResponse,
   MtrResponse,
   PictureResponse,
   TrafficResponse,
@@ -30,6 +32,7 @@ const LAYERS_ON: WatchLayers = {
   incidents: true,
   control: true,
   mtr: true,
+  kmb: true,
 }
 
 function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
@@ -57,7 +60,13 @@ export function Dashboard() {
   const incidentsLive = useLiveJson<IncidentsResponse>("/api/incidents")
   const controlLive = useLiveJson<ControlPointsResponse>("/api/control-points")
   const warningsLive = useLiveJson<WarningsResponse>(`/api/warnings?lang=${hkoLang(locale)}`)
+  const [view, setView] = useState<{ lng: number; lat: number; zoom: number } | null>(null)
+  const kmbUrl =
+    layers.kmb && view && view.zoom >= KMB_MIN_ZOOM
+      ? `/api/kmb?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
+      : null
   const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
+  const kmbLive = useLiveJson<KmbResponse>(kmbUrl, KMB_POLL_MS)
   const traffic = trafficLive.data
   const approaches = approachesLive.data
   const picture = pictureLive.data
@@ -65,6 +74,7 @@ export function Dashboard() {
   const controlPoints = controlLive.data
   const warnings = warningsLive.data
   const mtr = mtrLive.data
+  const kmb = kmbLive.data
   const trafficLoading = traffic === null && trafficLive.error === null
   const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
   const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
@@ -96,6 +106,8 @@ export function Dashboard() {
         incidents={incidents?.ok ? incidents.incidents : null}
         controlPoints={boundary}
         mtr={mtr?.ok ? mtr : null}
+        kmb={kmb?.ok ? kmb : null}
+        onView={setView}
         layers={layers}
         basemap={basemap}
         flyToken={flyToken}
@@ -147,6 +159,7 @@ export function Dashboard() {
           tolls: picture ? tunnelCount(picture.tolls) : null,
           incidents: incidents ? incidents.incidents.features.length : null,
           mtr: mtr?.ok ? mtr.trains.length : null,
+          kmb: kmb?.ok ? kmb.buses.length : null,
           control: controlPoints?.ok
             ? controlPoints.points.features.filter((feature) => {
                 const worst = feature.properties && feature.properties.worst
@@ -160,6 +173,7 @@ export function Dashboard() {
         mapLive={mapLive}
         pictureError={pictureError}
         mtrError={mtrLive.error ?? (mtr && !mtr.ok ? mtr.error ?? "Next train feed failed" : null)}
+        kmbError={kmbLive.error ?? (kmb && !kmb.ok ? kmb.error ?? "KMB arrivals failed" : null)}
         aboveMarquee={!intelOpen}
       />
     </main>

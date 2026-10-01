@@ -14,6 +14,7 @@ type LayerDockProps = {
   mapLive: boolean
   pictureError: string | null
   mtrError: string | null
+  kmbError: string | null
   aboveMarquee: boolean
 }
 
@@ -39,6 +40,8 @@ function layerLabel(id: WatchLayer, m: Messages): string {
       return m.boundary
     case "mtr":
       return m.mtr
+    case "kmb":
+      return m.kmb
     default: {
       const exhaustive: never = id
       return exhaustive
@@ -70,6 +73,7 @@ const LAYERS: { id: WatchLayer; swatch: string }[] = [
   { id: "incidents", swatch: "bg-[#FF5D73]" },
   { id: "control", swatch: "bg-[#D7B4FF]" },
   { id: "mtr", swatch: "bg-[#E2231A]" },
+  { id: "kmb", swatch: "bg-[#9f1239]" },
 ]
 
 export function LayerDock(props: LayerDockProps) {
@@ -149,6 +153,11 @@ export function LayerDock(props: LayerDockProps) {
       {props.mtrError ? (
         <p className="basis-full text-xs text-red-100" role="alert">
           {m.locale === "en" ? props.mtrError : m.mtrFailed}
+        </p>
+      ) : null}
+      {props.kmbError ? (
+        <p className="basis-full text-xs text-red-100" role="alert">
+          {m.locale === "en" ? props.kmbError : m.kmbFailed}
         </p>
       ) : null}
     </div>

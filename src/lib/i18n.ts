@@ -155,6 +155,12 @@ export type Messages = {
   mtrHeld: (name: string) => string
   mtrDeparts: (n: number) => string
   mtrDue: (when: string, platform: string) => string
+  kmb: string
+  kmbFailed: string
+  kmbScheduled: string
+  kmbEstimate: string
+  kmbMethod: string
+  kmbNone: string
 }
 
 const en: Messages = {
@@ -293,6 +299,12 @@ const en: Messages = {
   mtrHeld: (name) => `Held at ${name}`,
   mtrDeparts: (n) => `Departs in ${n} min`,
   mtrDue: (when, platform) => (platform ? `${when} · platform ${platform}` : when),
+  kmb: "KMB",
+  kmbFailed: "KMB arrivals did not load.",
+  kmbScheduled: "Scheduled",
+  kmbEstimate: "Estimated",
+  kmbMethod: "Placed just before the stop from the published arrival time. KMB does not publish where the bus is.",
+  kmbNone: "No arrival on the board",
 }
 
 const zhHK: Messages = {
@@ -431,6 +443,12 @@ const zhHK: Messages = {
   mtrHeld: (name) => `停在${name}`,
   mtrDeparts: (n) => `${n} 分鐘後開出`,
   mtrDue: (when, platform) => (platform ? `${when} · ${platform} 號月台` : when),
+  kmb: "九巴",
+  kmbFailed: "未能取得九巴到站時間。",
+  kmbScheduled: "原定班次",
+  kmbEstimate: "預計到站",
+  kmbMethod: "按巴士站公布的到站時間，標在該站稍前。九巴沒有公布巴士位置。",
+  kmbNone: "班次表沒有到站時間",
 }
 
 const zhCN: Messages = {
@@ -560,6 +578,10 @@ const zhCN: Messages = {
   mtrBetween: (from, to) => `${from}至${to}之间`,
   mtrDeparts: (n) => `${n} 分钟后开出`,
   mtrDue: (when, platform) => (platform ? `${when} · ${platform} 号站台` : when),
+  kmbFailed: "未能取得九巴到站时间。",
+  kmbEstimate: "预计到站",
+  kmbMethod: "按巴士站公布的到站时间，标在该站稍前。九巴没有公布巴士位置。",
+  kmbNone: "班次表没有到站时间",
 }
 
 export const MESSAGES: Record<Locale, Messages> = {
