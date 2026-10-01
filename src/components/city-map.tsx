@@ -97,15 +97,9 @@ function showBasemap(map: Map, basemap: Basemap) {
       setRasterVisible(map, "places", true)
       setCityVisible(map, false)
       paintStreetRoads(map, false)
-      if (phone) {
-        map.setTerrain(null)
-      } else {
-        try {
-          map.setTerrain({ source: "terrain", exaggeration: 1 })
-        } catch {
-          map.setTerrain(null)
-        }
-      }
+      // The radar surface steps by tens of metres on flat roads. Draping the
+      // satellite picture on it makes the road fall away. Leave the photo flat.
+      map.setTerrain(null)
       map.easeTo({ pitch: OPENING.pitch, bearing: OPENING.bearing, duration: phone ? 200 : 650, essential: true })
       return
     case "buildings":
@@ -459,15 +453,7 @@ export function CityMap({
 
     map.on("load", () => {
       map.resize()
-      if (narrowScreen()) {
-        map.setTerrain(null)
-      } else {
-        try {
-          map.setTerrain({ source: "terrain", exaggeration: 1 })
-        } catch {
-          map.setTerrain(null)
-        }
-      }
+      map.setTerrain(null)
 
       map.addSource("cameras", { type: "geojson", data: emptyCollection() })
       map.addSource("works", { type: "geojson", data: emptyCollection() })

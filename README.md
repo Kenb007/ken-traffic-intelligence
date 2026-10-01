@@ -53,7 +53,7 @@ If you are changing the dashboard, add `?feed=down` and you can see the screen w
 
 Every number on the screen comes from an open data API Hong Kong had already published. The departments publish them as separate feeds, for separate pages. The work of this dashboard is to read those feeds and draw them as one city.
 
-The roads are the Transport Department’s strategic centreline. The file is stored in Hong Kong 1980 grid coordinates. Plot those numbers on a modern map and every road sits a little up and to the left of the real street. The Lands Department published the correction for the whole territory: add 8.8 arcseconds of longitude, and subtract 5.5 arcseconds of latitude. After that, the line lies on the road. The colour is the department’s saturation class. The hills under the satellite picture are the public Terrarium surface, smoothed so that a tile only a few metres wide does not turn a small radar jump into a cliff. If that surface fails to arrive, the map stays pitched over the satellite image, and the bar is still there.
+The roads are the Transport Department’s strategic centreline. The file is stored in Hong Kong 1980 grid coordinates. Plot those numbers on a modern map and every road sits a little up and to the left of the real street. The Lands Department published the correction for the whole territory: add 8.8 arcseconds of longitude, and subtract 5.5 arcseconds of latitude. After that, the line lies on the road. The colour is the department’s saturation class. The satellite picture stays flat. A radar elevation surface lifts a level road into steps, so the coloured line falls off the photograph. The map stays pitched over that flat picture.
 
 | What you are looking at | The open data |
 | --- | --- |
