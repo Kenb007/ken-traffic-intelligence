@@ -19,41 +19,53 @@ export async function fetchUpstream(url: string, ttlMs: number, options: Upstrea
 }
 
 async function readThrough(url: string, ttlMs: number, options: UpstreamOptions): Promise<UpstreamBody> {
-  const cache = edgeCache()
-  const key = new Request(url)
-  if (cache) {
-    const cached = await cache.match(key)
-    if (cached?.ok) {
-      const body = await remember(url, ttlMs, cached)
-      return body
-    }
-  }
+  const shared = await readShared(url, ttlMs)
+  if (shared) return shared
 
-  const seconds = Math.max(1, Math.round(ttlMs / 1000))
   const response = await fetch(url, {
     signal: AbortSignal.timeout(options.timeoutMs ?? 25_000),
     headers: options.headers,
-    cf: { cacheEverything: true, cacheTtl: seconds },
-  } as RequestInit)
+  })
   const contentType = response.headers.get("content-type") ?? ""
   const bytes = await response.arrayBuffer()
   const body: UpstreamBody = { status: response.status, body: bytes, contentType }
   if (response.ok) {
     memory.set(url, { expires: Date.now() + ttlMs, body })
-    if (cache) {
-      await cache.put(
-        key,
-        new Response(bytes.slice(0), {
-          status: 200,
-          headers: {
-            "Content-Type": contentType,
-            "Cache-Control": `public, max-age=${seconds}`,
-          },
-        }),
-      )
-    }
+    await writeShared(url, ttlMs, body)
   }
   return body
+}
+
+async function readShared(url: string, ttlMs: number): Promise<UpstreamBody | null> {
+  const cache = edgeCache()
+  if (!cache) return null
+  try {
+    const cached = await cache.match(new Request(url))
+    if (!cached?.ok) return null
+    return remember(url, ttlMs, cached)
+  } catch {
+    return null
+  }
+}
+
+async function writeShared(url: string, ttlMs: number, body: UpstreamBody): Promise<void> {
+  const cache = edgeCache()
+  if (!cache) return
+  const seconds = Math.max(1, Math.round(ttlMs / 1000))
+  try {
+    await cache.put(
+      new Request(url),
+      new Response(body.body.slice(0), {
+        status: 200,
+        headers: {
+          "Content-Type": body.contentType,
+          "Cache-Control": `public, max-age=${seconds}`,
+        },
+      }),
+    )
+  } catch {
+    // A cache write must not turn a good feed into an error.
+  }
 }
 
 async function remember(url: string, ttlMs: number, response: Response): Promise<UpstreamBody> {
