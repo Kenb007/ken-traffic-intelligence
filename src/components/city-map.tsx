@@ -5,7 +5,6 @@ import {
   GeoJSONSource,
   GPUInitializationError,
   Map,
-  Marker,
   NavigationControl,
   Popup,
   setWorkerUrl,
@@ -164,7 +163,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops"]
+const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -230,7 +229,7 @@ export function CityMap({
   const basemapRef = useRef(basemap)
   const cancelFlyRef = useRef<(() => void) | null>(null)
   const closeCardRef = useRef<(() => void) | null>(null)
-  const approachMarkersRef = useRef<Marker[]>([])
+  const approachesRef = useRef(approaches)
   const appliedBasemap = useRef<Basemap | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [gpuFailed, setGpuFailed] = useState(false)
@@ -472,6 +471,7 @@ export function CityMap({
       map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
       map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
       map.addSource("kmb-stops", { type: "geojson", data: emptyCollection() })
+      map.addSource("approaches", { type: "geojson", data: emptyCollection() })
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
@@ -550,8 +550,6 @@ export function CityMap({
       const showPopup = cards.show
       const watchLayers = WATCH_HITS.filter((layerId) => map.getLayer(layerId))
       const onCorridorClick = (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
-        const target = event.originalEvent.target
-        if (target instanceof Element && target.closest(".approach-time")) return
         if (watchLayers.length > 0) {
           const covering = map.queryRenderedFeatures(event.point, { layers: watchLayers })
           if (covering.length > 0) return
@@ -575,6 +573,13 @@ export function CityMap({
         "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
         "kmb-stops": kmbStopPopup,
       }
+      map.on("click", "approach-times", (event) => {
+        const raw = event.features?.[0]?.properties?.id
+        const id = typeof raw === "string" ? raw : typeof raw === "number" ? String(raw) : ""
+        const point = approachesRef.current.find((item) => item.id === id)
+        if (!point) return
+        showPopup(event.lngLat, approachPopup(point, copyRef.current))
+      })
       for (const layerId of watchLayers) {
         const render = featurePopups[layerId]
         if (!render) continue
@@ -669,9 +674,6 @@ export function CityMap({
     if (!focus || disabled || !map || !mapReady) return
     cancelFlyRef.current?.()
     closeCardRef.current?.()
-    for (const marker of approachMarkersRef.current) {
-      if (marker.getPopup()?.isOpen()) marker.togglePopup()
-    }
     map.stop()
     map.flyTo({
       center: focus.coordinates,
@@ -697,24 +699,22 @@ export function CityMap({
   }, [basemap, disabled, mapReady])
 
   useEffect(() => {
+    approachesRef.current = approaches
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const markers = approaches.map((point) => {
-      const popup = new Popup({ className: "city-popup", closeButton: true, maxWidth: "360px", offset: 16 }).setDOMContent(
-        approachPopup(point, messages),
-      )
-      popup.on("open", () => keepCardInView(map, popup))
-      const marker = new Marker({ element: approachButton(point, messages), anchor: "center" })
-        .setLngLat(point.coordinates)
-        .setPopup(popup)
-        .addTo(map)
-      return marker
+    const features: GeoJSON.Feature[] = approaches.map((point) => {
+      const colour = worstColour(point)
+      const minutes = shortestMinutes(point)
+      const label = minutes == null ? "—" : messages.minutes(minutes)
+      const icon = approachIconId(colour, label)
+      ensureApproachIcon(map, icon, label, PILL[colour])
+      return {
+        type: "Feature",
+        properties: { id: point.id, icon },
+        geometry: { type: "Point", coordinates: point.coordinates },
+      }
     })
-    approachMarkersRef.current = markers
-    return () => {
-      approachMarkersRef.current = []
-      markers.forEach((marker) => marker.remove())
-    }
+    geoJsonSource(map, "approaches")?.setData({ type: "FeatureCollection", features })
   }, [approaches, disabled, mapReady, locale, messages])
 
   useEffect(() => {
@@ -800,24 +800,44 @@ function isGpuFailure(error: unknown): boolean {
   return /webgl|gpu initialization/i.test(message)
 }
 
-function approachButton(point: ApproachPoint, m: Messages): HTMLButtonElement {
-  const minutes = shortestMinutes(point)
-  const button = document.createElement("button")
-  button.type = "button"
-  button.className = "approach-time"
-  button.textContent = minutes == null ? "—" : m.minutes(minutes)
-  button.setAttribute("aria-label", `${displayText(m.locale, point.nameTc, point.name)}, ${button.textContent}`)
-  button.style.cssText = [
-    "border:0",
-    "border-radius:999px",
-    "padding:3px 8px",
-    "font:600 12px/1.2 Outfit,sans-serif",
-    "color:#07131c",
-    `background:${PILL[worstColour(point)]}`,
-    `box-shadow:0 0 14px ${PILL[worstColour(point)]}, 0 1px 4px rgba(0,0,0,.45)`,
-    "cursor:pointer",
-  ].join(";")
-  return button
+function approachIconId(colour: HarbourJourney["colour"], label: string): string {
+  return `approach-${colour}-${encodeURIComponent(label)}`
+}
+
+function ensureApproachIcon(map: Map, id: string, label: string, colour: string) {
+  if (map.hasImage(id)) return
+  const image = approachPill(label, colour)
+  if (image) map.addImage(id, image, { pixelRatio: 2 })
+}
+
+function approachPill(label: string, colour: string): ImageData | null {
+  const scale = 2
+  const family = getComputedStyle(document.body).fontFamily || "sans-serif"
+  const font = `600 ${12 * scale}px ${family}`
+  const probe = document.createElement("canvas").getContext("2d")
+  if (!probe) return null
+  probe.font = font
+  const textWidth = Math.ceil(probe.measureText(label).width)
+  const padX = 8 * scale
+  const padY = 3 * scale
+  const width = Math.max(1, textWidth + padX * 2)
+  const height = Math.max(1, Math.ceil(12 * 1.2 * scale) + padY * 2)
+  const canvas = document.createElement("canvas")
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  if (!context) return null
+  context.clearRect(0, 0, width, height)
+  context.beginPath()
+  context.roundRect(0, 0, width, height, height / 2)
+  context.fillStyle = colour
+  context.fill()
+  context.font = font
+  context.fillStyle = "#07131c"
+  context.textAlign = "center"
+  context.textBaseline = "middle"
+  context.fillText(label, width / 2, height / 2)
+  return context.getImageData(0, 0, width, height)
 }
 
 function shortestMinutes(point: ApproachPoint): number | null {
@@ -961,6 +981,9 @@ function geoJsonSource(map: Map, id: string): GeoJSONSource | null {
 }
 
 function addWatchLayers(map: Map) {
+  // MapLibre paints every layer after the first extrusion on top of the roofs.
+  // These markers stay underneath, so a tower covers the ones behind it.
+  const underBuildings = "buildings-3d"
   const cone = cameraCone()
   if (cone && !map.hasImage("camera-cone")) {
     map.addImage("camera-cone", cone, { pixelRatio: 2 })
@@ -978,7 +1001,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "tolls-portal",
     type: "circle",
@@ -992,7 +1015,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "control-points-ring",
     type: "circle",
@@ -1005,7 +1028,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "control-points",
     type: "circle",
@@ -1029,7 +1052,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "works",
     type: "circle",
@@ -1041,7 +1064,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   const mark = incidentMark()
   if (mark && !map.hasImage("incident-mark")) {
     map.addImage("incident-mark", mark, { pixelRatio: 2 })
@@ -1056,20 +1079,16 @@ function addWatchLayers(map: Map) {
         "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.72, 14, 1.05],
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
-        "icon-pitch-alignment": "viewport",
+        "icon-pitch-alignment": "map",
+        "icon-rotation-alignment": "map",
       },
-    })
+    }, underBuildings)
   }
   if (map.hasImage("camera-cone")) {
-    addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6)
-    addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6)
-    addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14)
+    addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6, underBuildings)
+    addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6, underBuildings)
+    addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14, underBuildings)
   }
-  // The track stays under the extrusions, so a roof hides the line behind it.
-  // The train dots are drawn afterwards. A station-to-station line through
-  // Yau Tsim Mong runs under the towers for its whole length, and a dot
-  // underneath those roofs never appears.
-  const underBuildings = "buildings-3d"
   map.addLayer({
     id: "mtr-track-casing",
     type: "line",
@@ -1103,7 +1122,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "mtr-trains",
     type: "circle",
@@ -1113,9 +1132,9 @@ function addWatchLayers(map: Map) {
       "circle-color": ["get", "color"],
       "circle-stroke-color": "#f7fbff",
       "circle-stroke-width": 1.5,
-      "circle-pitch-alignment": "viewport",
+      "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
   map.addLayer({
     id: "kmb-stops",
     type: "circle",
@@ -1128,7 +1147,19 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  })
+  }, underBuildings)
+  map.addLayer({
+    id: "approach-times",
+    type: "symbol",
+    source: "approaches",
+    layout: {
+      "icon-image": ["get", "icon"],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "map",
+      "icon-rotation-alignment": "map",
+    },
+  }, underBuildings)
 }
 
 function incidentMark(): ImageData | null {
@@ -1164,7 +1195,7 @@ function incidentMark(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
-function addCameraLayer(map: Map, id: string, filter: FilterSpecification, minzoom: number) {
+function addCameraLayer(map: Map, id: string, filter: FilterSpecification, minzoom: number, beforeId: string) {
   map.addLayer({
     id,
     type: "symbol",
@@ -1176,11 +1207,11 @@ function addCameraLayer(map: Map, id: string, filter: FilterSpecification, minzo
       "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.42, 14, 0.85, 16, 1.05],
       "icon-rotate": ["get", "rotation"],
       "icon-rotation-alignment": "map",
-      "icon-pitch-alignment": "viewport",
+      "icon-pitch-alignment": "map",
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
     },
-  })
+  }, beforeId)
 }
 
 function cameraCone(): ImageData | null {
@@ -1421,8 +1452,6 @@ function openFeature(
   event: MapMouseEvent & { features?: MapGeoJSONFeature[] },
   render: (properties: GeoJSON.GeoJsonProperties) => HTMLElement,
 ) {
-  const target = event.originalEvent.target
-  if (target instanceof Element && target.closest(".approach-time")) return
   const feature = event.features?.[0]
   if (!feature) return
   showPopup(event.lngLat, render(feature.properties ?? null))
