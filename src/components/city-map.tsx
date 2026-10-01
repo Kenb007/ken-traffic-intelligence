@@ -228,6 +228,8 @@ export function CityMap({
   const readyRef = useRef(false)
   const basemapRef = useRef(basemap)
   const cancelFlyRef = useRef<(() => void) | null>(null)
+  const closeCardRef = useRef<(() => void) | null>(null)
+  const approachMarkersRef = useRef<Marker[]>([])
   const appliedBasemap = useRef<Basemap | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [gpuFailed, setGpuFailed] = useState(false)
@@ -528,7 +530,9 @@ export function CityMap({
       }, underBuildings)
 
       addWatchLayers(map)
-      const showPopup = popupOpener(map)
+      const cards = popupOpener(map)
+      closeCardRef.current = cards.close
+      const showPopup = cards.show
       const watchLayers = WATCH_HITS.filter((layerId) => map.getLayer(layerId))
       const onCorridorClick = (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
         const target = event.originalEvent.target
@@ -607,6 +611,7 @@ export function CityMap({
         map.remove()
       }
       mapRef.current = null
+      closeCardRef.current = null
     }
   }, [disabled])
 
@@ -647,6 +652,10 @@ export function CityMap({
     const map = mapRef.current
     if (!focus || disabled || !map || !mapReady) return
     cancelFlyRef.current?.()
+    closeCardRef.current?.()
+    for (const marker of approachMarkersRef.current) {
+      if (marker.getPopup()?.isOpen()) marker.togglePopup()
+    }
     map.stop()
     map.flyTo({
       center: focus.coordinates,
@@ -685,7 +694,9 @@ export function CityMap({
         .addTo(map)
       return marker
     })
+    approachMarkersRef.current = markers
     return () => {
+      approachMarkersRef.current = []
       markers.forEach((marker) => marker.remove())
     }
   }, [approaches, disabled, mapReady, locale, messages])
@@ -1192,13 +1203,19 @@ function layerIds(kind: WatchLayer): string[] {
 
 function popupOpener(map: Map) {
   let active: Popup | null = null
-  return (lngLat: LngLat, content: HTMLElement) => {
-    active?.remove()
-    active = new Popup({ className: "city-popup", closeButton: true, maxWidth: "360px", offset: 16 })
-      .setLngLat(lngLat)
-      .setDOMContent(content)
-      .addTo(map)
-    keepCardInView(map, active)
+  return {
+    show(lngLat: LngLat, content: HTMLElement) {
+      active?.remove()
+      active = new Popup({ className: "city-popup", closeButton: true, maxWidth: "360px", offset: 16 })
+        .setLngLat(lngLat)
+        .setDOMContent(content)
+        .addTo(map)
+      keepCardInView(map, active)
+    },
+    close() {
+      active?.remove()
+      active = null
+    },
   }
 }
 
