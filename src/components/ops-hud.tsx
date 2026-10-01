@@ -201,7 +201,7 @@ export function OpsHud(props: OpsHudProps) {
         data-map-chrome="panel"
         className={
           open
-            ? "pointer-events-auto absolute right-3 bottom-36 z-[6] w-[min(26rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-14"
+            ? "pointer-events-auto absolute right-3 bottom-36 z-[6] w-max max-w-[min(26rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-14"
             : "pointer-events-auto absolute inset-x-0 bottom-14 z-[6] border-t border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md"
         }
       >
@@ -384,13 +384,13 @@ function IntelRow(props: { item: IntelItem; onFocus: OpsHudProps["onFocus"] }) {
         if (!item.coordinates) return
         props.onFocus({ id: item.id, coordinates: item.coordinates })
       }}
-      className="flex w-full items-start gap-2 px-1 py-1 text-left enabled:hover:bg-white/5 disabled:cursor-default"
+      className="flex max-w-full items-start gap-2 px-1 py-1 text-left enabled:hover:bg-white/5 disabled:cursor-default"
     >
       <span className="mt-1 size-1.5 shrink-0 rounded-full" style={{ background: TONE[item.tone] }} />
-      <span className="min-w-0">
+      <span className="max-w-[22rem]">
         <span className="block font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/80 uppercase">{item.label}</span>
-        <span className="block truncate text-sm text-white">{item.title}</span>
-        {item.detail ? <span className="block truncate text-xs text-zinc-300">{item.detail}</span> : null}
+        <span className="block text-sm text-white">{item.title}</span>
+        {item.detail ? <span className="block text-xs text-zinc-300">{item.detail}</span> : null}
       </span>
     </button>
   )
