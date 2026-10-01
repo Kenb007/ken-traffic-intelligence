@@ -183,6 +183,10 @@
   }
 }
 
+.city-popup {
+  z-index: 40;
+}
+
 .city-popup .maplibregl-popup-content {
   position: relative;
   overflow: hidden;
@@ -310,6 +314,9 @@ html[data-locale="zh-CN"] .city-card {
   display: block;
   width: 100%;
   height: auto;
+  max-height: min(34vh, 220px);
+  object-fit: contain;
+  object-position: center;
   background: #d7dee6;
 }
 

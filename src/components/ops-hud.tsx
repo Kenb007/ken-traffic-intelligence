@@ -96,6 +96,7 @@ export function OpsHud(props: OpsHudProps) {
         </button>
       )}
       <header
+        data-map-chrome="top"
         className={`pointer-events-auto absolute top-2 right-2 left-2 flex flex-col gap-1 border border-cyan-200/30 bg-[#041018]/80 px-1.5 py-1 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:top-3 sm:right-3 sm:left-3 sm:gap-1.5 sm:px-2 sm:py-1.5 sm:flex-row sm:items-center lg:right-4 lg:left-16 ${
           barOpen ? "" : "max-sm:hidden"
         }`}
@@ -197,6 +198,7 @@ export function OpsHud(props: OpsHudProps) {
       </header>
       <section
         id="harbour-intel"
+        data-map-chrome="panel"
         className={
           open
             ? "pointer-events-auto absolute right-3 bottom-36 z-[6] w-[min(26rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-14"
