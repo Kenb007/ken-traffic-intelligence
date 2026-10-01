@@ -104,17 +104,3 @@ export function mtrStationCollection(): GeoJSON.FeatureCollection {
     })),
   }
 }
-
-export function mtrTrainCollection(trains: MtrTrain[], atMs: number): GeoJSON.FeatureCollection {
-  const features: GeoJSON.Feature[] = []
-  for (const train of trains) {
-    const spot = projectNetworkTrain(train, atMs)
-    if (!spot) continue
-    features.push({
-      type: "Feature",
-      properties: { id: train.id, color: lineRecord(train.line)?.color ?? "#5C6B7A" },
-      geometry: { type: "Point", coordinates: [spot.lng, spot.lat] },
-    })
-  }
-  return { type: "FeatureCollection", features }
-}

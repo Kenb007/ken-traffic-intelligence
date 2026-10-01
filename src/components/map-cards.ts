@@ -202,28 +202,42 @@ export function stationPopup(properties: GeoJSON.GeoJsonProperties, snapshot: Mt
 }
 
 export function trainPopup(properties: GeoJSON.GeoJsonProperties, snapshot: MtrResponse | null, m: Messages): HTMLElement {
-  const train = snapshot?.trains.find((item) => item.id === textProp(properties, "id"))
-  const dest = train ? stationRecord(train.dest) : null
-  const destName = dest ? displayText(m.locale, dest.tc, dest.en) : train?.dest || m.mtr
-  const card = openCard(train ? m.towards(destName) : m.mtr)
-  if (!train) {
+  const listed = snapshot?.trains.find((item) => item.id === textProp(properties, "id"))
+  const lineCode = textProp(properties, "line") || listed?.line || ""
+  const destCode = textProp(properties, "dest") || listed?.dest || ""
+  const from = textProp(properties, "from")
+  const to = textProp(properties, "to")
+  if (!lineCode && !listed) {
+    const card = openCard(m.mtr)
     card.body.append(paragraph("city-card-copy", m.mtrNoTrain))
     return card.root
   }
-  const line = lineLabel(train.line, m)
+  const dest = stationRecord(destCode)
+  const destName = dest ? displayText(m.locale, dest.tc, dest.en) : destCode || m.mtr
+  const card = openCard(m.towards(destName))
+  const line = lineLabel(lineCode, m)
   if (line) card.head.append(paragraph("city-card-detail", line))
-  const spot = projectNetworkTrain(train, Date.now())
-  const riding = spot != null && spot.from !== spot.to
-  const nextCode = riding ? spot.to : train.anchor
+  const timeType = textProp(properties, "timeType") === "D" || listed?.timeType === "D" ? "D" : "A"
+  const delay = textProp(properties, "delay") === "Y" || listed?.delay === true
+  const plat = textProp(properties, "plat") || listed?.plat || ""
+  const minutesOnDot = numberProp(properties, "minutes")
+  const shown =
+    from && to && minutesOnDot != null
+      ? { lng: 0, lat: 0, from, to, clamp: "none" as const, minutes: minutesOnDot }
+      : listed
+        ? projectNetworkTrain(listed, Date.now())
+        : null
+  const riding = shown != null && shown.from !== shown.to
+  const nextCode = riding && shown ? shown.to : from || listed?.anchor || ""
   const next = stationRecord(nextCode)
   const nextName = next ? displayText(m.locale, next.tc, next.en) : nextCode
-  if (riding || train.timeType !== "D") card.body.append(fact(m.mtrNext, nextName))
-  const minutes = spot ? Math.max(0, Math.round(spot.minutes)) : train.ttnt
-  const when = !riding && train.timeType === "D" ? m.mtrDeparts(minutes) : minutes <= 0 ? m.mtrArriving : m.minutes(minutes)
-  card.body.append(fact(m.whenLabel, when, train.delay ? "#8a5a00" : undefined))
-  if (train.plat) card.body.append(fact(m.mtrPlatform, train.plat))
-  if (spot) card.body.append(fact(m.mtrPosition, positionSentence(spot, m)))
-  if (train.delay) card.body.append(fact(m.statusLabel, m.mtrDelayed, "#8a5a00"))
+  if (nextName && (riding || timeType !== "D")) card.body.append(fact(m.mtrNext, nextName))
+  const minutes = shown ? Math.max(0, Math.round(shown.minutes)) : listed?.ttnt ?? 0
+  const when = !riding && timeType === "D" ? m.mtrDeparts(minutes) : minutes <= 0 ? m.mtrArriving : m.minutes(minutes)
+  card.body.append(fact(m.whenLabel, when, delay ? "#8a5a00" : undefined))
+  if (plat) card.body.append(fact(m.mtrPlatform, plat))
+  if (shown) card.body.append(fact(m.mtrPosition, positionSentence(shown, m)))
+  if (delay) card.body.append(fact(m.statusLabel, m.mtrDelayed, "#8a5a00"))
   card.body.append(paragraph("city-card-copy", m.mtrMethod))
   return card.root
 }

@@ -12,6 +12,7 @@ import {
   type EstimatedTrain,
   type TrainObservation,
 } from "./mtr-estimate.ts"
+import { advanceRuns, mergeRuns, type TrainRun } from "./mtr-run.ts"
 
 const now = Date.parse("2026-10-01T05:40:00Z")
 
@@ -113,6 +114,20 @@ assert.ok(rollsOut)
 assert.equal(rollsOut.from, "B")
 assert.equal(rollsOut.to, "C")
 
+const moving = advanceRuns([sampleRun(0, 12)], 5, locate)
+assert.equal(moving.length, 1)
+assert.ok((moving[0]?.distance ?? 0) > 50)
+assert.ok((moving[0]?.speed ?? 0) > 3)
+
+const behind = mergeRuns([sampleRun(800, 12)], [sampleRun(200, 12)], now + 1000)
+const kept = behind.find((run) => run.id === "keep")
+assert.ok(kept)
+assert.equal(kept.distance, 800)
+
+const far = mergeRuns([sampleRun(100, 12)], [{ ...sampleRun(3000, 12), id: "other" }], now + 1000)
+assert.equal(far.find((run) => run.id === "keep")?.distance, 100)
+assert.equal(far.some((run) => run.id === "other"), true)
+
 const carried = carryArrivalClock(
   [{ ...obs("B", "C", 0, 0), observedAt: now - 60_000, dueAt: now - 60_000 }],
   [obs("B", "C", 0, 0)],
@@ -152,6 +167,23 @@ const segment = segmentMinutes(metresBetween(places.A!, places.B!))
 assert.ok(Math.abs(segment - 2) < 0.05)
 
 console.log("mtr estimate ok")
+
+function sampleRun(distance: number, speed: number): TrainRun {
+  return {
+    id: "keep",
+    line: "TML",
+    dest: "C",
+    path: ["A", "B", "C"],
+    distance,
+    speed,
+    cruise: speed,
+    color: "#000",
+    plat: "1",
+    delay: false,
+    timeType: "A",
+    seenAt: now,
+  }
+}
 
 function obsTrain(station: string, dest: string, ttnt: number): EstimatedTrain {
   return {

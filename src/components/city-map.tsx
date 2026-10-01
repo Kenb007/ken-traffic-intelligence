@@ -29,7 +29,8 @@ import {
   workPopup,
 } from "@/components/map-cards"
 import { displayText, type Messages } from "@/lib/i18n"
-import { mtrStationCollection, mtrTrackCollection, mtrTrainCollection } from "@/lib/mtr-network"
+import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint } from "@/lib/mtr-network"
+import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
 import type { ApproachPoint, Basemap, Corridor, HarbourJourney, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
@@ -222,6 +223,7 @@ export function CityMap({
   const particlesRef = useRef<Particle[]>([])
   const corridorsRef = useRef(corridors)
   const mtrRef = useRef(mtr)
+  const runsRef = useRef<TrainRun[]>([])
   const onMapRef = useRef(onMap)
   const readyRef = useRef(false)
   const basemapRef = useRef(basemap)
@@ -253,6 +255,16 @@ export function CityMap({
 
   useEffect(() => {
     mtrRef.current = mtr
+    if (!mtr?.ok) {
+      runsRef.current = []
+      return
+    }
+    const now = Date.now()
+    runsRef.current = mergeRuns(
+      runsRef.current,
+      runsFromTrains(mtr.trains, stationPoint, (line) => lineRecord(line)?.color ?? "#5C6B7A", now),
+      now,
+    )
   }, [mtr])
 
   useEffect(() => {
@@ -564,11 +576,10 @@ export function CityMap({
 
     let frame = 0
     let last = performance.now()
-    let lastTrainDraw = 0
-    let lastTrainStamp = ""
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000)
+      const elapsed = Math.max(0, (now - last) / 1000)
       last = now
+      const dt = Math.min(0.05, elapsed)
       const current = mapRef.current
       if (current && readyRef.current && !document.hidden) {
         stepParticles(current, linesRef.current, particlesRef.current, dt)
@@ -577,16 +588,10 @@ export function CityMap({
           current.setPaintProperty("control-points-ring", "circle-opacity", pulse)
         }
         const trains = geoJsonSource(current, "mtr-trains")
-        const snapshot = mtrRef.current
-        if (trains && snapshot?.ok && current.getLayoutProperty("mtr-trains", "visibility") !== "none") {
+        if (trains && current.getLayoutProperty("mtr-trains", "visibility") !== "none") {
           const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          const stamp = snapshot.observedAt ?? ""
-          const due = reduced ? stamp !== lastTrainStamp : now - lastTrainDraw > 250
-          if (due) {
-            lastTrainDraw = now
-            lastTrainStamp = stamp
-            trains.setData(mtrTrainCollection(snapshot.trains, Date.now()))
-          }
+          if (!reduced) runsRef.current = advanceRuns(runsRef.current, Math.min(1, elapsed), stationPoint)
+          trains.setData(runCollection(runsRef.current, stationPoint))
         }
       }
       frame = requestAnimationFrame(tick)
@@ -693,7 +698,7 @@ export function CityMap({
     geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
     geoJsonSource(map, "incidents")?.setData(incidents ?? emptyCollection())
     geoJsonSource(map, "control-points")?.setData(controlPoints ?? emptyCollection())
-    geoJsonSource(map, "mtr-trains")?.setData(mtr?.ok ? mtrTrainCollection(mtr.trains, Date.now()) : emptyCollection())
+    if (!mtr?.ok) geoJsonSource(map, "mtr-trains")?.setData(emptyCollection())
   }, [controlPoints, disabled, incidents, mapReady, mtr, picture])
 
   useEffect(() => {
