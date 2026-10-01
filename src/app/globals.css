@@ -287,17 +287,86 @@ html[data-locale="zh-CN"] .city-card {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+}
+
+.city-card-fact-label,
+.city-card-fact-value {
+  min-width: 0;
 }
 
 .city-card-fact-label {
-  flex: none;
+  flex: 1 1 auto;
   color: #526170;
 }
 
 .city-card-fact-value {
+  flex: 1 1 auto;
   font-variant-numeric: tabular-nums;
   text-align: end;
+}
+
+.city-card-board {
+  display: flex;
+  flex-direction: column;
+  max-height: min(42vh, 280px);
+  overflow: auto;
+}
+
+.city-card-call {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  column-gap: 8px;
+  row-gap: 1px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-top: 1px solid #e7edf2;
+}
+
+.city-card-board .city-card-call:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.city-card-call-route {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-card-call:has(.city-card-call-kind) .city-card-call-route {
+  grid-row: 1 / span 2;
+  align-self: start;
+}
+
+.city-card-call-dest {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.city-card-call-when {
+  grid-column: 3;
+  grid-row: 1;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+
+.city-card-call-kind {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  color: #526170;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.city-card-call-timetable .city-card-call-route,
+.city-card-call-timetable .city-card-call-dest,
+.city-card-call-timetable .city-card-call-when {
+  color: #526170;
 }
 
 .city-card-note {

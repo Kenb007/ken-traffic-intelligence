@@ -164,24 +164,52 @@ export function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): H
 }
 
 export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const title = displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn")) || m.kmb
+  const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.kmb
   const card = openCard(title)
-  card.head.append(paragraph("city-card-detail", m.kmb))
   const calls = kmbBoard(properties)
   if (calls.length === 0) {
     card.body.append(paragraph("city-card-copy", m.kmbNone))
     return card.root
   }
-  for (const call of calls) {
-    const dest = displayText(m.locale, call.destTc, call.destEn)
-    const when = call.minutes == null ? clock(call.eta, m.locale) : m.minutes(call.minutes)
-    const kind = call.scheduled ? m.kmbScheduled : m.kmbEstimate
-    card.body.append(fact(`${call.route} ${m.towards(dest)}`, [when, kind].filter(Boolean).join(" · ")))
-  }
+  const board = document.createElement("div")
+  board.className = "city-card-board"
+  for (const call of calls) board.append(kmbCall(call, m))
+  card.body.append(board)
   return card.root
 }
 
-function kmbBoard(properties: GeoJSON.GeoJsonProperties): { route: string; destTc: string; destEn: string; eta: string; minutes: number | null; scheduled: boolean }[] {
+function kmbCall(call: KmbBoardCall, m: Messages): HTMLElement {
+  const row = document.createElement("div")
+  row.className = call.scheduled ? "city-card-call city-card-call-timetable" : "city-card-call"
+  const dest = readablePlace(displayText(m.locale, call.destTc, call.destEn))
+  const when = call.minutes == null ? clock(call.eta, m.locale) : m.minutes(call.minutes)
+  const kind = call.scheduled ? m.kmbScheduled : when ? "" : m.kmbEstimate
+  row.append(
+    text("span", "city-card-call-route", call.route),
+    text("span", "city-card-call-dest", dest ? m.towards(dest) : ""),
+    text("span", "city-card-call-when", when),
+  )
+  if (kind) row.append(text("span", "city-card-call-kind", kind))
+  return row
+}
+
+const PLACE_ACRONYMS = new Set(["BBI", "MTR", "KMB", "LWB", "HK", "PTI", "GMB", "CTB", "NWFB"])
+
+function readablePlace(value: string): string {
+  const shaped = /[\u4e00-\u9fff]/.test(value) ? value.replace(/,/g, "，") : value
+  const letters = shaped.replace(/[^A-Za-z]/g, "")
+  if (!letters || letters !== letters.toUpperCase()) return shaped
+  return shaped.replace(/[A-Za-z]+/g, (word, index: number) => {
+    const next = shaped[index + word.length]
+    if (next && /\d/.test(next)) return word
+    if (PLACE_ACRONYMS.has(word)) return word
+    return word.charAt(0) + word.slice(1).toLowerCase()
+  })
+}
+
+type KmbBoardCall = { route: string; destTc: string; destEn: string; eta: string; minutes: number | null; scheduled: boolean }
+
+function kmbBoard(properties: GeoJSON.GeoJsonProperties): KmbBoardCall[] {
   const raw = textProp(properties, "board")
   if (!raw) return []
   try {
