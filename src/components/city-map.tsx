@@ -71,7 +71,6 @@ const CITY_LAYERS = ["city-land", "city-water", "city-roads", "buildings-3d"]
 const STREET_VECTOR = ["city-land", "city-water", "city-roads"]
 
 function showBasemap(map: Map, basemap: Basemap) {
-  applySourceCredit(map, basemap)
   const phone = narrowScreen()
   switch (basemap) {
     case "street":
@@ -156,38 +155,6 @@ function tourCamera(step: (typeof FLYOVER)[number], basemap: Basemap) {
       return exhaustive
     }
   }
-}
-
-function sourceCredit(basemap: Basemap): string {
-  const phone = narrowScreen()
-  const base = basemap === "satellite" ? "Esri" : basemap === "street" && !phone ? "OSM" : "OpenFreeMap"
-  return `© ${base}, TD, ImmD, MTR, LandsD`
-}
-
-function clearTileCredit(map: Map): boolean {
-  let cleared = false
-  for (const id of ["imagery", "osm", "openmap"]) {
-    const source = map.getSource(id) as { attribution?: string } | undefined
-    if (!source?.attribution) continue
-    source.attribution = ""
-    cleared = true
-  }
-  return cleared
-}
-
-function applySourceCredit(map: Map, basemap: Basemap) {
-  clearTileCredit(map)
-  const controls = (map as Map & { _controls?: SourceCreditControl[] })._controls
-  const control = controls?.find((item) => item._innerContainer)
-  if (!control) return
-  control.options.customAttribution = sourceCredit(basemap)
-  control._updateAttributions()
-}
-
-type SourceCreditControl = {
-  options: { customAttribution?: string }
-  _innerContainer?: HTMLElement
-  _updateAttributions: () => void
 }
 
 function setRasterVisible(map: Map, layerId: string, visible: boolean) {
@@ -322,7 +289,7 @@ export function CityMap({
       map = new Map({
         container,
         pixelRatio: mapPixelRatio(),
-        attributionControl: { compact: false, customAttribution: "© Esri, TD, ImmD, MTR, LandsD" },
+        attributionControl: { compact: true },
         maxPitch: 72,
         maxBounds: [
           [113.62, 21.98],
@@ -337,6 +304,7 @@ export function CityMap({
                 "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
               ],
               tileSize: rasterTileSize(),
+              attribution: "© Esri",
             },
             labels: {
               type: "raster",
@@ -350,10 +318,12 @@ export function CityMap({
               tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
               tileSize: rasterTileSize(),
               maxzoom: 19,
+              attribution: "© OpenStreetMap contributors",
             },
             openmap: {
               type: "vector",
               url: "https://tiles.openfreemap.org/planet",
+              attribution: "© OpenMapTiles © OpenFreeMap",
             },
             terrain: {
               type: "raster-dem",
@@ -434,10 +404,6 @@ export function CityMap({
     }
     map.addControl(new NavigationControl({ visualizePitch: true }), "top-left")
     mapRef.current = map
-    map.on("sourcedata", () => {
-      if (!clearTileCredit(map)) return
-      applySourceCredit(map, basemapRef.current)
-    })
     holdDataCreditOpen(map)
 
     let terrainFailed = false
@@ -482,16 +448,19 @@ export function CityMap({
       map.addSource("control-points", {
         type: "geojson",
         data: emptyCollection(),
+        attribution: "© Immigration Department",
       })
       map.addSource("mtr-track", {
         type: "geojson",
         data: mtrTrackCollection(),
+        attribution: "© MTR Corporation | © Lands Department",
       })
       map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
       map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
+        attribution: "© Transport Department",
       })
       map.addSource("particles", { type: "geojson", data: emptyCollection() })
       // MapLibre paints every layer above the first 3D layer on top of the buildings.
