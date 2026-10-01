@@ -1,4 +1,3 @@
-import { Converter } from "opencc-js/t2cn"
 import { isSpeedBand } from "@/lib/speed"
 import type { SpeedBand } from "@/lib/types"
 
@@ -8,7 +7,20 @@ export const DEFAULT_LOCALE: Locale = "zh-HK"
 
 export const LOCALES: Locale[] = ["zh-HK", "zh-CN", "en"]
 
-const toSimplified = Converter({ from: "hk", to: "cn" })
+type Convert = (text: string) => string
+
+let simplified: Convert | null = null
+let simplifiedLoad: Promise<Convert> | null = null
+
+export function ensureSimplified(): Promise<Convert> {
+  // Loaded only for simplified Chinese so the default Traditional page does not download the converter.
+  simplifiedLoad ??= import("opencc-js/t2cn").then(({ Converter }) => {
+    const convert = Converter({ from: "hk", to: "cn" })
+    simplified = convert
+    return convert
+  })
+  return simplifiedLoad
+}
 
 export function localeOf(value: string | undefined | null): Locale {
   if (value === "zh-HK" || value === "zh-CN" || value === "en") return value
@@ -650,7 +662,7 @@ export function displayText(locale: Locale, traditional: string, english: string
   if (locale === "en") return english || traditional
   const source = traditional || english
   if (!source) return ""
-  if (locale === "zh-CN") return toSimplified(source)
+  if (locale === "zh-CN") return simplified ? simplified(source) : source
   return source
 }
 
