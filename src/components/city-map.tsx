@@ -1033,6 +1033,10 @@ function addWatchLayers(map: Map) {
     addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6)
     addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14)
   }
+  // The track stays under the extrusions, so a roof hides the line behind it.
+  // The train dots are drawn afterwards. A station-to-station line through
+  // Yau Tsim Mong runs under the towers for its whole length, and a dot
+  // underneath those roofs never appears.
   const underBuildings = "buildings-3d"
   map.addLayer({
     id: "mtr-track-casing",
@@ -1067,7 +1071,7 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
+  })
   map.addLayer({
     id: "mtr-trains",
     type: "circle",
@@ -1077,9 +1081,9 @@ function addWatchLayers(map: Map) {
       "circle-color": ["get", "color"],
       "circle-stroke-color": "#f7fbff",
       "circle-stroke-width": 1.5,
-      "circle-pitch-alignment": "map",
+      "circle-pitch-alignment": "viewport",
     },
-  }, underBuildings)
+  })
 }
 
 function incidentMark(): ImageData | null {
