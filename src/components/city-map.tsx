@@ -304,6 +304,9 @@ export function CityMap({
                 "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
               ],
               tileSize: rasterTileSize(),
+              // Hong Kong imagery is real through zoom 19. Zoom 20 and above is Esri's
+              // gray "Map Data Not Yet Available" tile, so the map scales the zoom 19 picture.
+              maxzoom: 19,
               attribution: "© Esri",
             },
             labels: {
