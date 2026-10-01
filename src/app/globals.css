@@ -241,10 +241,14 @@
 }
 
 .city-card {
-  width: 300px;
-  max-width: 78vw;
+  width: max-content;
+  max-width: min(300px, 78vw);
   color: #102033;
   font: 13px/1.45 var(--font-sans), "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", sans-serif;
+}
+
+.city-card:has(.city-card-figure) {
+  width: min(300px, 78vw);
 }
 
 html[data-locale="zh-CN"] .city-card {
