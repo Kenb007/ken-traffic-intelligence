@@ -181,20 +181,6 @@ export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages)
   return card.root
 }
 
-export function kmbBusPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const dest = displayText(m.locale, textProp(properties, "destTc"), textProp(properties, "destEn"))
-  const card = openCard(`${textProp(properties, "route")} ${m.towards(dest)}`.trim())
-  card.head.append(paragraph("city-card-detail", m.kmbMethod))
-  const stop = displayText(m.locale, textProp(properties, "stopTc"), textProp(properties, "stopEn"))
-  const from = displayText(m.locale, textProp(properties, "fromTc"), textProp(properties, "fromEn"))
-  if (stop) card.body.append(fact(m.kmb, from ? `${from} → ${stop}` : stop))
-  const minutes = numberProp(properties, "minutes")
-  if (minutes != null) card.body.append(fact(m.kmbEstimate, m.minutes(minutes)))
-  const due = clock(textProp(properties, "eta"), m.locale)
-  if (due) card.body.append(fact(m.whenLabel, due))
-  return card.root
-}
-
 function kmbBoard(properties: GeoJSON.GeoJsonProperties): { route: string; destTc: string; destEn: string; eta: string; minutes: number | null; scheduled: boolean }[] {
   const raw = textProp(properties, "board")
   if (!raw) return []

@@ -1,4 +1,5 @@
-// Builds data/kmb-network.json from the public KMB/LWB list.
+// Builds data/kmb-network.json from the public KMB stop list.
+// A stop has a name and a coordinate. The feed does not include the road a bus takes.
 // Run: node scripts/build-kmb-network.mjs
 
 import { writeFile } from "node:fs/promises"
@@ -17,11 +18,7 @@ async function load(path) {
   return body.data
 }
 
-const [routeRows, stopRows, visitRows] = await Promise.all([
-  load("route"),
-  load("stop"),
-  load("route-stop"),
-])
+const stopRows = await load("stop")
 
 const stops = {}
 for (const row of stopRows) {
@@ -36,46 +33,7 @@ for (const row of stopRows) {
   }
 }
 
-const routeNames = new Map()
-for (const row of routeRows) {
-  routeNames.set(`${row.route}|${row.bound}|${row.service_type}`, row)
-}
-
-const grouped = new Map()
-for (const row of visitRows) {
-  if (!stops[row.stop]) continue
-  const key = `${row.route}|${row.bound}|${row.service_type}`
-  const seq = Number(row.seq)
-  if (!Number.isFinite(seq)) continue
-  const list = grouped.get(key) ?? []
-  list.push({ seq, stop: row.stop })
-  grouped.set(key, list)
-}
-
-const variants = []
-for (const [key, list] of grouped) {
-  const names = routeNames.get(key)
-  if (!names) continue
-  list.sort((a, b) => a.seq - b.seq)
-  const ordered = []
-  for (const item of list) {
-    if (ordered[ordered.length - 1] !== item.stop) ordered.push(item.stop)
-  }
-  if (ordered.length === 0) continue
-  variants.push({
-    route: String(names.route),
-    bound: names.bound === "I" ? "I" : "O",
-    service: String(names.service_type),
-    origTc: String(names.orig_tc ?? "").trim(),
-    destTc: String(names.dest_tc ?? "").trim(),
-    origEn: String(names.orig_en ?? "").trim(),
-    destEn: String(names.dest_en ?? "").trim(),
-    stops: ordered,
-  })
-}
-
-variants.sort((a, b) => a.route.localeCompare(b.route) || a.bound.localeCompare(b.bound) || a.service.localeCompare(b.service))
-
-const file = { stops, variants }
-await writeFile(new URL("../data/kmb-network.json", import.meta.url), JSON.stringify(file))
-console.log(`kmb network: ${Object.keys(stops).length} stops, ${variants.length} variants`)
+const file = { stops }
+const target = new URL("../data/kmb-network.json", import.meta.url)
+await writeFile(target, JSON.stringify(file))
+console.log(`${Object.keys(stops).length} stops`)

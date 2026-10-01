@@ -183,28 +183,11 @@ export type KmbStopBoard = {
   calls: KmbCall[]
 }
 
-export type KmbBus = {
-  id: string
-  route: string
-  destTc: string
-  destEn: string
-  stopId: string
-  stopTc: string
-  stopEn: string
-  fromTc: string
-  fromEn: string
-  lng: number
-  lat: number
-  minutes: number
-  eta: string
-}
-
 export type KmbResponse = {
   ok: boolean
   error?: string
   observedAt: string | null
   stops: KmbStopBoard[]
-  buses: KmbBus[]
 }
 
 export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb"

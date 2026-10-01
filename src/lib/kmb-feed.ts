@@ -1,5 +1,4 @@
-import { placeKmbBuses, type KmbArrivalFix, type KmbStopPoint, type KmbVariantPath } from "@/lib/kmb-estimate"
-import { kmbStop, nearestKmbStops, variantsThrough } from "@/lib/kmb-network"
+import { kmbStop, nearestKmbStops } from "@/lib/kmb-network"
 import type { KmbCall, KmbResponse, KmbStopBoard } from "@/lib/types"
 
 const STOP_LIMIT = 24
@@ -9,8 +8,6 @@ const ETA_ROOT = "https://data.etabus.gov.hk/v1/transport/kmb/stop-eta"
 
 type EtaRow = {
   route?: string
-  dir?: string
-  service_type?: number | string
   dest_tc?: string
   dest_en?: string
   eta?: string | null
@@ -33,57 +30,19 @@ export async function loadKmbNear(lng: number, lat: number, now = Date.now()): P
   })
 
   const stops: KmbStopBoard[] = []
-  const arrivals: KmbArrivalFix[] = []
   for (const stop of nearest) {
     const cached = remembered.get(stop.id)
     if (!cached || now - cached.at > REMEMBER_MS) continue
     const record = kmbStop(stop.id)
     if (!record) continue
     const calls = callsAt(cached.rows, now)
-    if (calls.length > 0) {
-      stops.push({ id: stop.id, nameTc: record.tc, nameEn: record.en, lng: record.lng, lat: record.lat, calls })
-    }
-    for (const row of cached.rows) {
-      const fix = arrivalFix(row, stop.id)
-      if (fix) arrivals.push(fix)
-    }
+    if (calls.length === 0) continue
+    stops.push({ id: stop.id, nameTc: record.tc, nameEn: record.en, lng: record.lng, lat: record.lat, calls })
   }
   if (stops.length === 0) {
-    return { ok: false, error: "KMB arrivals failed", observedAt: null, stops: [], buses: [] }
+    return { ok: false, error: "KMB arrivals failed", observedAt: null, stops: [] }
   }
-  const paths = variantsThrough(stops.map((stop) => stop.id))
-  const buses = placeKmbBuses(paths, pointsOn(paths), arrivals, now).map((bus) => {
-    const here = kmbStop(bus.stopId)
-    const from = bus.fromStopId ? kmbStop(bus.fromStopId) : null
-    return {
-      id: bus.id,
-      route: bus.route,
-      destTc: bus.destTc,
-      destEn: bus.destEn,
-      stopId: bus.stopId,
-      stopTc: here?.tc ?? "",
-      stopEn: here?.en ?? "",
-      fromTc: from?.tc ?? "",
-      fromEn: from?.en ?? "",
-      lng: bus.lng,
-      lat: bus.lat,
-      minutes: bus.minutes,
-      eta: bus.eta,
-    }
-  })
-  return { ok: true, observedAt: new Date(now).toISOString(), stops, buses }
-}
-
-function pointsOn(variants: KmbVariantPath[]): Map<string, KmbStopPoint> {
-  const points = new Map<string, KmbStopPoint>()
-  for (const variant of variants) {
-    for (const id of variant.stops) {
-      if (points.has(id)) continue
-      const record = kmbStop(id)
-      if (record) points.set(id, { id, lng: record.lng, lat: record.lat })
-    }
-  }
-  return points
+  return { ok: true, observedAt: new Date(now).toISOString(), stops }
 }
 
 function callsAt(rows: EtaRow[], now: number): KmbCall[] {
@@ -93,35 +52,17 @@ function callsAt(rows: EtaRow[], now: number): KmbCall[] {
     const route = text(row.route)
     if (!route) continue
     const etaMs = row.eta ? Date.parse(row.eta) : NaN
-    const scheduled = isScheduled(row)
     calls.push({
       route,
       destTc: text(row.dest_tc),
       destEn: text(row.dest_en),
       eta: Number.isFinite(etaMs) ? new Date(etaMs).toISOString() : "",
       minutes: Number.isFinite(etaMs) ? Math.max(0, Math.round((etaMs - now) / 60_000)) : null,
-      scheduled,
+      scheduled: isScheduled(row),
     })
   }
   calls.sort((a, b) => (a.minutes ?? 999) - (b.minutes ?? 999) || a.route.localeCompare(b.route))
   return calls.slice(0, 12)
-}
-
-function arrivalFix(row: EtaRow, stopId: string): KmbArrivalFix | null {
-  const route = text(row.route)
-  const etaMs = row.eta ? Date.parse(row.eta) : NaN
-  if (!route || !Number.isFinite(etaMs)) return null
-  const bound = row.dir === "I" ? "I" : "O"
-  return {
-    stopId,
-    route,
-    bound,
-    service: String(row.service_type ?? "1"),
-    etaMs,
-    scheduled: isScheduled(row),
-    destTc: text(row.dest_tc),
-    destEn: text(row.dest_en),
-  }
 }
 
 function isScheduled(row: EtaRow): boolean {

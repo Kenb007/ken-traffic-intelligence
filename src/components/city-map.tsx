@@ -21,7 +21,6 @@ import {
   approachPopup,
   cameraPopup,
   controlPointPopup,
-  kmbBusPopup,
   kmbStopPopup,
   corridorPopup,
   incidentPopup,
@@ -171,7 +170,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops", "kmb-buses"]
+const WATCH_HITS = ["incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -487,7 +486,6 @@ export function CityMap({
       map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
       map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
       map.addSource("kmb-stops", { type: "geojson", data: emptyCollection() })
-      map.addSource("kmb-buses", { type: "geojson", data: emptyCollection() })
       map.addSource("corridors", {
         type: "geojson",
         data: emptyCollection(),
@@ -590,7 +588,6 @@ export function CityMap({
         "mtr-stations": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
         "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
         "kmb-stops": kmbStopPopup,
-        "kmb-buses": kmbBusPopup,
       }
       for (const layerId of watchLayers) {
         const render = featurePopups[layerId]
@@ -745,10 +742,8 @@ export function CityMap({
     if (!mtr?.ok) geoJsonSource(map, "mtr-trains")?.setData(emptyCollection())
     if (!layers.kmb) {
       geoJsonSource(map, "kmb-stops")?.setData(emptyCollection())
-      geoJsonSource(map, "kmb-buses")?.setData(emptyCollection())
     } else if (kmb?.ok) {
       geoJsonSource(map, "kmb-stops")?.setData(kmbStopCollection(kmb))
-      geoJsonSource(map, "kmb-buses")?.setData(kmbBusCollection(kmb))
     }
   }, [controlPoints, disabled, incidents, kmb, layers.kmb, mapReady, mtr, picture])
 
@@ -1148,19 +1143,6 @@ function addWatchLayers(map: Map) {
       "circle-pitch-alignment": "map",
     },
   })
-  map.addLayer({
-    id: "kmb-buses",
-    type: "circle",
-    source: "kmb-buses",
-    minzoom: KMB_MIN_ZOOM,
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 5, 16, 8],
-      "circle-color": "#9f1239",
-      "circle-stroke-color": "#f7fbff",
-      "circle-stroke-width": 1.5,
-      "circle-pitch-alignment": "viewport",
-    },
-  })
 }
 
 function incidentMark(): ImageData | null {
@@ -1255,27 +1237,6 @@ function kmbStopCollection(kmb: KmbResponse): GeoJSON.FeatureCollection {
   }
 }
 
-function kmbBusCollection(kmb: KmbResponse): GeoJSON.FeatureCollection {
-  return {
-    type: "FeatureCollection",
-    features: kmb.buses.map((bus) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [bus.lng, bus.lat] },
-      properties: {
-        route: bus.route,
-        destTc: bus.destTc,
-        destEn: bus.destEn,
-        stopTc: bus.stopTc,
-        stopEn: bus.stopEn,
-        fromTc: bus.fromTc,
-        fromEn: bus.fromEn,
-        minutes: bus.minutes,
-        eta: bus.eta,
-      },
-    })),
-  }
-}
-
 function layerIds(kind: WatchLayer): string[] {
   switch (kind) {
     case "speed":
@@ -1293,7 +1254,7 @@ function layerIds(kind: WatchLayer): string[] {
     case "mtr":
       return ["mtr-track-casing", "mtr-track", "mtr-stations", "mtr-trains"]
     case "kmb":
-      return ["kmb-stops", "kmb-buses"]
+      return ["kmb-stops"]
     default: {
       const exhaustive: never = kind
       return exhaustive

@@ -30,7 +30,7 @@
 
 **港鐵。** 到站分鐘、終點、月台，是港鐵公布的下一班車。港鐵沒有公布列車在哪裏。地圖上的圓點，是把那個分鐘沿車站之間的距離往回推。卡片寫明它落在哪兩個站之間，以及那個分鐘是哪一站的讀數。倒數比剩下的路更長，或者路線在交匯前分了叉而班次表沒有寫明，圓點就停在還能確定的最後一站，卡片也這樣寫。
 
-**九巴。** 車站上的時間是九巴公布的到站時間。寫明原定班次的，留在班次表上，不會畫成路上的一輛巴士。有預計到站的，才在該站稍前放一個圓點。九巴沒有公布那是哪一輛車，也沒有公布它在哪裏。把地圖拉近，才會看到畫面中間附近車站的巴士。
+**九巴。** 車站上的時間是九巴公布的到站時間。一列可以是原定班次，也可以是預計到站。兩者都留在班次表上。九巴公布的是車站，不是巴士所行的路，所以地圖不會畫一輛在車站之間移動的巴士。把地圖拉近，才會看到畫面中間附近的車站。
 
 **這些 API 正在說什麼。** 右下方的情報已經把值得先讀的事項排好：一宗未結束的意外、一段擠塞的路、一個非常繁忙的大堂、一道警告。你可以把它收起。它變成底部移動的一行，讓你看着地圖的時候，緊急的事項仍在眼前。沿底部可以換脚下的地面：衛星、街道，或者立起來的三維樓宇。車速、快拍、工程、隧道、意外、管制站、港鐵、九巴，都可以各自打開或關掉。樓宇那個按鈕是來回的。再按一次，就回到你剛才的地圖。
 
@@ -67,7 +67,7 @@ npm run dev
 | 市區燈柱上的一小批探測器 | [智慧燈柱交通探測器](https://data.gov.hk/tc-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
 | 陸路管制站的旅客大堂怎樣 | 入境事務處的 [陸路管制站輪候時間](https://data.gov.hk/tc-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
 | 下一班港鐵在哪裏，分鐘是公布的，位置是按分鐘推算的 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data) 的分鐘、月台和終點。圓點把那些分鐘沿車站之間的距離往回推。車站位置是地政總署的 [車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map)。港鐵沒有公布列車位置。 |
-| 下一班九巴將到哪一站，時間是公布的，圓點是按該站時間放置的 | [九巴及龍運到站時間](https://data.etabus.gov.hk/v1/transport/kmb/route)。原定班次只留在班次表。預計到站才在該站稍前放一個圓點。九巴沒有公布巴士位置。 |
+| 下一班九巴的到站時間 | [九巴及龍運到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop)。時間是公布的，並標明是否原定班次。九巴沒有公布行車路線，地圖顯示車站，不在路上畫巴士。 |
 | 蓋在城市上的警告、氣溫和雨 | 天文台的 [警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc) 和 [本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
 | 街道圖，以及可以俯看的樓宇 | [OpenStreetMap](https://www.openstreetmap.org/copyright) 和 [OpenFreeMap](https://openfreemap.org) |
 | 地面的照片 | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer)。影像 © Esri |

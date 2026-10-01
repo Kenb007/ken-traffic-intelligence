@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const lng = Number(url.searchParams.get("lng"))
   const lat = Number(url.searchParams.get("lat"))
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
-    const body: KmbResponse = { ok: false, error: "KMB centre missing", observedAt: null, stops: [], buses: [] }
+    const body: KmbResponse = { ok: false, error: "KMB centre missing", observedAt: null, stops: [] }
     return Response.json(body, { status: 400 })
   }
   const key = `${lng.toFixed(3)},${lat.toFixed(3)}`
@@ -34,7 +34,6 @@ export async function GET(request: Request) {
       error: error instanceof Error ? error.message : "KMB arrivals failed",
       observedAt: null,
       stops: [],
-      buses: [],
     }
     return Response.json(body, { status: 502 })
   }

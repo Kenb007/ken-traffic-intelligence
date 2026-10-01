@@ -159,7 +159,7 @@ export function Dashboard() {
           tolls: picture ? tunnelCount(picture.tolls) : null,
           incidents: incidents ? incidents.incidents.features.length : null,
           mtr: mtr?.ok ? mtr.trains.length : null,
-          kmb: kmb?.ok ? kmb.buses.length : null,
+          kmb: kmb?.ok ? kmb.stops.length : null,
           control: controlPoints?.ok
             ? controlPoints.points.features.filter((feature) => {
                 const worst = feature.properties && feature.properties.worst
