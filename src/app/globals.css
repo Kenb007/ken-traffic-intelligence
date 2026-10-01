@@ -451,9 +451,9 @@ html[data-locale="zh-CN"] .city-card {
 }
 
 .city-card-figure {
-  width: calc(100% + 28px);
+  width: 100%;
   min-width: min(200px, 70vw);
-  margin: 10px -14px -14px;
+  margin: 10px 0 2px;
 }
 
 .city-card-figure img {
