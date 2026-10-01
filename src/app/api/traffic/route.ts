@@ -60,6 +60,11 @@ function failedNetwork(error?: string): NetworkStatus {
   }
 }
 
+const FRESH_MS = 60_000
+
+let pending: Promise<TrafficResponse> | null = null
+let cached: { at: number; body: TrafficResponse } | null = null
+
 export async function GET(request: Request) {
   const simulate = new URL(request.url).searchParams.get("simulate")
   if (simulate === "fail") {
@@ -81,6 +86,32 @@ export async function GET(request: Request) {
     return Response.json(body, { status: 502 })
   }
 
+  const now = Date.now()
+  if (cached && now - cached.at < FRESH_MS) return Response.json(cached.body)
+  pending ??= loadTraffic().finally(() => {
+    pending = null
+  })
+  try {
+    const body = await pending
+    if (body.ok) cached = { at: Date.now(), body }
+    else if (cached) return Response.json(cached.body)
+    return Response.json(body, { status: body.ok ? 200 : 502 })
+  } catch (error) {
+    if (cached) return Response.json(cached.body)
+    const body: TrafficResponse = {
+      ok: false,
+      error: error instanceof Error ? error.message : "Speed feed failed",
+      observedAt: null,
+      corridors: [],
+      summary: emptySummary(),
+      segments: failedSegments("Speed feed failed."),
+      network: failedNetwork(),
+    }
+    return Response.json(body, { status: 502 })
+  }
+}
+
+async function loadTraffic(): Promise<TrafficResponse> {
   const [locations, raw, segments, network, centerlines, lampposts, lamppostSpeeds, saturation] =
     await Promise.allSettled([
       fetchText(LOCATIONS, 6 * 60 * 60 * 1000),
@@ -123,7 +154,7 @@ export async function GET(request: Request) {
       segments: segmentSummary,
       network: networkStatusFrom(network, false),
     }
-    return Response.json(body, { status: 502 })
+    return body
   }
 
   const detector =
@@ -151,7 +182,7 @@ export async function GET(request: Request) {
     segments: segmentSummary,
     network: networkStatusFrom(network, Boolean(drawn)),
   }
-  return Response.json(body, { status: body.ok ? 200 : 502 })
+  return body
 }
 
 function drawnFromNetwork(
