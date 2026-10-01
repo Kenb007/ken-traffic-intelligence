@@ -119,7 +119,8 @@ export function controlPointPopup(properties: GeoJSON.GeoJsonProperties, m: Mess
     roadName && typeof kmh === "number" && band
       ? vehicleSentence(roadName, kmh, band, m)
       : ""
-  card.body.append(fact(m.vehicles, vehicle || m.noVehicleApproach))
+  if (vehicle) card.body.append(fact(m.vehicles, vehicle))
+  else card.body.append(paragraph("city-card-copy", m.noVehicleApproach))
   return card.root
 }
 

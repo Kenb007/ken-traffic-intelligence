@@ -247,8 +247,9 @@
   font: 13px/1.45 var(--font-sans), "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", sans-serif;
 }
 
-.city-card:has(.city-card-figure) {
-  width: min(300px, 78vw);
+.city-card:has(.city-card-copy),
+.city-card:has(.city-card-aside) {
+  min-width: min(13rem, 78vw);
 }
 
 html[data-locale="zh-CN"] .city-card {
@@ -265,6 +266,13 @@ html[data-locale="zh-CN"] .city-card {
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: 0;
+}
+
+.city-card-detail,
+.city-card-copy,
+.city-card-aside {
+  width: 0;
+  min-width: 100%;
 }
 
 .city-card-detail {
@@ -444,6 +452,7 @@ html[data-locale="zh-CN"] .city-card {
 
 .city-card-figure {
   width: calc(100% + 28px);
+  min-width: min(200px, 70vw);
   margin: 10px -14px -14px;
 }
 
