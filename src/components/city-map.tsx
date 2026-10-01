@@ -31,7 +31,7 @@ import {
 import { displayText, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint } from "@/lib/mtr-network"
 import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
-import { KMB_MIN_ZOOM } from "@/lib/kmb-view"
+import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import type { ApproachPoint, Basemap, Corridor, HarbourJourney, KmbResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
@@ -230,6 +230,7 @@ export function CityMap({
   const cancelFlyRef = useRef<(() => void) | null>(null)
   const closeCardRef = useRef<(() => void) | null>(null)
   const approachesRef = useRef(approaches)
+  const viewKeyRef = useRef<string | null>(null)
   const appliedBasemap = useRef<Basemap | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [gpuFailed, setGpuFailed] = useState(false)
@@ -264,7 +265,11 @@ export function CityMap({
     if (disabled || !map || !mapReady) return
     const report = () => {
       const centre = map.getCenter()
-      onViewRef.current({ lng: centre.lng, lat: centre.lat, zoom: map.getZoom() })
+      const zoom = map.getZoom()
+      const key = kmbViewKey(centre.lng, centre.lat, zoom)
+      if (viewKeyRef.current === key) return
+      viewKeyRef.current = key
+      onViewRef.current({ lng: centre.lng, lat: centre.lat, zoom })
     }
     report()
     map.on("moveend", report)
