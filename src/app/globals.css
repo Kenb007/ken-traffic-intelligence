@@ -248,8 +248,9 @@
 }
 
 .city-card:has(.city-card-copy),
-.city-card:has(.city-card-aside) {
-  min-width: min(13rem, 78vw);
+.city-card:has(.city-card-aside),
+.city-card:has(.city-card-call) {
+  min-width: min(13.5rem, 78vw);
 }
 
 html[data-locale="zh-CN"] .city-card {
@@ -403,6 +404,7 @@ html[data-locale="zh-CN"] .city-card {
 
 .city-card-call-plain {
   grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
 }
 
 .city-card-call-plain .city-card-call-dest {
