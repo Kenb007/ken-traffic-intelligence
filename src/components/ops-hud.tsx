@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, type KeyboardEvent } from "react"
+import { flushSync } from "react-dom"
 import { useI18n } from "@/components/locale"
 import { boundaryGlance } from "@/lib/control-points"
 import { bestCrossings } from "@/lib/crossings"
@@ -78,9 +79,24 @@ export function OpsHud(props: OpsHudProps) {
   const firstIncident = board.roads.find((item) => item.kind === "incident" && item.coordinates)
   const worstRoad = board.roads.find((item) => item.coordinates && (item.kind === "jam" || item.kind === "slow" || item.kind === "incident"))
   const worstHall = board.boundary.find((item) => item.coordinates)
+  const changeOpen = (next: boolean) => {
+    if (next === open) return
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (reduced || typeof document.startViewTransition !== "function") {
+      props.onOpenChange(next)
+      return
+    }
+    try {
+      document.startViewTransition(() => {
+        flushSync(() => props.onOpenChange(next))
+      })
+    } catch {
+      props.onOpenChange(next)
+    }
+  }
   const show = (next: IntelTab, item: IntelItem | undefined) => {
     setTab(next)
-    props.onOpenChange(true)
+    changeOpen(true)
     if (item?.coordinates) props.onFocus({ id: item.id, coordinates: item.coordinates })
   }
   return (
@@ -237,7 +253,7 @@ export function OpsHud(props: OpsHudProps) {
                 type="button"
                 aria-expanded={open}
                 aria-controls="harbour-intel-list"
-                onClick={() => props.onOpenChange(false)}
+                onClick={() => changeOpen(false)}
                 className="ml-auto shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
               >
                 {m.hide}
@@ -256,7 +272,7 @@ export function OpsHud(props: OpsHudProps) {
                 type="button"
                 aria-expanded={open}
                 aria-controls="harbour-intel-list"
-                onClick={() => props.onOpenChange(true)}
+                onClick={() => changeOpen(true)}
                 className="ml-1 shrink-0 border border-white/15 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.65rem] tracking-[0.12em] text-cyan-50 uppercase"
               >
                 {m.intel}
