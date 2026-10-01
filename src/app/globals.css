@@ -174,7 +174,7 @@
 
 @media (max-width: 760px) {
   .maplibregl-map .maplibregl-ctrl-bottom-right {
-    bottom: 2.75rem;
+    bottom: 0.4rem;
     max-width: calc(100% - 0.75rem);
   }
 
