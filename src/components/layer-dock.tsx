@@ -141,19 +141,6 @@ export function LayerDock(props: LayerDockProps) {
           ))}
         </p>
       ) : null}
-      <p className="basis-full">
-        <span className="inline-block bg-[#041018]/92 px-2 py-1 font-[family-name:var(--font-hud)] text-[0.72rem] leading-snug text-white">
-          {m.creditBy}{" "}
-          <a
-            href="https://www.linkedin.com/in/keithlihk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
-          >
-            {m.creditLink}
-          </a>
-        </span>
-      </p>
       {props.pictureError ? (
         <p className="basis-full text-xs text-red-100" role="alert">
           {m.locale === "en" ? props.pictureError : m.pictureFailed}
