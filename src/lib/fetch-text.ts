@@ -1,20 +1,9 @@
-const memory = new Map<string, { expires: number; value: string }>()
+import { fetchUpstream } from "@/lib/upstream"
 
 export async function fetchText(url: string, ttlMs: number): Promise<string> {
-  const cached = memory.get(url)
-  if (cached && cached.expires > Date.now()) return cached.value
-
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(25_000),
-    headers: { Accept: "application/xml, text/xml, text/csv, application/json, */*" },
-  })
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} from ${hostOf(url)}`)
-  }
-  const value = await response.text()
-  memory.set(url, { expires: Date.now() + ttlMs, value })
-  return value
+  const result = await fetchUpstream(url, ttlMs)
+  if (result.status !== 200) throw new Error(`HTTP ${result.status} from ${hostOf(url)}`)
+  return new TextDecoder().decode(result.body)
 }
 
 function hostOf(url: string): string {

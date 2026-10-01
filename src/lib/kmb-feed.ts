@@ -1,4 +1,5 @@
 import { kmbStop, nearestKmbStops } from "@/lib/kmb-network"
+import { fetchUpstream } from "@/lib/upstream"
 import type { KmbCall, KmbResponse, KmbStopBoard } from "@/lib/types"
 
 const STOP_LIMIT = 24
@@ -75,16 +76,15 @@ function text(value: unknown): string {
 
 async function fetchStop(stopId: string): Promise<EtaRow[] | null> {
   try {
-    const response = await fetch(`${ETA_ROOT}/${encodeURIComponent(stopId)}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(5_000),
+    const response = await fetchUpstream(`${ETA_ROOT}/${encodeURIComponent(stopId)}`, REMEMBER_MS, {
+      timeoutMs: 5_000,
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 (compatible; HKTrafficIntelligence/1.0; +https://hktraffic.keith-li.workers.dev)",
       },
     })
-    if (!response.ok) return null
-    const body = (await response.json()) as { data?: EtaRow[] }
+    if (response.status !== 200) return null
+    const body = JSON.parse(new TextDecoder().decode(response.body)) as { data?: EtaRow[] }
     return Array.isArray(body.data) ? body.data : []
   } catch {
     return null

@@ -1,4 +1,5 @@
 import { controlPointFeatures, isQueueFile } from "@/lib/control-points"
+import { fetchUpstream } from "@/lib/upstream"
 import type { ControlPointsResponse } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -27,13 +28,9 @@ export async function GET() {
 }
 
 async function readQueue(url: string) {
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
-    headers: { Accept: "application/json" },
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status} from Immigration Department`)
-  const payload: unknown = await response.json()
+  const response = await fetchUpstream(url, 60_000, { timeoutMs: 15_000, headers: { Accept: "application/json" } })
+  if (response.status !== 200) throw new Error(`HTTP ${response.status} from Immigration Department`)
+  const payload: unknown = JSON.parse(new TextDecoder().decode(response.body))
   if (!isQueueFile(payload)) throw new Error("Control point waiting times were not in the published shape")
   return payload
 }

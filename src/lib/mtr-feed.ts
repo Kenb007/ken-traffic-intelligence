@@ -1,4 +1,5 @@
 import { carryArrivalClock, estimateTrains, type TrainObservation } from "@/lib/mtr-estimate"
+import { fetchUpstream } from "@/lib/upstream"
 import { mtrQueries, networkRoutes, stationPoint } from "@/lib/mtr-network"
 import { readSchedule } from "@/lib/mtr-schedule"
 import type { MtrBoard, MtrResponse, MtrTrain } from "@/lib/types"
@@ -69,9 +70,8 @@ async function fetchPair(line: string, station: string) {
   if (Date.now() < blockedUntil || failures >= 8) return null
   const url = `https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=${encodeURIComponent(line)}&sta=${encodeURIComponent(station)}&lang=tc`
   try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(5_000),
+    const response = await fetchUpstream(url, 15_000, {
+      timeoutMs: 5_000,
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 (compatible; HKTrafficIntelligence/1.0; +https://hktraffic.keith-li.workers.dev)",
@@ -86,9 +86,9 @@ async function fetchPair(line: string, station: string) {
       failures += 1
       return null
     }
-    if (!response.ok) return null
+    if (response.status !== 200) return null
     failures = 0
-    const payload: unknown = await response.json()
+    const payload: unknown = JSON.parse(new TextDecoder().decode(response.body))
     return readSchedule(payload, line, station)
   } catch {
     failures += 1

@@ -91,7 +91,7 @@ export function cameraPopup(properties: GeoJSON.GeoJsonProperties, m: Messages):
     figure.remove()
     card.root.append(paragraph("city-card-note", m.snapshotFailed))
   })
-  image.src = url
+  image.src = `/api/camera?url=${encodeURIComponent(url)}`
   figure.append(image)
   card.root.append(figure)
   return card.root

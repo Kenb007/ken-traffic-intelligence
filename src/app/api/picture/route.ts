@@ -1,4 +1,5 @@
 import { camerasFromWfs, tollsFromWfs, withPortalCameras, withTraditionalText, worksFromWfs } from "@/lib/picture"
+import { fetchUpstream } from "@/lib/upstream"
 import type { PictureResponse } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -77,16 +78,13 @@ function wfsUrl(typeName: string): string {
 }
 
 async function readJson(url: string): Promise<unknown> {
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(40_000),
+  const response = await fetchUpstream(url, 30_000, {
+    timeoutMs: 40_000,
     headers: {
       Accept: "application/json",
       Referer: REFERER,
     },
   })
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} from hkemobility.gov.hk`)
-  }
-  return response.json() as Promise<unknown>
+  if (response.status !== 200) throw new Error(`HTTP ${response.status} from hkemobility.gov.hk`)
+  return JSON.parse(new TextDecoder().decode(response.body)) as unknown
 }

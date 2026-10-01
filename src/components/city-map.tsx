@@ -78,15 +78,10 @@ function showBasemap(map: Map, basemap: Basemap) {
       setRasterVisible(map, "satellite", false)
       setRasterVisible(map, "places", false)
       setCityVisible(map, false)
+      setRasterVisible(map, "osm", false)
+      setStreetVector(map, true)
+      paintStreetRoads(map, true)
       map.setTerrain(null)
-      if (phone) {
-        setRasterVisible(map, "osm", false)
-        setStreetVector(map, true)
-        paintStreetRoads(map, true)
-      } else {
-        setRasterVisible(map, "osm", true)
-        paintStreetRoads(map, false)
-      }
       map.easeTo({ pitch: 0, bearing: 0, duration: phone ? 200 : 650, essential: true })
       return
     case "satellite":

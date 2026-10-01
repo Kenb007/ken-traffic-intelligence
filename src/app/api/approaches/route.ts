@@ -1,4 +1,5 @@
 import { readApproachPoints } from "@/lib/approaches"
+import { fetchUpstream } from "@/lib/upstream"
 import type { ApproachesResponse } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -78,16 +79,13 @@ function detailUrl(id: string): string {
 }
 
 async function readJson(url: string): Promise<unknown> {
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(40_000),
+  const response = await fetchUpstream(url, FRESH_MS, {
+    timeoutMs: 40_000,
     headers: {
       Accept: "application/json",
       Referer: "https://www.hkemobility.gov.hk/en/",
     },
   })
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} from hkemobility.gov.hk`)
-  }
-  return response.json() as Promise<unknown>
+  if (response.status !== 200) throw new Error(`HTTP ${response.status} from hkemobility.gov.hk`)
+  return JSON.parse(new TextDecoder().decode(response.body)) as unknown
 }

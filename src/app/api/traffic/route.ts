@@ -1,4 +1,5 @@
 import { parseCsv } from "@/lib/csv"
+import { fetchUpstream } from "@/lib/upstream"
 import { buildCorridors, laneSpeed, type DetectorSite } from "@/lib/corridors"
 import { fetchText } from "@/lib/fetch-text"
 import {
@@ -206,16 +207,15 @@ let saturationCache: { expires: number; levels: Map<string, string> } | null = n
 
 async function loadSaturation(): Promise<Map<string, string>> {
   if (saturationCache && saturationCache.expires > Date.now()) return saturationCache.levels
-  const response = await fetch(SATURATION_URL, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(40_000),
+  const response = await fetchUpstream(SATURATION_URL, 60_000, {
+    timeoutMs: 40_000,
     headers: {
       Accept: "application/json",
       Referer: "https://www.hkemobility.gov.hk/en/",
     },
   })
-  if (!response.ok) throw new Error(`HTTP ${response.status} from the traffic class feed`)
-  const payload: unknown = await response.json()
+  if (response.status !== 200) throw new Error(`HTTP ${response.status} from the traffic class feed`)
+  const payload: unknown = JSON.parse(new TextDecoder().decode(response.body))
   const levels = new Map<string, string>()
   if (isFeatureCollection(payload)) {
     for (const feature of payload.features) {

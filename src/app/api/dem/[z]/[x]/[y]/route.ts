@@ -1,4 +1,5 @@
 import { repairTerrariumPng } from "@/lib/terrain-tile"
+import { fetchUpstream } from "@/lib/upstream"
 
 export const dynamic = "force-dynamic"
 
@@ -19,11 +20,9 @@ export async function GET(
   }
 
   const upstream = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${zN}/${xN}/${yN}.png`
-  const response = await fetch(upstream, { signal: AbortSignal.timeout(20_000) })
-  if (!response.ok) {
-    return new Response(null, { status: response.status })
-  }
-  const bytes = Buffer.from(await response.arrayBuffer())
+  const response = await fetchUpstream(upstream, 86_400_000, { timeoutMs: 20_000 })
+  if (response.status !== 200) return new Response(null, { status: response.status })
+  const bytes = Buffer.from(response.body)
   const repaired = repairTerrariumPng(bytes, zN)
   return new Response(new Uint8Array(repaired), {
     headers: {

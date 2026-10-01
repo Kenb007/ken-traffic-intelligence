@@ -1,3 +1,4 @@
+import { fetchUpstream } from "@/lib/upstream"
 import { EMPTY_CONDITIONS, parseConditions, parseWarnsum, type HkoLang } from "@/lib/warnings"
 import type { WarningsResponse, WeatherConditions } from "@/lib/types"
 
@@ -40,11 +41,7 @@ function feedError(
 }
 
 async function readJson(url: string): Promise<unknown> {
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
-    headers: { Accept: "application/json" },
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status} from the Observatory`)
-  return response.json() as Promise<unknown>
+  const response = await fetchUpstream(url, 60_000, { timeoutMs: 20_000, headers: { Accept: "application/json" } })
+  if (response.status !== 200) throw new Error(`HTTP ${response.status} from the Observatory`)
+  return JSON.parse(new TextDecoder().decode(response.body)) as unknown
 }
