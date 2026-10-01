@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import {
+  carryArrivalClock,
   estimateTrains,
   metresBetween,
   pathsToward,
@@ -8,6 +9,7 @@ import {
   viaRacecourse,
   type EstimateRoute,
   type GeoPoint,
+  type EstimatedTrain,
   type TrainObservation,
 } from "./mtr-estimate.ts"
 
@@ -93,6 +95,30 @@ const queued = estimateTrains(line, [obs("A", "C", 3, 3), obs("A", "C", 7, 7), o
 assert.equal(queued.length, 1)
 assert.equal(queued[0]!.ttnt, 3)
 
+const leftBehind = estimateTrains(line, [obs("B", "C", 0, 0), obs("C", "C", 1, 1)], locate)
+assert.equal(leftBehind.length, 1)
+const leftSpot = projectTrain(leftBehind[0]!, locate, now)
+assert.ok(leftSpot)
+assert.equal(leftSpot.from, "B")
+assert.equal(leftSpot.to, "C")
+
+const dwellThenRun = projectTrain({ ...obsTrain("B", "C", 0), path: ["A", "B", "C"], hold: ["A", "B", "C"] }, locate, now + 90_000)
+assert.ok(dwellThenRun)
+assert.equal(dwellThenRun.from, "B")
+assert.equal(dwellThenRun.to, "C")
+assert.ok(dwellThenRun.lat > (places.B?.lat ?? 0) && dwellThenRun.lat < (places.C?.lat ?? 0))
+
+const rollsOut = projectTrain({ ...obsTrain("B", "C", 2), timeType: "D", path: ["A", "B", "C"], hold: ["A", "B", "C"] }, locate, now + 3 * 60_000)
+assert.ok(rollsOut)
+assert.equal(rollsOut.from, "B")
+assert.equal(rollsOut.to, "C")
+
+const carried = carryArrivalClock(
+  [{ ...obs("B", "C", 0, 0), observedAt: now - 60_000, dueAt: now - 60_000 }],
+  [obs("B", "C", 0, 0)],
+)
+assert.equal(carried[0]!.observedAt, now - 60_000)
+
 const departures = estimateTrains(
   line,
   [
@@ -126,6 +152,22 @@ const segment = segmentMinutes(metresBetween(places.A!, places.B!))
 assert.ok(Math.abs(segment - 2) < 0.05)
 
 console.log("mtr estimate ok")
+
+function obsTrain(station: string, dest: string, ttnt: number): EstimatedTrain {
+  return {
+    id: "t",
+    line: "TML",
+    dest,
+    plat: "1",
+    ttnt,
+    observedAt: now,
+    delay: false,
+    timeType: "A",
+    anchor: station,
+    path: ["A", "B", "C"],
+    hold: ["A", "B", "C"],
+  }
+}
 
 function obs(
   station: string,

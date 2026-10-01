@@ -213,11 +213,13 @@ export function trainPopup(properties: GeoJSON.GeoJsonProperties, snapshot: MtrR
   const line = lineLabel(train.line, m)
   if (line) card.head.append(paragraph("city-card-detail", line))
   const spot = projectNetworkTrain(train, Date.now())
-  const anchor = stationRecord(train.anchor)
-  const anchorName = anchor ? displayText(m.locale, anchor.tc, anchor.en) : train.anchor
-  if (train.timeType !== "D") card.body.append(fact(m.mtrNext, anchorName))
+  const riding = spot != null && spot.from !== spot.to
+  const nextCode = riding ? spot.to : train.anchor
+  const next = stationRecord(nextCode)
+  const nextName = next ? displayText(m.locale, next.tc, next.en) : nextCode
+  if (riding || train.timeType !== "D") card.body.append(fact(m.mtrNext, nextName))
   const minutes = spot ? Math.max(0, Math.round(spot.minutes)) : train.ttnt
-  const when = train.timeType === "D" ? m.mtrDeparts(minutes) : minutes <= 0 ? m.mtrArriving : m.minutes(minutes)
+  const when = !riding && train.timeType === "D" ? m.mtrDeparts(minutes) : minutes <= 0 ? m.mtrArriving : m.minutes(minutes)
   card.body.append(fact(m.whenLabel, when, train.delay ? "#8a5a00" : undefined))
   if (train.plat) card.body.append(fact(m.mtrPlatform, train.plat))
   if (spot) card.body.append(fact(m.mtrPosition, positionSentence(spot, m)))

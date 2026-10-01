@@ -10,6 +10,11 @@ const OPEN_SPEED_MPS = 18
 const MIN_SEGMENT_MIN = 0.8
 const MAX_SEGMENT_MIN = 8
 const HOP_TOLERANCE_MS = 150_000
+// The arrival board does not say when the train leaves. Half a minute is the stop
+// after a 0-minute reading, then the train runs the next spacing. A published
+// departure time is the leave time, so that one does not add a stop.
+const ARRIVAL_DWELL_MIN = 0.5
+const ZERO_CLOCK_MAX_MS = 4 * 60_000
 
 export type GeoPoint = { lng: number; lat: number }
 
@@ -158,17 +163,46 @@ export function estimateTrains(
 
 export function projectTrain(train: EstimatedTrain, locate: (code: string) => GeoPoint | null, atMs: number): TrainSpot | null {
   const elapsed = Math.max(0, (atMs - train.observedAt) / 60_000)
-  const minutes = Math.max(0, train.ttnt - elapsed)
+  const untilEvent = train.ttnt - elapsed
   const anchorPoint = locate(train.anchor)
   if (!anchorPoint) return null
-  if (train.timeType === "D" || minutes === 0) {
-    return { lng: anchorPoint.lng, lat: anchorPoint.lat, from: train.anchor, to: train.anchor, clamp: "none", minutes }
+  if (train.timeType === "D") {
+    if (untilEvent > 0) return atPoint(anchorPoint, train.anchor, untilEvent)
+    return rideForward(train, locate, -untilEvent) ?? atPoint(anchorPoint, train.anchor, 0)
   }
+  if (untilEvent > 0) return approachStation(train, locate, untilEvent, anchorPoint)
+  const sinceArrival = -untilEvent
+  if (sinceArrival < ARRIVAL_DWELL_MIN) return atPoint(anchorPoint, train.anchor, 0)
+  return rideForward(train, locate, sinceArrival - ARRIVAL_DWELL_MIN) ?? atPoint(anchorPoint, train.anchor, 0)
+}
+
+export function carryArrivalClock(previous: TrainObservation[], next: TrainObservation[]): TrainObservation[] {
+  return next.map((item) => {
+    if (item.ttnt !== 0 || item.timeType === "D") return item
+    const prior = previous.find(
+      (old) =>
+        old.ttnt === 0 &&
+        old.timeType !== "D" &&
+        old.line === item.line &&
+        old.station === item.station &&
+        old.dest === item.dest &&
+        old.plat === item.plat,
+    )
+    if (!prior || prior.observedAt >= item.observedAt) return item
+    if (item.observedAt - prior.observedAt > ZERO_CLOCK_MAX_MS) return item
+    return { ...item, observedAt: prior.observedAt, dueAt: prior.observedAt }
+  })
+}
+
+function approachStation(
+  train: EstimatedTrain,
+  locate: (code: string) => GeoPoint | null,
+  minutes: number,
+  anchorPoint: GeoPoint,
+): TrainSpot {
   const hold = new Set(train.hold)
   let at = train.path.indexOf(train.anchor)
-  if (at < 0) {
-    return { lng: anchorPoint.lng, lat: anchorPoint.lat, from: train.anchor, to: train.anchor, clamp: "junction", minutes }
-  }
+  if (at < 0) return { ...atPoint(anchorPoint, train.anchor, minutes), clamp: "junction" }
   let remain = minutes
   while (at > 0) {
     const previous = train.path[at - 1]
@@ -186,7 +220,7 @@ export function projectTrain(train: EstimatedTrain, locate: (code: string) => Ge
         from: previous,
         to: here,
         clamp: "none",
-        minutes,
+        minutes: remain,
       }
     }
     remain -= segment
@@ -195,7 +229,50 @@ export function projectTrain(train: EstimatedTrain, locate: (code: string) => Ge
   const code = train.path[at] ?? train.anchor
   const point = locate(code) ?? anchorPoint
   const clamp = remain > 0.05 ? (code === train.path[0] ? "origin" : "junction") : "none"
-  return { lng: point.lng, lat: point.lat, from: code, to: code, clamp, minutes }
+  return { lng: point.lng, lat: point.lat, from: code, to: code, clamp, minutes: Math.max(0, minutes) }
+}
+
+function rideForward(
+  train: EstimatedTrain,
+  locate: (code: string) => GeoPoint | null,
+  travelMin: number,
+): TrainSpot | null {
+  const hold = new Set(train.hold)
+  let index = train.path.indexOf(train.anchor)
+  const anchorPoint = locate(train.anchor)
+  if (index < 0 || !anchorPoint || travelMin <= 0) return null
+  let remain = travelMin
+  while (index < train.path.length - 1) {
+    const here = train.path[index]
+    const next = train.path[index + 1]
+    if (!here || !next || !hold.has(next)) break
+    const start = locate(here)
+    const end = locate(next)
+    if (!start || !end) break
+    const segment = segmentMinutes(metresBetween(start, end))
+    if (remain <= segment) {
+      const mix = segment <= 0 ? 1 : remain / segment
+      return {
+        lng: start.lng + (end.lng - start.lng) * mix,
+        lat: start.lat + (end.lat - start.lat) * mix,
+        from: here,
+        to: next,
+        clamp: "none",
+        minutes: Math.max(0, segment - remain),
+      }
+    }
+    remain -= segment
+    index += 1
+  }
+  const code = train.path[index] ?? train.anchor
+  const point = locate(code)
+  if (!point) return null
+  const held = index < train.path.length - 1
+  return { lng: point.lng, lat: point.lat, from: code, to: code, clamp: held ? "junction" : "none", minutes: 0 }
+}
+
+function atPoint(point: GeoPoint, code: string, minutes: number): TrainSpot {
+  return { lng: point.lng, lat: point.lat, from: code, to: code, clamp: "none", minutes: Math.max(0, minutes) }
 }
 
 function enteredService(
@@ -325,22 +402,24 @@ function pickAnchor(chain: Chain, shared: Set<string>, locate: (code: string) =>
   const branched = chain.items.some((item) => !shared.has(item.station))
   const hold = branched ? [...new Set(chain.path)] : [...shared]
   let best: IndexedObservation | null = null
-  let bestClamped = true
+  let bestRank = -1
   for (const item of arrivals) {
     const probeHold = hold.includes(item.station) ? hold : [...hold, item.station]
-    const clamped = walkClamps(chain.path, probeHold, item, locate)
-    if (!best || (bestClamped && !clamped)) {
+    const rank = placementRank(chain.path, probeHold, item, locate)
+    if (!best || rank > bestRank || (rank === bestRank && (item.ttnt < best.ttnt || (item.ttnt === best.ttnt && item.index > best.index)))) {
       best = item
-      bestClamped = clamped
-      continue
+      bestRank = rank
     }
-    if (clamped !== bestClamped) continue
-    if (item.ttnt < best.ttnt || (item.ttnt === best.ttnt && item.index > best.index)) best = item
   }
   return best ?? soonestDeparture
 }
 
-function walkClamps(path: string[], hold: string[], item: IndexedObservation, locate: (code: string) => GeoPoint | null): boolean {
+function placementRank(
+  path: string[],
+  hold: string[],
+  item: IndexedObservation,
+  locate: (code: string) => GeoPoint | null,
+): number {
   const spot = projectTrain(
     {
       id: "probe",
@@ -358,7 +437,10 @@ function walkClamps(path: string[], hold: string[], item: IndexedObservation, lo
     locate,
     item.observedAt,
   )
-  return spot?.clamp !== "none"
+  if (!spot) return 0
+  if (spot.from !== spot.to) return 2
+  if (spot.clamp === "none") return 1
+  return 0
 }
 
 function dueError(

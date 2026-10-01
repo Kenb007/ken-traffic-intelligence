@@ -1,4 +1,4 @@
-import { estimateTrains, type TrainObservation } from "@/lib/mtr-estimate"
+import { carryArrivalClock, estimateTrains, type TrainObservation } from "@/lib/mtr-estimate"
 import { mtrQueries, networkRoutes, stationPoint } from "@/lib/mtr-network"
 import { readSchedule } from "@/lib/mtr-schedule"
 import type { MtrBoard, MtrResponse, MtrTrain } from "@/lib/types"
@@ -28,7 +28,11 @@ export async function loadMtrSnapshot(now = Date.now()): Promise<MtrResponse> {
       if (!parsed) return
       const previous = remembered.get(key)
       if (parsed.observations.length === 0 && previous && previous.observations.length > 0 && now - previous.at < 180_000) return
-      remembered.set(key, { at: now, board: parsed.board, observations: parsed.observations })
+      remembered.set(key, {
+        at: now,
+        board: parsed.board,
+        observations: carryArrivalClock(previous?.observations ?? [], parsed.observations),
+      })
     })
   }
 
