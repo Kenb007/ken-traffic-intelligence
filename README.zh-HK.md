@@ -2,9 +2,11 @@
 
 # HK Traffic Intelligence
 
-香港的智慧城市，其實可以這樣看。星期五傍晚，三條過海隧道公布行車分鐘，策略性道路隨車流改變顏色，你回家的那條港鐵綫上有一班車在走。輕鐵有自己的路軌，穿過屯門、元朗和天水圍。九巴、龍運和城巴公布車站的下一班車。天氣轉壞時，天文台發出警告。入境事務處公布陸路管制站的輪候。
+這是一個香港智慧城市項目。它把這座城市的實時情況放在同一幅地圖上：過海隧道、道路、港鐵、輕鐵、巴士、天氣，以及陸路管制站。
 
-這些數字本來已經公開。這幅地圖把它們放在同一個畫面，讓你可以一起留意這座城市。它不提供行車路線。它之所以做得到，是因為運輸署、HKeMobility、入境事務處、香港天文台、港鐵、九巴、龍運和城巴已經把資料向公眾公布，而一個人應該可以把它們看成同一個地方。
+星期五傍晚，三條過海隧道公布行車分鐘，策略性道路隨車流改變顏色，你回家的那條港鐵綫上有一班車在走。輕鐵有自己的路軌，穿過屯門、元朗和天水圍。九巴、龍運和城巴公布車站的下一班車。天氣轉壞時，天文台發出警告。入境事務處公布陸路管制站的輪候。
+
+這些智慧城市的數字本來已經公開。這幅地圖把它們放在同一個畫面，讓你可以一起留意。它不提供行車路線。它之所以做得到，是因為運輸署、HKeMobility、入境事務處、香港天文台、港鐵、九巴、龍運和城巴已經把資料向公眾公布，而一個人應該可以把這個智慧城市看成同一個地方。
 
 網站在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。不需要帳戶。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁邊。
 
@@ -14,9 +16,9 @@
 
 ![香港交通地圖：衛星底圖、著色道路，以及頂端的實時讀數](docs/board.png)
 
-如果這幅地圖幫你少等一次過海，又或者你希望更多人看見這個開源的香港智慧城市地圖，請在 GitHub [按 star](https://github.com/keithligh/hk-traffic-intelligence)。Star 會讓這個項目被人看見，也是支持它最直接的方法。
+如果這幅智慧城市地圖幫你少等一次過海，又或者你希望更多人看見它，請在 GitHub [按 star](https://github.com/keithligh/hk-traffic-intelligence)。Star 會讓這個項目被人看見，也是支持它最直接的方法。
 
-## 你可以留意什麼
+## 這幅智慧城市地圖有什麼
 
 紅磡海底隧道、東區海底隧道和西區海底隧道，顯示在真實進路上量度的行車時間。策略性道路用運輸署的暢順、緩慢和擠塞，已公布車速的路段會顯示該車速。你可以打開公共快拍，包括隧道口，亦可查看較快速道路的工程、過海隧道和大欖隧道的收費點，以及尚未結束的特別交通消息。
 
@@ -26,11 +28,11 @@
 
 若幾項情況需要一併留意，網站會把它們排好次序，先是尚未結束的交通消息、列為擠塞的道路、非常繁忙的旅客大堂，或天氣警告。
 
-香港公開的數據，遠多於這幅地圖所用的部分。你在這裏看到的，是本頁稍後列出的交通、口岸、天氣、港鐵、輕鐵、九巴、龍運和城巴資料。
+香港公開的數據，遠多於這幅智慧城市地圖所用的部分。你在這裏看到的，是本頁稍後列出的交通、口岸、天氣、港鐵、輕鐵、九巴、龍運和城巴資料。
 
 ## 開源
 
-程式以 [MIT License](LICENSE) 開源。歡迎你複製、在本機運行、修改，以及 fork。如果你 fork 或重用這些程式，請保留版權聲明，並致謝 [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) 和 [Keith Li](https://github.com/keithligh)。
+這個智慧城市地圖的程式以 [MIT License](LICENSE) 開源。歡迎你複製、在本機運行、修改，以及 fork。如果你 fork 或重用這些程式，請保留版權聲明，並致謝 [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) 和 [Keith Li](https://github.com/keithligh)。
 
 需要 Node.js 22。
 
@@ -81,8 +83,8 @@ npm run dev
 
 ## 作者
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) 製作這幅地圖，用於 Agentic Engineer 的課堂、公開演講和大學客席講座。地圖之所以做得到，是因為運輸署、入境事務處、香港天文台、港鐵、九巴、龍運、城巴，以及負責 HKeMobility 的團隊，已經把這些數字向公眾公布。
+[Keith Li](https://www.linkedin.com/in/keithlihk) 製作這幅智慧城市地圖，用於 Agentic Engineer 的課堂、公開演講和大學客席講座。地圖之所以做得到，是因為運輸署、入境事務處、香港天文台、港鐵、九巴、龍運、城巴，以及負責 HKeMobility 的團隊，已經把這些數字向公眾公布。
 
-如果你用過這幅地圖，請 [按 star](https://github.com/keithligh/hk-traffic-intelligence)。下一個人就是這樣找到它的。
+如果你用過這幅地圖，請 [按 star](https://github.com/keithligh/hk-traffic-intelligence)。下一個人就是這樣找到這個智慧城市項目的。
 
 Keith 的 [LinkedIn](https://www.linkedin.com/in/keithlihk) 和 [GitHub](https://github.com/keithligh)。

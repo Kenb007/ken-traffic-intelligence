@@ -2,9 +2,11 @@
 
 # HK Traffic Intelligence
 
-Hong Kong already runs a smart city you can watch. On a Friday evening the three harbour crossings publish their minutes, the strategic roads change colour as traffic settles, and a train keeps moving along the line you take home. The Light Rail is on its own tracks through Tuen Mun, Yuen Long, and Tin Shui Wai. KMB, Long Win, and Citybus publish the next bus at the stop. The Observatory raises a warning when the weather turns. The Immigration Department publishes the wait at the land control points.
+This is a Hong Kong Smart City project. It puts the live city on one map: harbour crossings, roads, trains, Light Rail, buses, weather, and the land control points.
 
-Those figures were already public. This map reads them together, so you can follow the city on one screen. It does not give driving directions. It is here because the Transport Department, HKeMobility, the Immigration Department, the Observatory, MTR, KMB, Long Win, and Citybus already release the numbers, and a person should be able to see them as one place.
+On a Friday evening the three harbour crossings publish their minutes, the strategic roads change colour as traffic settles, and a train keeps moving along the line you take home. The Light Rail runs on its own tracks through Tuen Mun, Yuen Long, and Tin Shui Wai. KMB, Long Win, and Citybus publish the next bus at the stop. The Observatory raises a warning when the weather turns. The Immigration Department publishes the wait at the land control points.
+
+Those Smart City figures were already public. This map reads them together. It does not give driving directions. It is here because the Transport Department, HKeMobility, the Immigration Department, the Observatory, MTR, KMB, Long Win, and Citybus already release the numbers, and a person should be able to see that smart city as one place.
 
 Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account. The page opens in Traditional Chinese, the written Chinese of Hong Kong, and English sits beside the clock.
 
@@ -14,9 +16,9 @@ Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.d
 
 ![Hong Kong traffic map: satellite view, coloured strategic roads, live harbour minutes, and the header](docs/board.png)
 
-If this map saves you a crossing, or you want more people to find an open source picture of Hong Kong's smart city, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). A star is how the project gets seen, and it is the most direct way to support the work.
+If this Smart City map saves you a crossing, or you want more people to find it, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). A star is how the project gets seen, and it is the most direct way to support the work.
 
-## What you can follow
+## The smart city on this map
 
 The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing show the journey time measured on a real approach. Strategic roads use the Transport Department classes of Good, Average, and Bad, and a live speed appears where one has been published. You can open the public cameras, including the tunnel mouths, and follow road works on the faster roads, the toll points at the harbour crossings and Tai Lam Tunnel, and special traffic news that is still open.
 
@@ -26,11 +28,11 @@ The MTR draws its lines and moves each train from the next-train minutes, destin
 
 When several of these need attention at once, the site puts them in order, starting with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning.
 
-Hong Kong publishes much more open data than this map uses. What you see here is the traffic, border, weather, MTR, Light Rail, KMB, Long Win, and Citybus information named further down.
+Hong Kong publishes much more open data than this Smart City map uses. What you see here is the traffic, border, weather, MTR, Light Rail, KMB, Long Win, and Citybus information named further down.
 
 ## Open source
 
-The code is open source under the [MIT License](LICENSE). Clone it, run it, change it, and fork it. If you fork or reuse the work, please keep the copyright notice and credit [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) and [Keith Li](https://github.com/keithligh).
+The code for this Smart City map is open source under the [MIT License](LICENSE). Clone it, run it, change it, and fork it. If you fork or reuse the work, please keep the copyright notice and credit [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) and [Keith Li](https://github.com/keithligh).
 
 You need Node.js 22.
 
@@ -81,8 +83,8 @@ Each row is one part of the map and the publication it comes from. This is only 
 
 ## Author
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) made this map for Agentic Engineer classes, for public talks, and for guest lectures. It exists because the Transport Department, the Immigration Department, the Observatory, MTR, KMB, Long Win, Citybus, and the teams behind HKeMobility already publish these figures for the public.
+[Keith Li](https://www.linkedin.com/in/keithlihk) made this Smart City map for Agentic Engineer classes, for public talks, and for guest lectures. It exists because the Transport Department, the Immigration Department, the Observatory, MTR, KMB, Long Win, Citybus, and the teams behind HKeMobility already publish these figures for the public.
 
-If you have used the map, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). That star is how the next person finds it.
+If you have used the map, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). That star is how the next person finds this Smart City project.
 
 Keith is on [LinkedIn](https://www.linkedin.com/in/keithlihk) and [GitHub](https://github.com/keithligh).
