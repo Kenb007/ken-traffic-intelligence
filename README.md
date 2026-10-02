@@ -2,13 +2,9 @@
 
 # HK Traffic Intelligence
 
-This is a Hong Kong Smart City project. It puts the live city on one map: harbour crossings, roads, trains, Light Rail, buses, weather, and the land control points.
+This is a Hong Kong Smart City map. It shows the live city in one place: the harbour crossings, the strategic roads, MTR and Light Rail trains, KMB, Long Win and Citybus arrivals, the land boundary waits, and Observatory weather.
 
-On a Friday evening the three harbour crossings publish their minutes, the strategic roads change colour as traffic settles, and a train keeps moving along the line you take home. The Light Rail runs on its own tracks through Tuen Mun, Yuen Long, and Tin Shui Wai. KMB, Long Win, and Citybus publish the next bus at the stop. The Observatory raises a warning when the weather turns. The Immigration Department publishes the wait at the land control points.
-
-Those Smart City figures were already public. This map reads them together. It does not give driving directions. It is here because the Transport Department, HKeMobility, the Immigration Department, the Observatory, MTR, KMB, Long Win, and Citybus already release the numbers, and a person should be able to see that smart city as one place.
-
-Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account. The page opens in Traditional Chinese, the written Chinese of Hong Kong, and English sits beside the clock.
+Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account to create and nothing to install. The site opens in Traditional Chinese as written in Hong Kong, with English beside the clock.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_the_map-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
@@ -16,19 +12,27 @@ Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.d
 
 ![Hong Kong traffic map: satellite view, coloured strategic roads, live harbour minutes, and the header](docs/board.png)
 
-If this Smart City map saves you a crossing, or you want more people to find it, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). A star is how the project gets seen, and it is the most direct way to support the work.
+If this Smart City map helped you pick a better time to cross the harbour, or you want more people to find it, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). A star is how new readers discover the project, and it is the simplest way to support it.
 
-## The smart city on this map
+## What the site is for
 
-The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing show the journey time measured on a real approach. Strategic roads use the Transport Department classes of Good, Average, and Bad, and a live speed appears where one has been published. You can open the public cameras, including the tunnel mouths, and follow road works on the faster roads, the toll points at the harbour crossings and Tai Lam Tunnel, and special traffic news that is still open.
+The site answers a small set of practical questions. How long do the three harbour crossings take right now. Whether the road you plan to use is running well. Whether the boundary hall you plan to use is busy. Whether an Observatory warning is in force. When the next train or bus actually comes.
 
-The eight land control points show the passenger halls, for residents and visitors, arriving and departing, together with the live speed on the strategic road that leads to that port. Lo Wu is a passenger crossing, and the published figures do not include a queue for private cars. Every Hong Kong Observatory warning in force is listed. On a quiet day the site still gives the temperature at the Observatory and whether rain fell in the past hour.
+It does not plan driving routes. It reads the figures that public bodies already publish and places them side by side, so the harbour, the roads, the boundary, the weather, and public transport can be weighed together.
 
-The MTR draws its lines and moves each train from the next-train minutes, destination, and platform that MTR publishes. The Light Rail does the same on its own routes: the track is on the map, and the train moves along it from the minutes published for those stations. KMB and Long Win show the published arrival at a stop, including a trip shown as scheduled. Long Win on this feed is the airport and Tung Chung work, including the A, E, and S routes. Citybus shows the published arrival at its stops, on Hong Kong Island and on the routes it runs elsewhere.
+Those figures come from the Transport Department, HKeMobility, the Immigration Department, the Observatory, MTR, KMB, Long Win, and Citybus. The map exists only because these organisations already release their numbers to the public.
 
-When several of these need attention at once, the site puts them in order, starting with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning.
+## What you can see on the map
 
-Hong Kong publishes much more open data than this Smart City map uses. What you see here is the traffic, border, weather, MTR, Light Rail, KMB, Long Win, and Citybus information named further down.
+Crossing the harbour and driving in town come first. The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing each show a journey time measured on a real approach. Strategic roads take the Transport Department grades of Good, Average, and Bad, and show a live speed wherever one has been published. Public cameras can be opened, including the tunnel mouths. Road works on the faster roads, toll points at the harbour crossings and Tai Lam Tunnel, and special traffic notices that are still in force are all on the same view.
+
+Going through the boundary and checking the weather come next. The eight land control points show the passenger halls for residents and visitors, arriving and departing, together with the live speed on the strategic road that leads to each port. Lo Wu serves passengers rather than private cars, so its published figures carry no car queue. Every Observatory warning in force is listed. On a quiet day the site still reports the Observatory temperature and whether rain fell in the past hour.
+
+Catching a train or a bus is drawn the same way. MTR lines are drawn on the map and each train moves from the next-train minutes, destination, and platform that MTR publishes. Light Rail keeps its own tracks through Tuen Mun, Yuen Long, and Tin Shui Wai, and each car moves from the minutes published for those stations. KMB and Long Win stops show the published arrival, including trips marked as scheduled. Long Win in this feed means the airport and Tung Chung work, including the A, E, and S routes. Citybus stops show the published arrival on Hong Kong Island and on the routes Citybus runs elsewhere.
+
+When several things need attention at once, the site puts them in order. An open traffic notice, a road graded Bad, a very busy hall, or a weather warning rises to the top, so the urgent item is read first.
+
+Hong Kong publishes far more open data than this Smart City map uses. What appears here is the traffic, boundary, weather, MTR, Light Rail, KMB, Long Win, and Citybus material listed further down.
 
 ## Open source
 
@@ -54,17 +58,17 @@ Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 
 The application is written with Next.js, React, MapLibre GL, and Tailwind CSS, and the public site runs as a Cloudflare Worker.
 
-## One shared copy
+## How the site stays light
 
-Anyone who opens the public site reads a shared copy of each feed, kept on Cloudflare for that city. Trains are renewed about every fifteen seconds, KMB and Long Win about every thirty seconds, and Citybus and the other feeds about once a minute. While a copy is still current, the next visitor is served from it. A fresh request goes to the organisation that publishes the feed only when that copy is ready to be renewed, so many people can read the map while the site stays with the pace of the figures those organisations already release.
+Everyone who opens the public site reads from one shared copy of each feed, held on Cloudflare for the whole city. Trains are renewed about every fifteen seconds, KMB and Long Win about every thirty seconds, and Citybus and the remaining feeds about once a minute. While a copy is still current, the next visitor is served from it. A fresh request goes to the publishing organisation only when that copy falls due for renewal. Many people can therefore read the map at once, at the pace those organisations already publish, and the site does not add load to government servers.
 
 ## Where the numbers come from
 
-Each row is one part of the map and the publication it comes from. This is only what the map uses.
+Each row is one part of the map and the publication it is drawn from. This table covers only what the map uses.
 
 | On the map | Open data |
 | --- | --- |
-| Speed and official colour on strategic roads | [Traffic data of strategic and major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads), classed on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| Speed and official grade on strategic roads | [Traffic data of strategic and major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads), graded on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
 | The shape of those roads | [Road Network, second generation](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) |
 | Journey times at the harbour crossings | Journey-time information on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
 | Cameras, in English and Traditional Chinese | Camera images on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
@@ -83,8 +87,8 @@ Each row is one part of the map and the publication it comes from. This is only 
 
 ## Author
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) made this Smart City map for Agentic Engineer classes, for public talks, and for guest lectures. It exists because the Transport Department, the Immigration Department, the Observatory, MTR, KMB, Long Win, Citybus, and the teams behind HKeMobility already publish these figures for the public.
+[Keith Li](https://www.linkedin.com/in/keithlihk) made this Smart City map for Agentic Engineer classes, for public talks, and for guest lectures. It is possible because the Transport Department, the Immigration Department, the Observatory, MTR, KMB, Long Win, Citybus, and the teams behind HKeMobility already publish these figures for the public.
 
-If you have used the map, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). That star is how the next person finds this Smart City project.
+If you have used the map, please [star the repository](https://github.com/keithligh/hk-traffic-intelligence). That star is how the next reader finds this Smart City project.
 
 Keith is on [LinkedIn](https://www.linkedin.com/in/keithlihk) and [GitHub](https://github.com/keithligh).
