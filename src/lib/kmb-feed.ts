@@ -1,6 +1,7 @@
 import { busCompany } from "@/lib/bus-company"
 import { refreshKmbCatalogueSoon } from "@/lib/kmb-catalogue"
 import { kmbStop, kmbStopsWithin } from "@/lib/kmb-network"
+import { kmbRoutesAt, refreshKmbRoutesSoon } from "@/lib/kmb-routes"
 import { isListedKmbRow, kmbReachMetres, STOP_CAP } from "@/lib/kmb-reach"
 import { arrivalFailure, etaDue, ETA_FRESH_MS, forgetStale, heldRows, type HeldRows } from "@/lib/place-arrivals"
 import { etaQueue } from "@/lib/polite-fetch"
@@ -26,11 +27,19 @@ const remembered = new Map<string, HeldRows<EtaRow>>()
 
 export function loadKmbPlaces(lng: number, lat: number, now = Date.now(), zoom = Number.NaN): KmbPlacesResponse {
   refreshKmbCatalogueSoon(now)
+  refreshKmbRoutesSoon(now)
   const stops: KmbPlacesResponse["stops"] = []
   for (const stop of kmbStopsWithin(lng, lat, kmbReachMetres(zoom, lat), STOP_CAP)) {
     const record = kmbStop(stop.id)
     if (!record) continue
-    stops.push({ id: stop.id, nameTc: record.tc, nameEn: record.en, lng: record.lng, lat: record.lat })
+    stops.push({
+      id: stop.id,
+      nameTc: record.tc,
+      nameEn: record.en,
+      lng: record.lng,
+      lat: record.lat,
+      routes: kmbRoutesAt(stop.id),
+    })
   }
   return { ok: true, stops }
 }
@@ -38,6 +47,7 @@ export function loadKmbPlaces(lng: number, lat: number, now = Date.now(), zoom =
 // Poles come from the catalogue. This only refreshes the arrival clock.
 export async function loadKmbNear(lng: number, lat: number, now = Date.now(), zoom = Number.NaN): Promise<KmbResponse> {
   refreshKmbCatalogueSoon(now)
+  refreshKmbRoutesSoon(now)
   forgetStale(remembered, now)
   const nearest = kmbStopsWithin(lng, lat, kmbReachMetres(zoom, lat), STOP_CAP)
   let missed = 0
@@ -54,7 +64,15 @@ export async function loadKmbNear(lng: number, lat: number, now = Date.now(), zo
     const record = kmbStop(stop.id)
     if (!record) continue
     const rows = heldRows(remembered.get(stop.id), now) ?? []
-    stops.push({ id: stop.id, nameTc: record.tc, nameEn: record.en, lng: record.lng, lat: record.lat, calls: callsAt(rows, now) })
+    stops.push({
+      id: stop.id,
+      nameTc: record.tc,
+      nameEn: record.en,
+      lng: record.lng,
+      lat: record.lat,
+      routes: kmbRoutesAt(stop.id),
+      calls: callsAt(rows, now),
+    })
   }
   const error = arrivalFailure(missed, stops.map((stop) => stop.calls.length), "KMB arrivals failed")
   return {

@@ -1562,6 +1562,7 @@ function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Local
           nameTc: stop.nameTc,
           nameEn: stop.nameEn,
           board: JSON.stringify(stop.calls),
+          routes: JSON.stringify(stop.routes),
           ...(icon ? { icon } : {}),
         },
       }
@@ -1574,7 +1575,8 @@ function kmbStopCollection(map: Map, kmb: KmbResponse, locale: Locale, labels: b
     type: "FeatureCollection",
     features: kmb.stops.map((stop) => {
       const name = readablePlace(displayText(locale, stop.nameTc, stop.nameEn))
-      const icon = labels ? placeStopPlate(map, name, stop.calls.map((call) => call.route), "#9f1239") : ""
+      const marks = stop.routes.length > 0 ? stop.routes : stop.calls.map((call) => call.route)
+      const icon = labels ? placeStopPlate(map, name, marks, "#9f1239") : ""
       return {
         type: "Feature" as const,
         geometry: { type: "Point" as const, coordinates: [stop.lng, stop.lat] },
@@ -1582,6 +1584,7 @@ function kmbStopCollection(map: Map, kmb: KmbResponse, locale: Locale, labels: b
           nameTc: stop.nameTc,
           nameEn: stop.nameEn,
           board: JSON.stringify(stop.calls),
+          routes: JSON.stringify(stop.routes),
           ...(icon ? { icon } : {}),
         },
       }

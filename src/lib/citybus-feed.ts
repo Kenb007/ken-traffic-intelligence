@@ -121,7 +121,6 @@ function callsAt(rows: EtaRow[], now: number): CitybusCall[] {
     const hasEta = Number.isFinite(etaMs)
     const remarkTc = isScheduled(row) ? "" : text(row.rmk_tc)
     const remarkEn = isScheduled(row) ? "" : text(row.rmk_en)
-    if (!hasEta && !remarkTc && !remarkEn) continue
     calls.push({
       route,
       destTc: text(row.dest_tc),

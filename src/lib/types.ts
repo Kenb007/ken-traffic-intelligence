@@ -183,6 +183,7 @@ export type KmbStopBoard = {
   nameEn: string
   lng: number
   lat: number
+  routes: string[]
   calls: KmbCall[]
 }
 
