@@ -154,6 +154,10 @@
   view-transition-name: harbour-intel;
 }
 
+.maplibregl-map .maplibregl-ctrl-top-left {
+  top: var(--map-control-top, 0px);
+}
+
 ::view-transition-group(harbour-intel) {
   animation-duration: 360ms;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);

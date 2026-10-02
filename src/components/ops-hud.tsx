@@ -99,6 +99,32 @@ export function OpsHud(props: OpsHudProps) {
     changeOpen(true)
     if (item?.coordinates) props.onFocus({ id: item.id, coordinates: item.coordinates })
   }
+  useEffect(() => {
+    const root = document.documentElement
+    const apply = () => {
+      if (window.matchMedia("(min-width: 1024px)").matches) {
+        root.style.removeProperty("--map-control-top")
+        return
+      }
+      const header = document.querySelector<HTMLElement>("[data-map-chrome='top']")
+      const box = header?.getBoundingClientRect()
+      if (!box || box.height < 2 || box.left > 56) {
+        root.style.removeProperty("--map-control-top")
+        return
+      }
+      root.style.setProperty("--map-control-top", `${Math.ceil(box.bottom + 6)}px`)
+    }
+    apply()
+    const header = document.querySelector("[data-map-chrome='top']")
+    const observer = new ResizeObserver(apply)
+    if (header) observer.observe(header)
+    window.addEventListener("resize", apply)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", apply)
+      root.style.removeProperty("--map-control-top")
+    }
+  }, [barOpen, locale])
   return (
     <div className="pointer-events-none absolute inset-0 z-[5]">
       {barOpen ? null : (
