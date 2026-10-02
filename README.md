@@ -6,7 +6,7 @@ This is a Hong Kong Smart City map. It shows the live city in one place: the har
 
 This map is possible because the Hong Kong Government publishes these feeds as open data. The Transport Department, the Immigration Department, the Observatory, and the teams behind HKeMobility and DATA.GOV.HK release the figures to the public, alongside MTR, KMB, Long Win, and Citybus, and this site simply reads them together.
 
-Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account to create and nothing to install. The site opens in Traditional Chinese as written in Hong Kong, with English beside the clock.
+Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account to create and nothing to install. The site opens in Traditional Chinese. Simplified Chinese and English are available from the language switch beside the clock.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_the_map-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)

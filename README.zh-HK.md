@@ -6,7 +6,7 @@
 
 這幅地圖之所以做得到，是因為香港政府把這些資料以開放數據形式公布。運輸署、入境事務處、天文台，以及負責 HKeMobility 和 DATA.GOV.HK 的團隊，向公眾發放這些數字，港鐵、九巴、龍運和城巴亦公布各自的班次資料，而這個網站只是把它們放在一起閱讀。
 
-網站設於 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。不需要開設帳戶，也不用安裝任何東西。畫面以香港通告的繁體中文開啟，英文在時鐘旁邊。
+網站設於 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。不需要開設帳戶，也不用安裝任何東西。網站預設以繁體中文顯示。如要轉用簡體中文或英文，請按時鐘旁邊的語言按鈕。
 
 [![開啟地圖](https://img.shields.io/badge/▶_開啟地圖-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
