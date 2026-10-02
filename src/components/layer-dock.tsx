@@ -17,6 +17,9 @@ type LayerDockProps = {
   kmbError: string | null
   lrtError: string | null
   citybusError: string | null
+  gmbError: string | null
+  nlbError: string | null
+  ferryError: string | null
   aboveMarquee: boolean
 }
 
@@ -48,6 +51,12 @@ function layerLabel(id: WatchLayer, m: Messages): string {
       return m.lrt
     case "citybus":
       return m.citybus
+    case "gmb":
+      return m.gmb
+    case "nlb":
+      return m.nlb
+    case "ferry":
+      return m.ferry
     default: {
       const exhaustive: never = id
       return exhaustive
@@ -83,6 +92,9 @@ const LAYERS: { id: WatchLayer; swatch: string }[] = [
   { id: "lrt", swatch: "bg-[#f5c518]" },
   { id: "kmb", swatch: "bg-[#9f1239]" },
   { id: "citybus", swatch: "bg-[#f6c343]" },
+  { id: "gmb", swatch: "bg-[#65a30d]" },
+  { id: "nlb", swatch: "bg-[#0f766e]" },
+  { id: "ferry", swatch: "bg-[#0369a1]" },
 ]
 
 export function LayerDock(props: LayerDockProps) {
@@ -91,11 +103,12 @@ export function LayerDock(props: LayerDockProps) {
   return (
     <div
       data-map-chrome="bottom"
-      className={`pointer-events-auto absolute left-4 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2 lg:left-16 ${
+      className={`pointer-events-auto absolute left-4 z-10 flex max-w-[calc(100%-2rem)] flex-col gap-2 lg:left-16 ${
         props.aboveMarquee ? "bottom-36 sm:bottom-28" : "bottom-28 sm:bottom-14 lg:max-w-[calc(100%-30rem)]"
       }`}
     >
-      <div className="inline-flex border border-white/15" role="group" aria-label={m.basemap}>
+      <div className="flex max-w-full items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
+      <div className="inline-flex shrink-0 border border-white/15" role="group" aria-label={m.basemap}>
         {BASEMAPS.map((id) => {
           const on = props.basemap === id
           return (
@@ -122,7 +135,7 @@ export function LayerDock(props: LayerDockProps) {
             type="button"
             aria-pressed={on}
             onClick={() => props.onToggle(layer.id)}
-            className={`inline-flex items-center gap-2 border px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] uppercase ${
+            className={`inline-flex shrink-0 items-center gap-2 border px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] uppercase ${
               on
                 ? "border-cyan-200/50 bg-[#041018]/80 text-white"
                 : "border-white/15 bg-[#041018]/55 text-zinc-400"
@@ -137,10 +150,11 @@ export function LayerDock(props: LayerDockProps) {
       <button
         type="button"
         onClick={props.onReplay}
-        className="border border-white/15 bg-[#041018]/70 px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] text-cyan-50 uppercase"
+        className="shrink-0 border border-white/15 bg-[#041018]/70 px-2.5 py-1.5 font-[family-name:var(--font-hud)] text-[0.72rem] tracking-[0.08em] text-cyan-50 uppercase"
       >
         {m.replay}
       </button>
+      </div>
       {props.layers.speed ? (
         <p
           className="basis-full flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-hud)] text-[0.68rem] tracking-[0.06em] text-cyan-50/90 uppercase"
@@ -172,6 +186,21 @@ export function LayerDock(props: LayerDockProps) {
       {props.citybusError ? (
         <p className="basis-full text-xs text-red-100" role="alert">
           {m.locale === "en" ? props.citybusError : m.citybusFailed}
+        </p>
+      ) : null}
+      {props.gmbError ? (
+        <p className="basis-full text-xs text-red-100" role="alert">
+          {m.locale === "en" ? props.gmbError : m.gmbFailed}
+        </p>
+      ) : null}
+      {props.nlbError ? (
+        <p className="basis-full text-xs text-red-100" role="alert">
+          {m.locale === "en" ? props.nlbError : m.nlbFailed}
+        </p>
+      ) : null}
+      {props.ferryError ? (
+        <p className="basis-full text-xs text-red-100" role="alert">
+          {m.locale === "en" ? props.ferryError : m.ferryFailed}
         </p>
       ) : null}
       {props.kmbError ? (

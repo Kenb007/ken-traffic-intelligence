@@ -9,6 +9,7 @@ import { useLiveJson } from "@/components/use-live-json"
 import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
 import { KMB_MIN_ZOOM, KMB_POLL_MS, PLACE_POLL_MS } from "@/lib/kmb-view"
+import { inLantau } from "@/lib/lantau"
 import { PICTURE_POLL_MS } from "@/lib/picture"
 import { mergePlaceArrivals } from "@/lib/place-arrivals"
 import { hkoLang } from "@/lib/i18n"
@@ -17,11 +18,16 @@ import type {
   CitybusPlacesResponse,
   CitybusResponse,
   ControlPointsResponse,
+  FerryResponse,
+  GmbPlacesResponse,
+  GmbResponse,
   IncidentsResponse,
   KmbPlacesResponse,
   KmbResponse,
   LrtResponse,
   MtrResponse,
+  NlbPlacesResponse,
+  NlbResponse,
   PictureResponse,
   TrafficResponse,
   WarningsResponse,
@@ -47,6 +53,9 @@ const LAYERS_ON: WatchLayers = {
   lrt: true,
   kmb: true,
   citybus: true,
+  gmb: true,
+  nlb: true,
+  ferry: true,
 }
 
 export function Dashboard() {
@@ -78,12 +87,25 @@ export function Dashboard() {
   const kmbUrl = layers.kmb && kmbQuery ? `/api/kmb?${kmbQuery}` : null
   const citybusPlacesUrl = layers.citybus && citybusQuery ? `/api/citybus/places?${citybusQuery}` : null
   const citybusUrl = layers.citybus && citybusQuery ? `/api/citybus?${citybusQuery}` : null
+  const gmbPlacesUrl = layers.gmb && kmbQuery ? `/api/gmb/places?${kmbQuery}` : null
+  const gmbUrl = layers.gmb && kmbQuery ? `/api/gmb?${kmbQuery}` : null
+  const nlbQuery =
+    view && view.zoom >= KMB_MIN_ZOOM && inLantau(view.lng, view.lat)
+      ? `lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
+      : null
+  const nlbPlacesUrl = layers.nlb && nlbQuery ? `/api/nlb/places?${nlbQuery}` : null
+  const nlbUrl = layers.nlb && nlbQuery ? `/api/nlb?${nlbQuery}` : null
   const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
   const kmbPlacesLive = useLiveJson<KmbPlacesResponse>(kmbPlacesUrl, PLACE_POLL_MS)
   const kmbLive = useLiveJson<KmbResponse>(kmbUrl, KMB_POLL_MS)
   const lrtLive = useLiveJson<LrtResponse>(layers.lrt ? "/api/lrt" : null, 15_000)
   const citybusPlacesLive = useLiveJson<CitybusPlacesResponse>(citybusPlacesUrl, PLACE_POLL_MS)
   const citybusLive = useLiveJson<CitybusResponse>(citybusUrl, 60_000)
+  const gmbPlacesLive = useLiveJson<GmbPlacesResponse>(gmbPlacesUrl, PLACE_POLL_MS)
+  const gmbLive = useLiveJson<GmbResponse>(gmbUrl, KMB_POLL_MS)
+  const nlbPlacesLive = useLiveJson<NlbPlacesResponse>(nlbPlacesUrl, PLACE_POLL_MS)
+  const nlbLive = useLiveJson<NlbResponse>(nlbUrl, 60_000)
+  const ferryLive = useLiveJson<FerryResponse>(layers.ferry ? "/api/ferry" : null, 60_000)
   const kmbMerged = useMemo(
     () => mergePlaceArrivals(kmbPlacesLive.data, kmbLive.data),
     [kmbLive.data, kmbPlacesLive.data],
@@ -91,6 +113,14 @@ export function Dashboard() {
   const citybusMerged = useMemo(
     () => mergePlaceArrivals(citybusPlacesLive.data, citybusLive.data),
     [citybusLive.data, citybusPlacesLive.data],
+  )
+  const gmbMerged = useMemo(
+    () => mergePlaceArrivals(gmbPlacesLive.data, gmbLive.data),
+    [gmbLive.data, gmbPlacesLive.data],
+  )
+  const nlbMerged = useMemo(
+    () => mergePlaceArrivals(nlbPlacesLive.data, nlbLive.data),
+    [nlbLive.data, nlbPlacesLive.data],
   )
   const traffic = trafficLive.data
   const approaches = approachesLive.data
@@ -102,6 +132,9 @@ export function Dashboard() {
   const kmb = kmbMerged
   const lrt = lrtLive.data
   const citybus = citybusMerged
+  const gmb = gmbMerged
+  const nlb = nlbMerged
+  const ferry = ferryLive.data
   const trafficLoading = traffic === null && trafficLive.error === null
   const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
   const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
@@ -136,6 +169,9 @@ export function Dashboard() {
         kmb={kmb}
         lrt={lrt?.ok ? lrt : null}
         citybus={citybus}
+        gmb={gmb}
+        nlb={nlb}
+        ferry={ferry?.ok ? ferry : null}
         onView={setView}
         layers={layers}
         basemap={basemap}
@@ -200,6 +236,9 @@ export function Dashboard() {
           kmb: null,
           lrt: null,
           citybus: null,
+          gmb: null,
+          nlb: null,
+          ferry: null,
           control: null,
         }}
         onToggle={toggleLayer}
@@ -211,6 +250,9 @@ export function Dashboard() {
         kmbError={liveError(kmbLive.error, kmbLive.data, "KMB arrivals failed")}
         lrtError={lrtLive.error ?? (lrt && !lrt.ok ? lrt.error ?? "Light Rail arrivals failed" : null)}
         citybusError={liveError(citybusLive.error, citybusLive.data, "Citybus arrivals failed")}
+        gmbError={liveError(gmbLive.error, gmbLive.data, "Green minibus arrivals failed")}
+        nlbError={liveError(nlbLive.error, nlbLive.data, "New Lantao Bus arrivals failed")}
+        ferryError={liveError(ferryLive.error, ferryLive.data, "Ferry arrivals failed")}
         aboveMarquee={!intelOpen}
       />
     </main>

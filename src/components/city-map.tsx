@@ -23,7 +23,10 @@ import {
   controlPointPopup,
   kmbStopPopup,
   citybusStopPopup,
+  ferryStopPopup,
+  gmbStopPopup,
   lrtStationPopup,
+  nlbStopPopup,
   lrtTrainPopup,
   corridorPopup,
   incidentPopup,
@@ -38,9 +41,10 @@ import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import { displayText, type Locale, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint, stationRecord } from "@/lib/mtr-network"
 import { lrtColor, lrtPoint, lrtRoutesThrough, lrtStation, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
+import { ferryPierFeatures, ferryVesselFeatures } from "@/lib/ferry-network"
 import { beginPush, endPush, type PushGate } from "@/lib/frame-push"
 import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
-import type { ApproachPoint, Basemap, CitybusResponse, Corridor, HarbourJourney, KmbResponse, LrtResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
+import type { ApproachPoint, Basemap, CitybusResponse, Corridor, FerryResponse, GmbResponse, HarbourJourney, KmbResponse, LrtResponse, MtrResponse, NlbResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
@@ -177,7 +181,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-station-label", "mtr-trains", "mtr-train-label", "kmb-stops", "kmb-stop-label", "lrt-stations", "lrt-station-label", "lrt-trains", "lrt-train-label", "citybus-stops", "citybus-stop-label"]
+const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-station-label", "mtr-trains", "mtr-train-label", "kmb-stops", "kmb-stop-label", "lrt-stations", "lrt-station-label", "lrt-trains", "lrt-train-label", "citybus-stops", "citybus-stop-label", "gmb-stops", "gmb-stop-label", "nlb-stops", "nlb-stop-label", "ferry-piers", "ferry-pier-label", "ferry-vessels"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -198,6 +202,9 @@ type CityMapProps = {
   kmb: KmbResponse | null
   lrt: LrtResponse | null
   citybus: CitybusResponse | null
+  gmb: GmbResponse | null
+  nlb: NlbResponse | null
+  ferry: FerryResponse | null
   onView: (view: { lng: number; lat: number; zoom: number }) => void
   layers: WatchLayers
   basemap: Basemap
@@ -224,6 +231,9 @@ export function CityMap({
   kmb,
   lrt,
   citybus,
+  gmb,
+  nlb,
+  ferry,
   onView,
   layers,
   basemap,
@@ -642,7 +652,24 @@ export function CityMap({
       if (!layers.citybus) {
         geoJsonSource(map, "citybus-stops")?.setData(emptyCollection())
       } else if (citybus?.ok) {
-        geoJsonSource(map, "citybus-stops")?.setData(citybusStopCollection(map, citybus, locale, labels))
+        geoJsonSource(map, "citybus-stops")?.setData(busStopCollection(map, citybus, locale, labels, "#c2410c"))
+      }
+      if (!layers.gmb) {
+        geoJsonSource(map, "gmb-stops")?.setData(emptyCollection())
+      } else if (gmb?.ok) {
+        geoJsonSource(map, "gmb-stops")?.setData(busStopCollection(map, gmb, locale, labels, "#65a30d"))
+      }
+      if (!layers.nlb) {
+        geoJsonSource(map, "nlb-stops")?.setData(emptyCollection())
+      } else if (nlb?.ok) {
+        geoJsonSource(map, "nlb-stops")?.setData(busStopCollection(map, nlb, locale, labels, "#0f766e"))
+      }
+      if (!layers.ferry) {
+        geoJsonSource(map, "ferry-piers")?.setData(emptyCollection())
+        geoJsonSource(map, "ferry-vessels")?.setData(emptyCollection())
+      } else {
+        geoJsonSource(map, "ferry-piers")?.setData(ferryPierCollection(map, ferry, locale, labels))
+        geoJsonSource(map, "ferry-vessels")?.setData(ferryVesselFeatures(ferry))
       }
     }
     paint()
@@ -650,7 +677,7 @@ export function CityMap({
     return () => {
       map.off("zoomend", paint)
     }
-  }, [citybus, controlPoints, disabled, incidents, kmb, layers.citybus, layers.kmb, layers.lrt, locale, lrt, mapReady, mtr, picture, styleEpoch])
+  }, [citybus, controlPoints, disabled, ferry, gmb, incidents, kmb, layers.citybus, layers.ferry, layers.gmb, layers.kmb, layers.lrt, layers.nlb, locale, lrt, mapReady, mtr, nlb, picture, styleEpoch])
 
   useEffect(() => {
     const map = mapRef.current
@@ -672,7 +699,7 @@ export function CityMap({
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control", "mtr", "kmb", "lrt", "citybus"]
+    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control", "mtr", "kmb", "lrt", "citybus", "gmb", "nlb", "ferry"]
     for (const kind of kinds) {
       for (const layerId of layerIds(kind)) {
         if (!map.getLayer(layerId)) continue
@@ -1086,6 +1113,10 @@ function mountDataLayers(map: Map) {
   map.addSource("lrt-trains", { type: "geojson", data: emptyCollection() })
   map.addSource("lrt-train-labels", { type: "geojson", data: emptyCollection() })
   map.addSource("citybus-stops", { type: "geojson", data: emptyCollection() })
+  map.addSource("gmb-stops", { type: "geojson", data: emptyCollection() })
+  map.addSource("nlb-stops", { type: "geojson", data: emptyCollection() })
+  map.addSource("ferry-piers", { type: "geojson", data: emptyCollection() })
+  map.addSource("ferry-vessels", { type: "geojson", data: emptyCollection() })
   map.addSource("approaches", { type: "geojson", data: emptyCollection() })
   map.addSource("corridors", {
     type: "geojson",
@@ -1200,6 +1231,13 @@ function bindOverlayClicks(
     "lrt-train-label": (properties) => lrtTrainPopup(properties, lrtRef.current, copyRef.current),
     "citybus-stops": citybusStopPopup,
     "citybus-stop-label": citybusStopPopup,
+    "gmb-stops": gmbStopPopup,
+    "gmb-stop-label": gmbStopPopup,
+    "nlb-stops": nlbStopPopup,
+    "nlb-stop-label": nlbStopPopup,
+    "ferry-piers": ferryStopPopup,
+    "ferry-pier-label": ferryStopPopup,
+    "ferry-vessels": ferryStopPopup,
   }
   map.on("click", "approach-times", (event) => {
     const raw = event.features?.[0]?.properties?.id
@@ -1454,6 +1492,59 @@ function addWatchLayers(map: Map, before: string | undefined) {
   }, before)
   addStopLabel(map, "citybus-stop-label", "citybus-stops", before)
   addOverlay(map, {
+    id: "gmb-stops",
+    type: "circle",
+    source: "gmb-stops",
+    minzoom: KMB_MIN_ZOOM,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 16, 6],
+      "circle-color": "#f7fee7",
+      "circle-stroke-color": "#65a30d",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addStopLabel(map, "gmb-stop-label", "gmb-stops", before)
+  addOverlay(map, {
+    id: "nlb-stops",
+    type: "circle",
+    source: "nlb-stops",
+    minzoom: KMB_MIN_ZOOM,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 16, 6],
+      "circle-color": "#f0fdfa",
+      "circle-stroke-color": "#0f766e",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addStopLabel(map, "nlb-stop-label", "nlb-stops", before)
+  addOverlay(map, {
+    id: "ferry-piers",
+    type: "circle",
+    source: "ferry-piers",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 4, 15, 7],
+      "circle-color": "#e0f2fe",
+      "circle-stroke-color": "#0369a1",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addStopLabel(map, "ferry-pier-label", "ferry-piers", before)
+  addOverlay(map, {
+    id: "ferry-vessels",
+    type: "circle",
+    source: "ferry-vessels",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 4.5, 15, 7.5],
+      "circle-color": "#0369a1",
+      "circle-stroke-color": "#f0f9ff",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addOverlay(map, {
     id: "approach-times",
     type: "symbol",
     source: "approaches",
@@ -1548,13 +1639,13 @@ function cameraCone(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
-function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Locale, labels: boolean): GeoJSON.FeatureCollection {
+function busStopCollection(map: Map, board: CitybusResponse, locale: Locale, labels: boolean, stroke: string): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
-    features: citybus.stops.map((stop) => {
+    features: board.stops.map((stop) => {
       const name = readablePlace(displayText(locale, stop.nameTc, stop.nameEn))
       const marks = stop.routes.length > 0 ? stop.routes : stop.calls.map((call) => call.route)
-      const icon = labels ? placeStopPlate(map, name, marks, "#c2410c") : ""
+      const icon = labels ? placeStopPlate(map, name, marks, stroke) : ""
       return {
         type: "Feature" as const,
         geometry: { type: "Point" as const, coordinates: [stop.lng, stop.lat] },
@@ -1566,6 +1657,35 @@ function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Local
           ...(icon ? { icon } : {}),
         },
       }
+    }),
+  }
+}
+
+function ferryPierCollection(map: Map, ferry: FerryResponse | null, locale: Locale, labels: boolean): GeoJSON.FeatureCollection {
+  const base = ferryPierFeatures(ferry)
+  if (!labels) return base
+  return {
+    type: "FeatureCollection",
+    features: base.features.map((feature) => {
+      const properties = feature.properties ?? {}
+      const traditional = typeof properties.nameTc === "string" ? properties.nameTc : ""
+      const english = typeof properties.nameEn === "string" ? properties.nameEn : ""
+      const board = typeof properties.board === "string" ? properties.board : "[]"
+      let marks: string[] = []
+      try {
+        const parsed: unknown = JSON.parse(board)
+        if (Array.isArray(parsed)) {
+          marks = parsed.flatMap((item) => {
+            if (typeof item !== "object" || item === null) return []
+            const route = (item as { route?: unknown }).route
+            return typeof route === "string" && route ? [route] : []
+          })
+        }
+      } catch {
+        marks = []
+      }
+      const icon = placeStopPlate(map, readablePlace(displayText(locale, traditional, english)), marks, "#0369a1")
+      return { ...feature, properties: { ...properties, ...(icon ? { icon } : {}) } }
     }),
   }
 }
@@ -1639,6 +1759,12 @@ function layerIds(kind: WatchLayer): string[] {
       return ["lrt-track-casing", "lrt-track", "lrt-stations", "lrt-station-label", "lrt-trains", "lrt-train-label"]
     case "citybus":
       return ["citybus-stops", "citybus-stop-label"]
+    case "gmb":
+      return ["gmb-stops", "gmb-stop-label"]
+    case "nlb":
+      return ["nlb-stops", "nlb-stop-label"]
+    case "ferry":
+      return ["ferry-piers", "ferry-pier-label", "ferry-vessels"]
     default: {
       const exhaustive: never = kind
       return exhaustive

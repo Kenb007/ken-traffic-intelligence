@@ -259,7 +259,54 @@ export type CitybusResponse = {
   cacheable?: boolean
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb" | "lrt" | "citybus"
+export type GmbCall = CitybusCall
+export type GmbStopBoard = CitybusStopBoard
+export type GmbPlacesResponse = CitybusPlacesResponse
+export type GmbResponse = CitybusResponse
+
+export type NlbCall = CitybusCall
+export type NlbStopBoard = CitybusStopBoard
+export type NlbPlacesResponse = CitybusPlacesResponse
+export type NlbResponse = CitybusResponse
+
+export type FerryCall = {
+  route: string
+  destTc: string
+  destEn: string
+  eta: string
+  minutes: number | null
+  remarkTc: string
+  remarkEn: string
+}
+
+export type FerryPier = {
+  id: string
+  nameTc: string
+  nameEn: string
+  lng: number
+  lat: number
+  calls: FerryCall[]
+}
+
+export type FerryVessel = {
+  id: string
+  nameTc: string
+  nameEn: string
+  lng: number
+  lat: number
+  route: string
+  eta: string
+}
+
+export type FerryResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  piers: FerryPier[]
+  vessels: FerryVessel[]
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb" | "lrt" | "citybus" | "gmb" | "nlb" | "ferry"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 

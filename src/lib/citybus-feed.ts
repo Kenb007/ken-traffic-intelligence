@@ -1,3 +1,4 @@
+import { arrivalPairs } from "@/lib/arrival-pairs"
 import { citybusStop, nearestCitybusStops } from "@/lib/citybus-network"
 import { arrivalFailure, etaDue, ETA_FRESH_MS, forgetStale, heldRows, type HeldRows } from "@/lib/place-arrivals"
 import { etaQueue } from "@/lib/polite-fetch"
@@ -43,7 +44,7 @@ export function loadCitybusPlaces(lng: number, lat: number): CitybusPlacesRespon
 export async function loadCitybusNear(lng: number, lat: number, now = Date.now()): Promise<CitybusResponse> {
   forgetStale(remembered, now)
   const nearest = nearestCitybusStops(lng, lat, STOP_LIMIT)
-  const pairs = arrivalPairs(nearest)
+  const pairs = arrivalPairs(nearest, PAIR_BUDGET)
   let missed = 0
   await pool(pairs, FETCH_LIMIT, async (pair) => {
     const key = `${pair.stopId}/${pair.route}`
@@ -81,34 +82,6 @@ export async function loadCitybusNear(lng: number, lat: number, now = Date.now()
     stops,
     cacheable: missed === 0,
   }
-}
-
-function arrivalPairs(stops: { id: string; routes: string[] }[]): { stopId: string; route: string }[] {
-  const pairs: { stopId: string; route: string }[] = []
-  const seen = new Set<string>()
-  const add = (stopId: string, route: string) => {
-    const key = `${stopId}/${route}`
-    if (seen.has(key) || pairs.length >= PAIR_BUDGET) return
-    seen.add(key)
-    pairs.push({ stopId, route })
-  }
-  const closest = stops[0]
-  if (closest) {
-    for (const route of closest.routes.slice(0, 12)) add(closest.id, route)
-  }
-  const queues = stops.slice(1).map((stop) => ({ id: stop.id, routes: [...stop.routes] }))
-  let added = true
-  while (pairs.length < PAIR_BUDGET && added) {
-    added = false
-    for (const queue of queues) {
-      const route = queue.routes.shift()
-      if (!route) continue
-      add(queue.id, route)
-      added = true
-      if (pairs.length >= PAIR_BUDGET) break
-    }
-  }
-  return pairs
 }
 
 function callsAt(rows: EtaRow[], now: number): CitybusCall[] {

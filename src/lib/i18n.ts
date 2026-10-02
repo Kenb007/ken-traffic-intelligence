@@ -181,6 +181,15 @@ export type Messages = {
   citybus: string
   citybusFailed: string
   citybusNone: string
+  gmb: string
+  gmbFailed: string
+  gmbNone: string
+  nlb: string
+  nlbFailed: string
+  nlbNone: string
+  ferry: string
+  ferryFailed: string
+  ferryNone: string
 }
 
 const en: Messages = {
@@ -333,6 +342,15 @@ const en: Messages = {
   citybus: "Citybus",
   citybusFailed: "Citybus arrivals did not load.",
   citybusNone: "No arrival on the board",
+  gmb: "Green minibus",
+  gmbFailed: "Green minibus arrivals did not load.",
+  gmbNone: "No arrival on the board",
+  nlb: "New Lantao Bus",
+  nlbFailed: "New Lantao Bus arrivals did not load.",
+  nlbNone: "No arrival on the board",
+  ferry: "Ferry",
+  ferryFailed: "Ferry arrivals did not load.",
+  ferryNone: "No sailing on the board",
 }
 
 const zhHK: Messages = {
@@ -485,6 +503,15 @@ const zhHK: Messages = {
   citybus: "城巴",
   citybusFailed: "未能取得城巴到站時間。",
   citybusNone: "班次表沒有到站時間",
+  gmb: "綠色專線小巴",
+  gmbFailed: "未能取得綠色專線小巴到站時間。",
+  gmbNone: "班次表沒有到站時間",
+  nlb: "嶼巴",
+  nlbFailed: "未能取得嶼巴到站時間。",
+  nlbNone: "班次表沒有到站時間",
+  ferry: "渡輪",
+  ferryFailed: "未能取得渡輪航班時間。",
+  ferryNone: "未有航班時間",
 }
 
 const zhCN: Messages = {
@@ -627,6 +654,15 @@ const zhCN: Messages = {
   citybus: "城巴",
   citybusFailed: "未能取得城巴到站时间。",
   citybusNone: "班次表没有到站时间",
+  gmb: "绿色专线小巴",
+  gmbFailed: "未能取得绿色专线小巴到站时间。",
+  gmbNone: "班次表没有到站时间",
+  nlb: "屿巴",
+  nlbFailed: "未能取得屿巴到站时间。",
+  nlbNone: "班次表没有到站时间",
+  ferry: "渡轮",
+  ferryFailed: "未能取得渡轮航班时间。",
+  ferryNone: "未有航班时间",
 }
 
 export const MESSAGES: Record<Locale, Messages> = {

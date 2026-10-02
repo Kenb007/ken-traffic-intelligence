@@ -254,6 +254,18 @@ export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages)
   return busStopPopup(properties, m, m.kmb, m.kmbNone)
 }
 
+export function gmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  return busStopPopup(properties, m, m.gmb, m.gmbNone)
+}
+
+export function nlbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  return busStopPopup(properties, m, m.nlb, m.nlbNone)
+}
+
+export function ferryStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  return busStopPopup(properties, m, m.ferry, m.ferryNone)
+}
+
 function kmbCall(call: KmbBoardCall, m: Messages): HTMLElement {
   const row = document.createElement("div")
   row.className = call.scheduled ? "city-card-call city-card-call-timetable" : "city-card-call"
