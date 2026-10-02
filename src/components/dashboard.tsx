@@ -39,15 +39,6 @@ const LAYERS_ON: WatchLayers = {
   citybus: true,
 }
 
-function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
-  const codes = new Set<string>()
-  for (const feature of tolls.features) {
-    const code = feature.properties && typeof feature.properties.code === "string" ? feature.properties.code : ""
-    if (code) codes.add(code)
-  }
-  return codes.size
-}
-
 export function Dashboard() {
   const { locale, messages: m } = useI18n()
   const search = useSearchParams()
@@ -177,20 +168,15 @@ export function Dashboard() {
         basemap={basemap}
         counts={{
           speed: null,
-          cameras: picture ? picture.cameras.features.length : null,
+          cameras: null,
           works: picture ? picture.works.features.length : null,
-          tolls: picture ? tunnelCount(picture.tolls) : null,
+          tolls: null,
           incidents: incidents ? incidents.incidents.features.length : null,
-          mtr: mtr?.ok ? mtr.trains.length : null,
+          mtr: null,
           kmb: null,
-          lrt: lrt?.ok ? lrt.trains.length : null,
+          lrt: null,
           citybus: null,
-          control: controlPoints?.ok
-            ? controlPoints.points.features.filter((feature) => {
-                const worst = feature.properties && feature.properties.worst
-                return worst === 1 || worst === 2
-              }).length
-            : null,
+          control: null,
         }}
         onToggle={toggleLayer}
         onBasemap={selectBasemap}

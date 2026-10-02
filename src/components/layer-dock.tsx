@@ -71,6 +71,7 @@ function basemapLabel(id: Basemap, m: Messages): string {
 }
 
 const BASEMAPS: Basemap[] = ["satellite", "street", "buildings"]
+const COUNTED_LAYERS: ReadonlySet<WatchLayer> = new Set(["works", "incidents"])
 const LAYERS: { id: WatchLayer; swatch: string }[] = [
   { id: "speed", swatch: "bg-[#3DDC97]" },
   { id: "cameras", swatch: "bg-[#7DD3E8]" },
@@ -114,7 +115,7 @@ export function LayerDock(props: LayerDockProps) {
       </div>
       {LAYERS.map((layer) => {
         const on = props.layers[layer.id]
-        const count = props.counts[layer.id]
+        const count = COUNTED_LAYERS.has(layer.id) ? props.counts[layer.id] : null
         return (
           <button
             key={layer.id}
