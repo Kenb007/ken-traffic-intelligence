@@ -21,11 +21,11 @@
 
 在八個陸路管制站，你可以查看旅客大堂的情況，分居民與訪客、入境與出境，並一併看到通往該口岸的策略性道路車速。羅湖供旅客過關，已公布的數字不包括私家車輪候。你亦可以查看所有生效中的香港天文台警告。當天沒有警告時，網站仍會提供天文台的氣溫，以及過去一小時有沒有下雨。
 
-港鐵方面，你可以查看已公布的下一班車，包括還有多少分鐘、開往哪裏，以及使用哪個月台。列車在兩站之間的位置，是按這些分鐘推算的。輕鐵方面，你可以查看屯門、元朗和天水圍各站已公布的下一班車。九巴和龍運方面，你可以查看某車站已公布的到站時間，包括列為原定班次的班次。龍運的路線包括機場和東涌一帶的 A、E、S 線。
+港鐵方面，你可以查看已公布的下一班車，包括還有多少分鐘、開往哪裏，以及使用哪個月台。列車在兩站之間的位置，是按這些分鐘推算的。輕鐵方面，你可以查看屯門、元朗和天水圍各站已公布的下一班車。九巴和龍運方面，你可以查看某車站已公布的到站時間，包括列為原定班次的班次。龍運的路線包括機場和東涌一帶的 A、E、S 線。城巴方面，你可以查看港島及城巴行走的其他路線在車站已公布的到站時間。
 
 若幾項情況需要一併留意，網站會把它們排好次序，先是尚未結束的交通消息、列為擠塞的道路、非常繁忙的旅客大堂，或天氣警告。
 
-以上是本頁稍後說明的交通、口岸、天氣、港鐵、輕鐵、九巴和龍運資料。香港公開的數據，遠多於這個網站所用的部分。
+以上是本頁稍後說明的交通、口岸、天氣、港鐵、輕鐵、九巴、龍運和城巴資料。香港公開的數據，遠多於這個網站所用的部分。
 
 ## 開源
 
@@ -73,6 +73,7 @@ npm run dev
 | 下一班港鐵 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data)，車站位置來自地政總署的[車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map) |
 | 下一班九巴或龍運 | [九巴及龍運的預計到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
 | 下一班輕鐵 | [輕鐵實時列車服務資訊](https://data.gov.hk/tc-data/dataset/mtr-lrnt_data-light-rail-nexttrain-data) |
+| 下一班城巴 | [城巴實時到站時間](https://data.gov.hk/tc-data/dataset/ctb-eta-transport-realtime-eta) |
 | 警告、氣溫和雨量 | 香港天文台的[警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc)和[本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
 | 街道圖和樓宇 | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) 和 [OSM Liberty](https://github.com/maputnik/osm-liberty)，由 [OpenFreeMap](https://openfreemap.org) 提供，數據來自 [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者和 [OpenMapTiles](https://openmaptiles.org/) |
 | 衛星照片 | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer)。影像 © Esri |

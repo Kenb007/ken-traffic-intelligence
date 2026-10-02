@@ -217,7 +217,34 @@ export type LrtResponse = {
   stations: LrtStationBoard[]
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb" | "lrt"
+export type CitybusCall = {
+  route: string
+  destTc: string
+  destEn: string
+  eta: string
+  minutes: number | null
+  scheduled: boolean
+  remarkTc: string
+  remarkEn: string
+}
+
+export type CitybusStopBoard = {
+  id: string
+  nameTc: string
+  nameEn: string
+  lng: number
+  lat: number
+  calls: CitybusCall[]
+}
+
+export type CitybusResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  stops: CitybusStopBoard[]
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb" | "lrt" | "citybus"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 

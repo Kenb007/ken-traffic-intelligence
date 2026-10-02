@@ -21,11 +21,11 @@ You can read the journey time for the Cross-Harbour Tunnel, the Eastern Harbour 
 
 At the eight land control points you can read the passenger halls, for residents and visitors, arriving and departing, together with the live speed on the strategic road that leads to that port. Lo Wu is a passenger crossing, and the published figures do not include a queue for private cars. You can also read every Hong Kong Observatory warning that is in force. When none is in force, the site still gives the temperature at the Observatory and whether rain fell in the past hour.
 
-For the MTR you can read the next train that has been published: how many minutes away it is, where it is going, and which platform it will use. The position shown between stations is worked out from those minutes. For the Light Rail you can read the next train published for stations in Tuen Mun, Yuen Long, and Tin Shui Wai. For KMB and Long Win you can read the published arrival at a stop, including a trip that is shown as scheduled. Long Win routes on this feed are the airport and Tung Chung services, including the A, E, and S routes.
+For the MTR you can read the next train that has been published: how many minutes away it is, where it is going, and which platform it will use. The position shown between stations is worked out from those minutes. For the Light Rail you can read the next train published for stations in Tuen Mun, Yuen Long, and Tin Shui Wai. For KMB and Long Win you can read the published arrival at a stop, including a trip that is shown as scheduled. Long Win routes on this feed are the airport and Tung Chung services, including the A, E, and S routes. For Citybus you can read the published arrival at a stop on Hong Kong Island and the routes Citybus runs elsewhere.
 
 When several of these need attention together, the site orders them, starting with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning.
 
-These are the traffic, border, weather, MTR, Light Rail, KMB, and Long Win feeds described later on this page. Hong Kong publishes much more open data than this site uses.
+These are the traffic, border, weather, MTR, Light Rail, KMB, Long Win, and Citybus feeds described later on this page. Hong Kong publishes much more open data than this site uses.
 
 ## Open source
 
@@ -73,6 +73,7 @@ Each row below is one part of the screen and the publication it comes from. This
 | The next MTR train | [Next train](https://data.gov.hk/en-data/dataset/mtr-data2-nexttrain-data), with station locations from the Lands Department [indoor station footprints](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map) |
 | The next KMB or Long Win arrival | [Estimated time of arrival for KMB and LWB](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
 | The next Light Rail train | [Light Rail next train](https://data.gov.hk/en-data/dataset/mtr-lrnt_data-light-rail-nexttrain-data) |
+| The next Citybus arrival | [Citybus next bus](https://data.gov.hk/en-data/dataset/ctb-eta-transport-realtime-eta) |
 | Warnings, temperature, and rainfall | Hong Kong Observatory [warning summary](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en) and [regional weather report](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en) |
 | Street map and buildings | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) and [OSM Liberty](https://github.com/maputnik/osm-liberty), served by [OpenFreeMap](https://openfreemap.org), from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and [OpenMapTiles](https://openmaptiles.org/) |
 | Satellite photograph | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer). Imagery © Esri |

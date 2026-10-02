@@ -178,6 +178,9 @@ export type Messages = {
   lrtFailed: string
   lrtNone: string
   lrtArriving: string
+  citybus: string
+  citybusFailed: string
+  citybusNone: string
 }
 
 const en: Messages = {
@@ -327,6 +330,9 @@ const en: Messages = {
   lrtFailed: "Light Rail arrivals did not load.",
   lrtNone: "No arrival on the board",
   lrtArriving: "Arriving",
+  citybus: "Citybus",
+  citybusFailed: "Citybus arrivals did not load.",
+  citybusNone: "No arrival on the board",
 }
 
 const zhHK: Messages = {
@@ -476,6 +482,9 @@ const zhHK: Messages = {
   lrtFailed: "未能取得輕鐵到站時間。",
   lrtNone: "班次表沒有到站時間",
   lrtArriving: "即將抵達",
+  citybus: "城巴",
+  citybusFailed: "未能取得城巴到站時間。",
+  citybusNone: "班次表沒有到站時間",
 }
 
 const zhCN: Messages = {
@@ -615,6 +624,9 @@ const zhCN: Messages = {
   lrtFailed: "未能取得轻铁到站时间。",
   lrtNone: "班次表没有到站时间",
   lrtArriving: "即将抵达",
+  citybus: "城巴",
+  citybusFailed: "未能取得城巴到站时间。",
+  citybusNone: "班次表没有到站时间",
 }
 
 export const MESSAGES: Record<Locale, Messages> = {

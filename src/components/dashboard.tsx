@@ -12,6 +12,7 @@ import { KMB_MIN_ZOOM, KMB_POLL_MS } from "@/lib/kmb-view"
 import { hkoLang } from "@/lib/i18n"
 import type {
   ApproachesResponse,
+  CitybusResponse,
   ControlPointsResponse,
   IncidentsResponse,
   KmbResponse,
@@ -35,6 +36,7 @@ const LAYERS_ON: WatchLayers = {
   mtr: true,
   lrt: true,
   kmb: true,
+  citybus: true,
 }
 
 function tunnelCount(tolls: GeoJSON.FeatureCollection): number {
@@ -71,9 +73,14 @@ export function Dashboard() {
     layers.lrt && view && view.zoom >= KMB_MIN_ZOOM
       ? `/api/lrt?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
       : null
+  const citybusUrl =
+    layers.citybus && view && view.zoom >= KMB_MIN_ZOOM
+      ? `/api/citybus?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
+      : null
   const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
   const kmbLive = useLiveJson<KmbResponse>(kmbUrl, KMB_POLL_MS)
   const lrtLive = useLiveJson<LrtResponse>(lrtUrl, 15_000)
+  const citybusLive = useLiveJson<CitybusResponse>(citybusUrl, 60_000)
   const traffic = trafficLive.data
   const approaches = approachesLive.data
   const picture = pictureLive.data
@@ -83,6 +90,7 @@ export function Dashboard() {
   const mtr = mtrLive.data
   const kmb = kmbLive.data
   const lrt = lrtLive.data
+  const citybus = citybusLive.data
   const trafficLoading = traffic === null && trafficLive.error === null
   const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
   const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
@@ -116,6 +124,7 @@ export function Dashboard() {
         mtr={mtr?.ok ? mtr : null}
         kmb={kmb?.ok ? kmb : null}
         lrt={lrt?.ok ? lrt : null}
+        citybus={citybus?.ok ? citybus : null}
         onView={setView}
         layers={layers}
         basemap={basemap}
@@ -179,6 +188,7 @@ export function Dashboard() {
           mtr: mtr?.ok ? mtr.trains.length : null,
           kmb: null,
           lrt: null,
+          citybus: null,
           control: controlPoints?.ok
             ? controlPoints.points.features.filter((feature) => {
                 const worst = feature.properties && feature.properties.worst
@@ -194,6 +204,7 @@ export function Dashboard() {
         mtrError={mtrLive.error ?? (mtr && !mtr.ok ? mtr.error ?? "Next train feed failed" : null)}
         kmbError={kmbLive.error ?? (kmb && !kmb.ok ? kmb.error ?? "KMB arrivals failed" : null)}
         lrtError={lrtLive.error ?? (lrt && !lrt.ok ? lrt.error ?? "Light Rail arrivals failed" : null)}
+        citybusError={citybusLive.error ?? (citybus && !citybus.ok ? citybus.error ?? "Citybus arrivals failed" : null)}
         aboveMarquee={!intelOpen}
       />
     </main>

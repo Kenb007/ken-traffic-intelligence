@@ -215,6 +215,21 @@ function lrtBoard(properties: GeoJSON.GeoJsonProperties): LrtBoardCall[] {
   }
 }
 
+export function citybusStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.citybus
+  const card = openCard(title)
+  const calls = kmbBoard(properties)
+  if (calls.length === 0) {
+    card.body.append(paragraph("city-card-copy", m.citybusNone))
+    return card.root
+  }
+  const board = document.createElement("div")
+  board.className = "city-card-board"
+  for (const call of calls) board.append(kmbCall({ ...call, company: "KMB" }, m))
+  card.body.append(board)
+  return card.root
+}
+
 export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
   const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.kmb
   const card = openCard(title)

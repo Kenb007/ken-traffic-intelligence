@@ -16,6 +16,7 @@ type LayerDockProps = {
   mtrError: string | null
   kmbError: string | null
   lrtError: string | null
+  citybusError: string | null
   aboveMarquee: boolean
 }
 
@@ -45,6 +46,8 @@ function layerLabel(id: WatchLayer, m: Messages): string {
       return m.kmbLwb
     case "lrt":
       return m.lrt
+    case "citybus":
+      return m.citybus
     default: {
       const exhaustive: never = id
       return exhaustive
@@ -78,6 +81,7 @@ const LAYERS: { id: WatchLayer; swatch: string }[] = [
   { id: "mtr", swatch: "bg-[#E2231A]" },
   { id: "lrt", swatch: "bg-[#f5c518]" },
   { id: "kmb", swatch: "bg-[#9f1239]" },
+  { id: "citybus", swatch: "bg-[#f6c343]" },
 ]
 
 export function LayerDock(props: LayerDockProps) {
@@ -162,6 +166,11 @@ export function LayerDock(props: LayerDockProps) {
       {props.lrtError ? (
         <p className="basis-full text-xs text-red-100" role="alert">
           {m.locale === "en" ? props.lrtError : m.lrtFailed}
+        </p>
+      ) : null}
+      {props.citybusError ? (
+        <p className="basis-full text-xs text-red-100" role="alert">
+          {m.locale === "en" ? props.citybusError : m.citybusFailed}
         </p>
       ) : null}
       {props.kmbError ? (
