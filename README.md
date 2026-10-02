@@ -2,9 +2,9 @@
 
 # HK Traffic Intelligence
 
-Hong Kong has spent years building a smart city. The roads already have speed readings, the harbour crossings already publish their minutes, the tunnels already have cameras, and the MTR already tells you when the next train is due. Almost all of that is public. The trouble is that you still have to open a different government website for each piece, so you never quite see the city as one place.
+Hong Kong's smart city programmes already put live traffic information in public hands. The Transport Department publishes speed on the strategic roads and journey times at the harbour crossings. HKeMobility publishes cameras, road works, and special traffic news. The Immigration Department publishes waiting times at the land control points. The Hong Kong Observatory publishes warnings. MTR and KMB publish the next train and the next bus.
 
-This project puts those pieces on one live map. You can look up a crossing, see which strategic roads have slowed down, check a camera, read a weather warning, and see the next KMB arrival without keeping six tabs open. It does not give driving directions. It is there so a person can read the city, and so other people can see what Hong Kong's open data looks like when it is brought together.
+This map reads those open feeds on one screen, so the same official numbers can be followed together. It does not give driving directions. It is a way to watch the city, and a way to show the data these organisations already release.
 
 The site is [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account. It opens in Traditional Chinese, the written Chinese used in Hong Kong, and you can switch to English beside the clock.
 
@@ -27,13 +27,13 @@ The eight land control points show passenger halls for residents and visitors, a
 
 Every Hong Kong Observatory warning in force is listed. When the sky is quiet, you still see the temperature at the Observatory and whether the past hour brought rain.
 
-MTR next-train minutes, destination, and platform are the figures MTR publishes. MTR does not publish a train position, so the dot walks those minutes back along the track and the card says which two stations it falls between. Light rail is not on this layer. KMB shows the arrival time KMB publishes, including a scheduled row, once you are zoomed in near the middle of the map. KMB does not publish the path a bus takes, so the map shows the stop and leaves the road empty of buses.
+MTR next-train minutes, destination, and platform are taken from the board MTR publishes. The dot walks those minutes back along the track, and the card says which two stations it falls between. Light rail is not on this layer. KMB shows the arrival time KMB publishes, including a scheduled row, once you are zoomed in near the middle of the map. The arrival feed names the stop, so the map shows the stop.
 
 A list on the side ranks what to read first: an open incident, a road that has gone bad, a hall that is very busy, a warning. Hide it and the same items run along the bottom.
 
 You can switch the ground between satellite photography, the OSM Bright street map, and OSM Liberty with the buildings stood up. In the buildings view, labels and markers sit under the roofs.
 
-This is not every dataset on [DATA.GOV.HK](https://data.gov.hk). It is the traffic, border, weather, MTR, and KMB information this map actually uses.
+The map uses the traffic, border, weather, MTR, and KMB feeds listed below. Hong Kong publishes a great deal more open data than this one screen draws on.
 
 ## Open source
 
@@ -63,7 +63,7 @@ Add `?feed=down` to see the screen when the speed feed fails. Add `?map=down` an
 
 ## One copy of each feed
 
-The live site keeps one shared copy of each upstream feed and serves that copy to visitors. A new visitor does not cause a new call to a department server while that copy is still fresh. The copy is per city on Cloudflare's network, and it expires on the same rhythm as the map polls: about fifteen seconds for MTR, thirty seconds for KMB, and about a minute for the other feeds. The point is that a popular site should not overload the government servers it depends on.
+The live site keeps one shared copy of each feed and serves that copy to visitors. While the copy is still fresh, a new visitor reads it here. The copy is kept per city on Cloudflare's network, and it expires on the same rhythm as the map polls: about fifteen seconds for MTR, thirty seconds for KMB, and about a minute for the other feeds. That rhythm follows the pace of the published feeds, so the site can be widely read while each department server is asked only when a fresh copy is due.
 
 ## Where the numbers come from
 
@@ -88,7 +88,7 @@ Road geometry is the Transport Department strategic centreline, stored in Hong K
 
 ## Author
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) built this map for Agentic Engineer classes, public talks, and guest lectures. The smart city data was already public. The work is to make it something a person can read.
+[Keith Li](https://www.linkedin.com/in/keithlihk) built this map for Agentic Engineer classes, public talks, and guest lectures. It is possible because the Transport Department, the Immigration Department, the Observatory, MTR, KMB, and the teams behind HKeMobility already publish the data.
 
 Please [star the repository](https://github.com/keithligh/hk-traffic-intelligence) if you want this project to reach more people.
 
