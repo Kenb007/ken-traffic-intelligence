@@ -4,11 +4,11 @@
 
 # HK Traffic Intelligence
 
-**一幅地圖，接駁這塊板實際使用的開放數據。**
-
-過海分鐘、策略性道路車速、快拍、道路工程、收費點、特別交通消息、陸路管制站、天文台警告、港鐵下一班、九巴到站，畫在同一塊實時儀表板上。涵蓋範圍以本板已接入的來源為準。
+香港交通的實時地圖。畫面上的數字，來自運輸署、HKeMobility、入境事務處、天文台、港鐵及九巴等已公布的開放數據。
 
 [![實時示範](https://img.shields.io/badge/▶_開啟_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
+
+儀表板在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
@@ -25,9 +25,9 @@
 
 運輸署為策略性道路提供車速與飽和等級；HKeMobility 公布過海分鐘與快拍；入境事務處公布陸路管制站輪候；天文台公布生效警告；港鐵與九巴公布下一班車。數字本來就是公開的。
 
-難處在分散：即使只是這個子集，也分別在不同網站更新；亦不等於 [DATA.GOV.HK](https://data.gov.hk) 上的每一個數據集。本項目把已接駁的來源畫在同一幅 MapLibre 地圖上，方便讀過海時間、擠塞路段、羅湖大堂或生效中的警告，而毋須同時開六個分頁。
+難處在分散：這些數據分別在不同網站更新，也不涵蓋 [DATA.GOV.HK](https://data.gov.hk) 上的每一個數據集。本項目把畫面上用到的來源合成一幅 MapLibre 地圖，方便讀過海時間、擠塞路段、羅湖大堂或生效中的警告，而毋須同時開六個分頁。
 
-**不提供行車路線。** 這塊板用來讀一座城市，也用來說明公開數據怎樣變成同一幅畫面。
+**不提供行車路線。** 儀表板用來讀一座城市，也用來說明公開數據怎樣變成同一幅畫面。
 
 ---
 
@@ -52,7 +52,7 @@
 
 **原則：絕不向他人的伺服器重複索取。**
 
-公開網站為每一項上游數據保留一份共用副本，訪客讀的是這份副本。副本仍然有效時，新的訪客不會再向運輸署等部門伺服器發出新請求。
+公開網站為每一項取用的開放數據保留一份共用副本，訪客讀的是這份副本。副本仍然有效時，新的訪客不會再向運輸署等部門伺服器發出新請求。
 
 | 數據類別 | 大約更新間隔 |
 | --- | --- |
@@ -158,6 +158,6 @@ npm run dev
 
 ## 作者
 
-[Keith Li](https://www.linkedin.com/in/keithlihk)。這塊板用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的城市。
+[Keith Li](https://www.linkedin.com/in/keithlihk)。這個儀表板用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的城市。
 
 **製作：** [Keith Li](https://www.linkedin.com/in/keithlihk) / [GitHub](https://github.com/keithligh)

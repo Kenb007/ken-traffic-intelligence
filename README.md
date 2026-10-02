@@ -4,11 +4,11 @@
 
 # HK Traffic Intelligence
 
-**One map for the open feeds this board actually uses.**
-
-Harbour minutes, strategic-road speed, cameras, works, toll points, incidents, land control points, Observatory warnings, MTR next train, and KMB ETA on one live board. Scope is limited to what this app wires in, not every dataset on [DATA.GOV.HK](https://data.gov.hk).
+A live map of Hong Kong traffic. The numbers on screen come from open data published by Transport Department, HKeMobility, Immigration, the Observatory, MTR, and KMB.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
+
+The board is at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev).
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
@@ -25,7 +25,7 @@ No account. No install. Opens in **Traditional Chinese** (Hong Kong written form
 
 Hong Kong already publishes the numbers: Transport Department on strategic roads, HKeMobility on harbour minutes and cameras, Immigration on land control points, the Observatory on warnings, MTR and KMB on the next train and bus.
 
-The feeds are **public**. They are also **scattered** across portals and refresh on different clocks. This project draws the wired-in subset onto one MapLibre map so you can read a crossing, a red road, Lo Wu, or an active warning without opening six tabs.
+The feeds are **public**. They are also **scattered** across portals and refresh on different clocks. This project does not cover every dataset on [DATA.GOV.HK](https://data.gov.hk). It draws the feeds used on this board onto one MapLibre map so you can read a crossing, a red road, Lo Wu, or an active warning without opening six tabs.
 
 It is **not** a turn-by-turn navigator. It is a traffic board for reading the city, and for showing how open data becomes one picture.
 
