@@ -37,10 +37,14 @@ export function corridorsFromSegments(
 ): Corridor[] {
   return lines.map((line) => {
     const speedKmh = speeds.get(line.id) ?? null
+    // Names come from the centreline street, then its alias or route number.
+    // 策略性道路 is only a piece the Transport Department left unnamed.
+    const roadEn = line.roadEn.trim()
+    const roadTc = line.roadTc.trim()
     return {
       id: line.id,
-      roadTc: line.roadTc || line.roadEn || "Strategic road",
-      roadEn: line.roadEn,
+      roadTc: roadTc || roadEn || "策略性道路",
+      roadEn: roadEn || (roadTc ? "" : "Strategic road"),
       direction: "",
       speedKmh,
       band: bandForSaturation(saturation.get(line.id)) ?? bandForSpeed(speedKmh),
