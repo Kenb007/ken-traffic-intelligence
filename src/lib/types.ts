@@ -191,6 +191,7 @@ export type KmbResponse = {
   error?: string
   observedAt: string | null
   stops: KmbStopBoard[]
+  cacheable?: boolean
 }
 
 export type LrtCalling = {

@@ -58,7 +58,7 @@ export function Dashboard() {
   const [view, setView] = useState<{ lng: number; lat: number; zoom: number } | null>(null)
   const kmbUrl =
     layers.kmb && view && view.zoom >= KMB_MIN_ZOOM
-      ? `/api/kmb?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
+      ? `/api/kmb?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}&zoom=${view.zoom.toFixed(2)}`
       : null
   const citybusUrl =
     layers.citybus && view && view.zoom >= KMB_MIN_ZOOM

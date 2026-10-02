@@ -1,11 +1,11 @@
 import { busCompany } from "@/lib/bus-company"
-import { kmbStop, nearestKmbStops } from "@/lib/kmb-network"
+import { kmbStop, kmbStopsWithin } from "@/lib/kmb-network"
+import { isListedKmbRow, kmbReachMetres, STOP_CAP } from "@/lib/kmb-reach"
 import { pool } from "@/lib/pool"
 import { fetchUpstream } from "@/lib/upstream"
 import type { KmbCall, KmbResponse, KmbStopBoard } from "@/lib/types"
 
-const STOP_LIMIT = 24
-const FETCH_LIMIT = 4
+const FETCH_LIMIT = 8
 const REMEMBER_MS = 30_000
 const ETA_ROOT = "https://data.etabus.gov.hk/v1/transport/kmb/stop-eta"
 
@@ -24,13 +24,15 @@ type Remembered = { at: number; rows: EtaRow[] }
 
 const remembered = new Map<string, Remembered>()
 
-export async function loadKmbNear(lng: number, lat: number, now = Date.now()): Promise<KmbResponse> {
-  const nearest = nearestKmbStops(lng, lat, STOP_LIMIT)
+export async function loadKmbNear(lng: number, lat: number, now = Date.now(), zoom = Number.NaN): Promise<KmbResponse> {
+  const nearest = kmbStopsWithin(lng, lat, kmbReachMetres(zoom, lat), STOP_CAP)
+  let missed = 0
   await pool(nearest.map((stop) => stop.id), FETCH_LIMIT, async (stopId) => {
     const cached = remembered.get(stopId)
     if (cached && now - cached.at < REMEMBER_MS) return
     const rows = await fetchStop(stopId)
     if (rows) remembered.set(stopId, { at: now, rows })
+    else missed += 1
   })
 
   const stops: KmbStopBoard[] = []
@@ -44,23 +46,22 @@ export async function loadKmbNear(lng: number, lat: number, now = Date.now()): P
     stops.push({ id: stop.id, nameTc: record.tc, nameEn: record.en, lng: record.lng, lat: record.lat, calls })
   }
   if (stops.length === 0) {
-    return { ok: false, error: "KMB arrivals failed", observedAt: null, stops: [] }
+    return { ok: false, error: "KMB arrivals failed", observedAt: null, stops: [], cacheable: false }
   }
-  return { ok: true, observedAt: new Date(now).toISOString(), stops }
+  return { ok: true, observedAt: new Date(now).toISOString(), stops, cacheable: missed === 0 }
 }
 
 function callsAt(rows: EtaRow[], now: number): KmbCall[] {
   const calls: KmbCall[] = []
   for (const row of rows) {
     if (row.eta_seq !== 1) continue
+    if (!isListedKmbRow(row)) continue
     const route = text(row.route)
     if (!route) continue
     const etaMs = row.eta ? Date.parse(row.eta) : NaN
     const hasEta = Number.isFinite(etaMs)
     const remarkTc = isScheduled(row) ? "" : text(row.rmk_tc)
     const remarkEn = isScheduled(row) ? "" : text(row.rmk_en)
-    // A route with neither a time nor a published note is not an estimate.
-    if (!hasEta && !remarkTc && !remarkEn) continue
     calls.push({
       route,
       destTc: text(row.dest_tc),
