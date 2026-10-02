@@ -59,6 +59,10 @@ const OPENING = {
   bearing: -20,
 }
 
+const LABEL_MIN_ZOOM = 16.5
+const LABEL_REFRESH_MS = 700
+let plateFamily = ""
+
 function narrowScreen(): boolean {
   return window.matchMedia("(max-width: 760px)").matches
 }
@@ -429,6 +433,33 @@ export function CityMap({
       keep.className = "ios-frame-keep"
       document.body.appendChild(keep)
     }
+    const motionReady = { mtr: false, lrt: false, at: 0 }
+    const refreshTrainLabels = (map: Map, now: number) => {
+      const show = map.getZoom() >= LABEL_MIN_ZOOM
+      if (!show) {
+        if (!motionReady.mtr && !motionReady.lrt) return
+        if (motionReady.mtr) geoJsonSource(map, "mtr-train-labels")?.setData(emptyCollection())
+        if (motionReady.lrt) geoJsonSource(map, "lrt-train-labels")?.setData(emptyCollection())
+        motionReady.mtr = false
+        motionReady.lrt = false
+        return
+      }
+      if (now - motionReady.at < LABEL_REFRESH_MS && (motionReady.mtr || motionReady.lrt)) return
+      motionReady.at = now
+      const publish = (sourceId: string, layerId: string, mode: "mtr" | "lrt", runs: TrainRun[], locate: (code: string) => { lng: number; lat: number } | null) => {
+        const source = geoJsonSource(map, sourceId)
+        if (!source) return
+        if (!layerShown(map, layerId)) {
+          if (motionReady[mode]) source.setData(emptyCollection())
+          motionReady[mode] = false
+          return
+        }
+        source.setData(withTrainMarks(map, runCollection(runs, locate), localeRef.current, mode))
+        motionReady[mode] = true
+      }
+      publish("mtr-train-labels", "mtr-train-label", "mtr", runsRef.current, stationPoint)
+      publish("lrt-train-labels", "lrt-train-label", "lrt", lrtRunsRef.current, lrtPoint)
+    }
     const step = () => {
       const now = performance.now()
       const elapsed = Math.max(0, (now - last) / 1000)
@@ -455,17 +486,18 @@ export function CityMap({
         const trains = geoJsonSource(current, "mtr-trains")
         if (trains && layerShown(current, "mtr-trains")) {
           runsRef.current = advanceRuns(runsRef.current, trainStep, stationPoint)
-          const moving = withTrainMarks(current, runCollection(runsRef.current, stationPoint), localeRef.current, "mtr")
+          const moving = runCollection(runsRef.current, stationPoint)
           if (ios) pushMovingSource(trains, gates.mtr, moving, now, pushGap)
           else trains.setData(moving)
         }
         const lightRail = geoJsonSource(current, "lrt-trains")
         if (lightRail && layerShown(current, "lrt-trains")) {
           lrtRunsRef.current = advanceRuns(lrtRunsRef.current, trainStep, lrtPoint)
-          const moving = withTrainMarks(current, runCollection(lrtRunsRef.current, lrtPoint), localeRef.current, "lrt")
+          const moving = runCollection(lrtRunsRef.current, lrtPoint)
           if (ios) pushMovingSource(lightRail, gates.lrt, moving, now, pushGap)
           else lightRail.setData(moving)
         }
+        refreshTrainLabels(current, now)
       }
     }
     const tick = () => {
@@ -587,34 +619,54 @@ export function CityMap({
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    geoJsonSource(map, "cameras")?.setData(picture?.cameras ?? emptyCollection())
-    geoJsonSource(map, "works")?.setData(picture?.works ?? emptyCollection())
-    geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
-    geoJsonSource(map, "incidents")?.setData(incidents ?? emptyCollection())
-    geoJsonSource(map, "control-points")?.setData(controlPoints ?? emptyCollection())
-    if (!mtr?.ok) geoJsonSource(map, "mtr-trains")?.setData(emptyCollection())
-    if (!layers.kmb) {
-      geoJsonSource(map, "kmb-stops")?.setData(emptyCollection())
-    } else if (kmb?.ok) {
-      geoJsonSource(map, "kmb-stops")?.setData(kmbStopCollection(map, kmb, locale))
+    const paint = () => {
+      const labels = map.getZoom() >= LABEL_MIN_ZOOM
+      geoJsonSource(map, "cameras")?.setData(picture?.cameras ?? emptyCollection())
+      geoJsonSource(map, "works")?.setData(picture?.works ?? emptyCollection())
+      geoJsonSource(map, "tolls")?.setData(picture?.tolls ?? emptyCollection())
+      geoJsonSource(map, "incidents")?.setData(incidents ?? emptyCollection())
+      geoJsonSource(map, "control-points")?.setData(controlPoints ?? emptyCollection())
+      if (!mtr?.ok) {
+        geoJsonSource(map, "mtr-trains")?.setData(emptyCollection())
+        geoJsonSource(map, "mtr-train-labels")?.setData(emptyCollection())
+      }
+      if (!layers.kmb) {
+        geoJsonSource(map, "kmb-stops")?.setData(emptyCollection())
+      } else if (kmb?.ok) {
+        geoJsonSource(map, "kmb-stops")?.setData(kmbStopCollection(map, kmb, locale, labels))
+      }
+      if (!layers.lrt) {
+        geoJsonSource(map, "lrt-trains")?.setData(emptyCollection())
+        geoJsonSource(map, "lrt-train-labels")?.setData(emptyCollection())
+      }
+      if (!layers.citybus) {
+        geoJsonSource(map, "citybus-stops")?.setData(emptyCollection())
+      } else if (citybus?.ok) {
+        geoJsonSource(map, "citybus-stops")?.setData(citybusStopCollection(map, citybus, locale, labels))
+      }
     }
-    if (!layers.lrt) {
-      geoJsonSource(map, "lrt-trains")?.setData(emptyCollection())
-    }
-    if (!layers.citybus) {
-      geoJsonSource(map, "citybus-stops")?.setData(emptyCollection())
-    } else if (citybus?.ok) {
-      geoJsonSource(map, "citybus-stops")?.setData(citybusStopCollection(map, citybus, locale))
+    paint()
+    map.on("zoomend", paint)
+    return () => {
+      map.off("zoomend", paint)
     }
   }, [citybus, controlPoints, disabled, incidents, kmb, layers.citybus, layers.kmb, layers.lrt, locale, lrt, mapReady, mtr, picture, styleEpoch])
 
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    geoJsonSource(map, "mtr-stations")?.setData(platedStations(map, mtrStationCollection(), locale, "#7dd3e8", () => []))
-    geoJsonSource(map, "lrt-stations")?.setData(
-      platedStations(map, lrtStationCollection(), locale, "#d4a017", (code) => lrtRoutesThrough(code)),
-    )
+    const paint = () => {
+      const labels = map.getZoom() >= LABEL_MIN_ZOOM
+      geoJsonSource(map, "mtr-stations")?.setData(platedStations(map, mtrStationCollection(), locale, "#7dd3e8", () => [], labels))
+      geoJsonSource(map, "lrt-stations")?.setData(
+        platedStations(map, lrtStationCollection(), locale, "#d4a017", (code) => lrtRoutesThrough(code), labels),
+      )
+    }
+    paint()
+    map.on("zoomend", paint)
+    return () => {
+      map.off("zoomend", paint)
+    }
   }, [disabled, locale, mapReady, styleEpoch])
 
   useEffect(() => {
@@ -775,7 +827,8 @@ function ensureStopPlate(map: Map, id: string, plate: StopPlate, stroke: string)
 
 function stopPlateImage(plate: StopPlate, stroke: string): ImageData | null {
   const scale = 2
-  const family = getComputedStyle(document.body).fontFamily || "sans-serif"
+  plateFamily ||= getComputedStyle(document.body).fontFamily || "sans-serif"
+  const family = plateFamily
   const titleFont = `600 ${11 * scale}px ${family}`
   const routeFont = `600 ${10 * scale}px ${family}`
   const probe = document.createElement("canvas").getContext("2d")
@@ -986,12 +1039,13 @@ function addOverlay(map: Map, layer: Parameters<Map["addLayer"]>[0], before: str
   else map.addLayer(layer)
 }
 
-function addStopLabel(map: Map, id: string, source: string, minzoom: number, before: string | undefined) {
+function addStopLabel(map: Map, id: string, source: string, before: string | undefined) {
   addOverlay(map, {
     id,
     type: "symbol",
     source,
-    minzoom,
+    minzoom: LABEL_MIN_ZOOM,
+    filter: ["has", "icon"],
     filter: ["has", "icon"],
     layout: {
       "icon-image": ["get", "icon"],
@@ -1022,6 +1076,7 @@ function mountDataLayers(map: Map) {
   })
   map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
   map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
+  map.addSource("mtr-train-labels", { type: "geojson", data: emptyCollection() })
   map.addSource("kmb-stops", { type: "geojson", data: emptyCollection() })
   map.addSource("lrt-track", {
     type: "geojson",
@@ -1030,6 +1085,7 @@ function mountDataLayers(map: Map) {
   })
   map.addSource("lrt-stations", { type: "geojson", data: lrtStationCollection() })
   map.addSource("lrt-trains", { type: "geojson", data: emptyCollection() })
+  map.addSource("lrt-train-labels", { type: "geojson", data: emptyCollection() })
   map.addSource("citybus-stops", { type: "geojson", data: emptyCollection() })
   map.addSource("approaches", { type: "geojson", data: emptyCollection() })
   map.addSource("corridors", {
@@ -1308,7 +1364,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "mtr-station-label", "mtr-stations", 14, before)
+  addStopLabel(map, "mtr-station-label", "mtr-stations", before)
   addOverlay(map, {
     id: "mtr-trains",
     type: "circle",
@@ -1321,7 +1377,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "mtr-train-label", "mtr-trains", 15, before)
+  addStopLabel(map, "mtr-train-label", "mtr-train-labels", before)
   addOverlay(map, {
     id: "kmb-stops",
     type: "circle",
@@ -1335,7 +1391,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "kmb-stop-label", "kmb-stops", 15, before)
+  addStopLabel(map, "kmb-stop-label", "kmb-stops", before)
   addOverlay(map, {
     id: "lrt-track-casing",
     type: "line",
@@ -1370,7 +1426,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "lrt-station-label", "lrt-stations", 15, before)
+  addStopLabel(map, "lrt-station-label", "lrt-stations", before)
   addOverlay(map, {
     id: "lrt-trains",
     type: "circle",
@@ -1383,7 +1439,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "lrt-train-label", "lrt-trains", 15, before)
+  addStopLabel(map, "lrt-train-label", "lrt-train-labels", before)
   addOverlay(map, {
     id: "citybus-stops",
     type: "circle",
@@ -1397,7 +1453,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "citybus-stop-label", "citybus-stops", 15, before)
+  addStopLabel(map, "citybus-stop-label", "citybus-stops", before)
   addOverlay(map, {
     id: "approach-times",
     type: "symbol",
@@ -1493,12 +1549,12 @@ function cameraCone(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
-function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Locale): GeoJSON.FeatureCollection {
+function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Locale, labels: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: citybus.stops.map((stop) => {
       const name = readablePlace(displayText(locale, stop.nameTc, stop.nameEn))
-      const icon = placeStopPlate(map, name, stop.calls.map((call) => call.route), "#c2410c")
+      const icon = labels ? placeStopPlate(map, name, stop.calls.map((call) => call.route), "#c2410c") : ""
       return {
         type: "Feature" as const,
         geometry: { type: "Point" as const, coordinates: [stop.lng, stop.lat] },
@@ -1513,12 +1569,12 @@ function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Local
   }
 }
 
-function kmbStopCollection(map: Map, kmb: KmbResponse, locale: Locale): GeoJSON.FeatureCollection {
+function kmbStopCollection(map: Map, kmb: KmbResponse, locale: Locale, labels: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: kmb.stops.map((stop) => {
       const name = readablePlace(displayText(locale, stop.nameTc, stop.nameEn))
-      const icon = placeStopPlate(map, name, stop.calls.map((call) => call.route), "#9f1239")
+      const icon = labels ? placeStopPlate(map, name, stop.calls.map((call) => call.route), "#9f1239") : ""
       return {
         type: "Feature" as const,
         geometry: { type: "Point" as const, coordinates: [stop.lng, stop.lat] },
@@ -1539,7 +1595,9 @@ function platedStations(
   locale: Locale,
   stroke: string,
   routesFor: (code: string) => string[],
+  labels: boolean,
 ): GeoJSON.FeatureCollection {
+  if (!labels) return collection
   return {
     type: "FeatureCollection",
     features: collection.features.map((feature) => {
