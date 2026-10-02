@@ -32,12 +32,13 @@ import {
   trainPopup,
   workPopup,
 } from "@/components/map-cards"
-import { displayText, type Messages } from "@/lib/i18n"
+import { stopPlate, stopPlateKey, type StopPlate } from "@/lib/stop-plate"
+import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
+import { displayText, type Locale, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint } from "@/lib/mtr-network"
 import { lrtColor, lrtPoint, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
 import { beginPush, endPush, type PushGate } from "@/lib/frame-push"
 import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
-import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import type { ApproachPoint, Basemap, CitybusResponse, Corridor, HarbourJourney, KmbResponse, LrtResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
@@ -171,7 +172,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops", "lrt-stations", "lrt-trains", "citybus-stops"]
+const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops", "lrt-stations", "lrt-trains", "citybus-stops", "citybus-stop-label"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -600,9 +601,9 @@ export function CityMap({
     if (!layers.citybus) {
       geoJsonSource(map, "citybus-stops")?.setData(emptyCollection())
     } else if (citybus?.ok) {
-      geoJsonSource(map, "citybus-stops")?.setData(citybusStopCollection(citybus))
+      geoJsonSource(map, "citybus-stops")?.setData(citybusStopCollection(map, citybus, locale))
     }
-  }, [citybus, controlPoints, disabled, incidents, kmb, layers.citybus, layers.kmb, layers.lrt, lrt, mapReady, mtr, picture, styleEpoch])
+  }, [citybus, controlPoints, disabled, incidents, kmb, layers.citybus, layers.kmb, layers.lrt, locale, lrt, mapReady, mtr, picture, styleEpoch])
 
   useEffect(() => {
     const map = mapRef.current
@@ -719,6 +720,58 @@ function approachPill(label: string, colour: string): ImageData | null {
   context.textAlign = "center"
   context.textBaseline = "middle"
   context.fillText(label, width / 2, height / 2)
+  return context.getImageData(0, 0, width, height)
+}
+
+function stopPlateIconId(plate: StopPlate): string {
+  return `stop-plate-${encodeURIComponent(stopPlateKey(plate))}`
+}
+
+function ensureStopPlate(map: Map, id: string, plate: StopPlate) {
+  if (map.hasImage(id)) return
+  const image = stopPlateImage(plate)
+  if (image) map.addImage(id, image, { pixelRatio: 2 })
+}
+
+function stopPlateImage(plate: StopPlate): ImageData | null {
+  const scale = 2
+  const family = getComputedStyle(document.body).fontFamily || "sans-serif"
+  const titleFont = `600 ${11 * scale}px ${family}`
+  const routeFont = `600 ${10 * scale}px ${family}`
+  const probe = document.createElement("canvas").getContext("2d")
+  if (!probe) return null
+  const rows = plate.title ? [plate.title, ...plate.lines] : plate.lines
+  if (rows.length === 0) return null
+  const widths = rows.map((row, index) => {
+    probe.font = index === 0 && plate.title ? titleFont : routeFont
+    return Math.ceil(probe.measureText(row).width)
+  })
+  const padX = 6 * scale
+  const padY = 4 * scale
+  const lineHeight = 13 * scale
+  const width = Math.max(1, Math.max(...widths) + padX * 2)
+  const height = Math.max(1, rows.length * lineHeight + padY * 2)
+  const canvas = document.createElement("canvas")
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  if (!context) return null
+  context.clearRect(0, 0, width, height)
+  context.beginPath()
+  context.roundRect(scale, scale, width - scale * 2, height - scale * 2, 6 * scale)
+  context.fillStyle = "rgba(4, 16, 24, 0.92)"
+  context.fill()
+  context.lineWidth = scale
+  context.strokeStyle = "#c2410c"
+  context.stroke()
+  context.textAlign = "left"
+  context.textBaseline = "middle"
+  rows.forEach((row, index) => {
+    const titleRow = index === 0 && plate.title
+    context.font = titleRow ? titleFont : routeFont
+    context.fillStyle = titleRow ? "#fff8e8" : "#ffedd5"
+    context.fillText(row, padX, padY + lineHeight * index + lineHeight / 2)
+  })
   return context.getImageData(0, 0, width, height)
 }
 
@@ -1027,6 +1080,7 @@ function bindOverlayClicks(
     "lrt-stations": (properties) => lrtStationPopup(properties, lrtRef.current, copyRef.current),
     "lrt-trains": (properties) => lrtTrainPopup(properties, lrtRef.current, copyRef.current),
     "citybus-stops": citybusStopPopup,
+    "citybus-stop-label": citybusStopPopup,
   }
   map.on("click", "approach-times", (event) => {
     const raw = event.features?.[0]?.properties?.id
@@ -1275,6 +1329,22 @@ function addWatchLayers(map: Map, before: string | undefined) {
     },
   }, before)
   addOverlay(map, {
+    id: "citybus-stop-label",
+    type: "symbol",
+    source: "citybus-stops",
+    minzoom: 15,
+    filter: ["has", "icon"],
+    layout: {
+      "icon-image": ["get", "icon"],
+      "icon-anchor": "bottom",
+      "icon-offset": [0, -10],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "viewport",
+      "icon-rotation-alignment": "viewport",
+    },
+  }, before)
+  addOverlay(map, {
     id: "approach-times",
     type: "symbol",
     source: "approaches",
@@ -1369,14 +1439,24 @@ function cameraCone(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
-function citybusStopCollection(citybus: CitybusResponse): GeoJSON.FeatureCollection {
+function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Locale): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
-    features: citybus.stops.map((stop) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [stop.lng, stop.lat] },
-      properties: { nameTc: stop.nameTc, nameEn: stop.nameEn, board: JSON.stringify(stop.calls) },
-    })),
+    features: citybus.stops.map((stop) => {
+      const plate = stopPlate(displayText(locale, stop.nameTc, stop.nameEn), stop.calls.map((call) => call.route))
+      const icon = stopPlateIconId(plate)
+      ensureStopPlate(map, icon, plate)
+      return {
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [stop.lng, stop.lat] },
+        properties: {
+          nameTc: stop.nameTc,
+          nameEn: stop.nameEn,
+          board: JSON.stringify(stop.calls),
+          ...(map.hasImage(icon) ? { icon } : {}),
+        },
+      }
+    }),
   }
 }
 
@@ -1412,7 +1492,7 @@ function layerIds(kind: WatchLayer): string[] {
     case "lrt":
       return ["lrt-track-casing", "lrt-track", "lrt-stations", "lrt-trains"]
     case "citybus":
-      return ["citybus-stops"]
+      return ["citybus-stops", "citybus-stop-label"]
     default: {
       const exhaustive: never = kind
       return exhaustive
