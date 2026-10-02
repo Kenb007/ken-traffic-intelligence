@@ -1,4 +1,5 @@
 import { camerasFromWfs, tollsFromWfs, withPortalCameras, withTraditionalText, worksFromWfs } from "@/lib/picture"
+import { fillWorksChinese } from "@/lib/works-chinese"
 import { fetchUpstream } from "@/lib/upstream"
 import type { PictureResponse } from "@/lib/types"
 
@@ -35,15 +36,17 @@ export async function GET() {
       withTraditionalText(camerasResult.features, camerasTcResult.features, ["name", "district", "region"]),
       tollsResult.features,
     ),
-    works: withTraditionalText(worksResult.features, worksTcResult.features, [
-      "road",
-      "place",
-      "status",
-      "kind",
-      "lane",
-      "bound",
-      "district",
-    ]),
+    works: fillWorksChinese(
+      withTraditionalText(worksResult.features, worksTcResult.features, [
+        "road",
+        "place",
+        "status",
+        "kind",
+        "lane",
+        "bound",
+        "district",
+      ]),
+    ),
     tolls: tollsResult.features,
   }
   cache = { expires: Date.now() + (body.ok ? 30_000 : 10_000), body }
