@@ -1,7 +1,8 @@
 {
   "name": "hk-traffic-dashboard",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "license": "MIT",
   "scripts": {
     "predev": "node scripts/copy-maplibre-worker.mjs",
     "prebuild": "node scripts/copy-maplibre-worker.mjs",

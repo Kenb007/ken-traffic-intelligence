@@ -7,6 +7,7 @@
 香港交通的實時地圖。畫面上的數字，來自運輸署、HKeMobility、入境事務處、天文台、港鐵及九巴等已公布的開放數據。
 
 [![實時示範](https://img.shields.io/badge/▶_開啟_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 
 網址：[hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。
 
@@ -14,7 +15,9 @@
 [![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
 
-毋須帳戶，亦毋須安裝。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁。
+開源項目（[MIT](LICENSE)）。可直接開啟公開網址，亦可自行安裝。歡迎 fork；請保留對本項目的致謝。
+
+毋須帳戶。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁。
 
 </div>
 
@@ -98,7 +101,9 @@ flowchart LR
 
 ---
 
-## 快速開始
+## 自行安裝
+
+本項目為**開源**。你可以複製程式、在本機運行，亦可 fork。請保留版權聲明，並致謝 [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) / [Keith Li](https://github.com/keithligh)。
 
 需要 Node.js 22。
 
@@ -157,8 +162,10 @@ npm run dev
 
 ---
 
-## 作者
+## 作者及授權
 
 [Keith Li](https://www.linkedin.com/in/keithlihk)。這個項目用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的城市。
+
+以 [MIT License](LICENSE) 發布。歡迎 fork 及重用；請保留版權聲明，並致謝本項目。
 
 **製作：** [Keith Li](https://www.linkedin.com/in/keithlihk) / [GitHub](https://github.com/keithligh)

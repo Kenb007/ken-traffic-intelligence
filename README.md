@@ -7,6 +7,7 @@
 A live map of Hong Kong traffic. The numbers on screen come from open data published by Transport Department, HKeMobility, Immigration, the Observatory, MTR, and KMB.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 
 The board is at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev).
 
@@ -14,7 +15,9 @@ The board is at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.work
 [![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
 
-No account. No install. Opens in **Traditional Chinese** (Hong Kong written form). **English** sits beside the clock.
+Open source ([MIT](LICENSE)). Use the live site, or clone it and run it yourself. Forks are welcome; please keep credit to this project.
+
+No account needed. Opens in **Traditional Chinese** (Hong Kong written form). **English** sits beside the clock.
 
 </div>
 
@@ -98,7 +101,9 @@ flowchart LR
 
 ---
 
-## Quick start
+## Run it yourself
+
+This project is **open source**. You can clone it, run it locally, and fork it. Please keep the copyright notice and credit [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) / [Keith Li](https://github.com/keithligh).
 
 **Node.js 22**
 
@@ -157,8 +162,10 @@ Road geometry uses the TD **strategic centreline** (Hong Kong 1980 grid), shifte
 
 ---
 
-## Author
+## Author and licence
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) built this board for **Agentic Engineer** classes, public talks, and guest lectures. The data was already public. The work is to make those feeds one city a person can read.
+[Keith Li](https://www.linkedin.com/in/keithlihk) built this for **Agentic Engineer** classes, public talks, and guest lectures. The data was already public. The work is to make those feeds one city a person can read.
+
+Released under the [MIT License](LICENSE). Forks and reuse are welcome. Please keep the copyright notice and credit this project.
 
 **Created by:** [Keith Li](https://www.linkedin.com/in/keithlihk), [GitHub](https://github.com/keithligh)
