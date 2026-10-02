@@ -17,23 +17,19 @@ If you find the map useful, please [star this repository](https://github.com/kei
 
 ## What you will see
 
-The three harbour crossings (Cross-Harbour, Eastern Harbour, and Western Harbour) show minutes measured from a real approach road. Green is an ordinary run, amber is a delay that has settled in, and red means that crossing has turned. Click a reading and the map moves to that approach.
+The header begins with the three harbour crossings. The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing each show the minutes measured on a real approach road. Green is an ordinary run, amber is a delay that has already settled in, and red means that crossing has changed. If you click a reading, the map moves to the approach those minutes came from, and the card names the road, the direction, what is nearby, and the time to each crossing on that approach.
 
-Strategic roads are coloured with the Transport Department's own saturation classes: Good, Average, and Bad. Where a segment has no class, the colour falls back to the speed itself. Dots move along corridors that have a live speed, and they disappear when you turn the speed layer off.
+Under the crossings, the strategic roads use the saturation classes the Transport Department publishes: Good, Average, and Bad. When a short segment has no class, the colour follows the speed on that segment. Where a live speed is available, dots travel along the corridor at a pace that matches it. Turn the speed layer off, and the dots leave with it.
 
-Public cameras include the tunnel mouths. Harbour and tunnel-mouth cameras stay on the map when you are zoomed out. The rest of the city appears as you come closer. Road works on fast roads, toll points, and special traffic news that is still open sit on their own layers.
+The same map carries the public cameras, including the mouths of the tunnels. Cameras around the harbour and at those mouths stay visible while you are still zoomed out, and the rest of the city appears as you move closer. A camera card separates the road, the direction, the nearby place, the district, the region, the way the lens faces, and the camera number, and then shows the still. Road works on roads with a limit of 70 km/h or above, the toll points for the harbour crossings and Tai Lam Tunnel, and special traffic news that is still open each have their own layer, which you can switch from the bar along the bottom.
 
-The eight land control points show passenger halls for residents and visitors, arriving and departing. The vehicle line beside a hall is the live speed on the strategic road that feeds that port. Lo Wu is a passenger crossing, so that line stays empty.
+The eight land control points show the passenger halls, for residents and for visitors, arriving and departing. The vehicle figure beside a hall is the live speed on the strategic road that feeds that port. Lo Wu is a passenger crossing. The published file has no private-car queue there, so that line is left blank. Weather sits in the header with them. Every Observatory warning in force is listed, and on a quiet day you still see the temperature at the Observatory and whether the past hour brought rain.
 
-Every Hong Kong Observatory warning in force is listed. When the sky is quiet, you still see the temperature at the Observatory and whether the past hour brought rain.
+MTR and KMB are drawn from the figures those operators publish. For the MTR, the minutes, the destination, and the platform are the next train on the published board. A dot walks those minutes back along the track, and the card says which two stations it falls between. Light rail is not included. For KMB, the time on a stop is the published arrival, and a scheduled trip stays on the list. The stops appear once you have zoomed in, near the middle of the map, because the arrival information is given stop by stop.
 
-MTR next-train minutes, destination, and platform are taken from the board MTR publishes. The dot walks those minutes back along the track, and the card says which two stations it falls between. Light rail is not on this layer. KMB shows the arrival time KMB publishes, including a scheduled row, once you are zoomed in near the middle of the map. The arrival feed names the stop, so the map shows the stop.
+Beside the map, a list puts the items worth reading first in order: an incident that is still open, a road the Transport Department has classed as bad, a hall that is very busy, or a warning. Hide the list and those same items run along the bottom. You can also change the ground. Satellite photography, the OSM Bright street map, and OSM Liberty with the buildings stood up are all available. Press buildings again and you return to the map you had. In the buildings view, the labels and the markers sit under the roofs.
 
-A list on the side ranks what to read first: an open incident, a road that has gone bad, a hall that is very busy, a warning. Hide it and the same items run along the bottom.
-
-You can switch the ground between satellite photography, the OSM Bright street map, and OSM Liberty with the buildings stood up. In the buildings view, labels and markers sit under the roofs.
-
-The map uses the traffic, border, weather, MTR, and KMB feeds listed below. Hong Kong publishes a great deal more open data than this one screen draws on.
+Everything above is drawn from the traffic, border, weather, MTR, and KMB feeds named later on this page. Hong Kong publishes much more open data than this one map uses.
 
 ## Open source
 
@@ -50,7 +46,7 @@ npm run dev
 
 Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 
-The bottom bar switches the ground and the layers: satellite (Esri photography, kept flat so the coloured roads stay on the streets), streets ([OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) from [OpenFreeMap](https://openfreemap.org)), buildings ([OSM Liberty](https://github.com/maputnik/osm-liberty), press again to return to the map you had), and the data layers for speed, cameras, works, tunnels, incidents, boundary, MTR, and KMB.
+The bar along the bottom is where you choose the ground and the layers. Satellite is Esri photography, kept flat so the coloured roads stay on the streets. Streets is [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style), served by [OpenFreeMap](https://openfreemap.org). Buildings is [OSM Liberty](https://github.com/maputnik/osm-liberty). Press that button again and you return to the map you were on. The remaining buttons turn speed, cameras, works, tunnels, incidents, the land control points, MTR, and KMB on and off.
 
 | Command | What it does |
 | --- | --- |
@@ -59,7 +55,7 @@ The bottom bar switches the ground and the layers: satellite (Esri photography, 
 | `npm run dev:vinext` | The Cloudflare-oriented dev server on port 4318 |
 | `npm run deploy:vinext` | Deploy the worker, when Cloudflare credentials are available |
 
-Add `?feed=down` to see the screen when the speed feed fails. Add `?map=down` and the header stays up while the map is absent. The app is Next.js, React, MapLibre GL, and Tailwind CSS, served as a Cloudflare Worker.
+If you want to see the screen when the speed feed cannot be reached, add `?feed=down` to the address. If you want to see the header while the map itself is absent, add `?map=down`. The application is written with Next.js, React, MapLibre GL, and Tailwind CSS, and the public site runs as a Cloudflare Worker.
 
 ## One copy of each feed
 
@@ -67,7 +63,9 @@ The live site keeps one shared copy of each feed and serves that copy to visitor
 
 ## Where the numbers come from
 
-Road geometry is the Transport Department strategic centreline, stored in Hong Kong 1980 grid coordinates. The Lands Department correction for the whole territory is 8.8 arcseconds of longitude added, and 5.5 arcseconds of latitude subtracted. After that, the line lies on the road.
+The roads on the map follow the Transport Department strategic centreline. The file is stored in Hong Kong 1980 grid coordinates. The Lands Department correction for the whole territory adds 8.8 arcseconds of longitude and subtracts 5.5 arcseconds of latitude. After that correction, the line lies on the road.
+
+The table below names the published source for each part of the screen. Hong Kong's open-data catalogues contain far more than this list. These are the feeds the map reads.
 
 | On the map | Open data |
 | --- | --- |
