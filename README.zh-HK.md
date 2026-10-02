@@ -33,7 +33,7 @@
 - **港鐵。** 到站分鐘、終點、月台是港鐵公布的下一班車。港鐵沒有公布列車位置。圓點把那些分鐘沿路軌往回推，卡片寫明它落在哪兩個站之間。輕鐵不在這一層。
 - **九巴。** 車站上的時間是九巴公布的到站時間，原定班次也留在班次表上。把地圖拉近，才會看到畫面中間附近的車站。九巴沒有公布巴士所行的路，所以地圖只顯示車站。
 - **情報。** 清單把值得先讀的事項排好：未結束的意外、擠塞的路、非常繁忙的大堂、警告。收起之後，同一批事項沿底部移動。收起和展開都有動畫。
-- **底圖。** 衛星照片、街道圖，或立起來的樓宇。樓宇按鈕再按一次，就回到剛才的地圖。樓宇畫面裏，標籤和標記在屋頂之下。
+- **底圖。** 衛星照片、OSM Bright 街道圖，或立起來的 OSM Liberty 樓宇。樓宇按鈕再按一次，就回到剛才的地圖。樓宇畫面裏，標籤和標記在屋頂之下。
 
 ## 快速開始
 
@@ -55,8 +55,8 @@ npm run dev
 | 控制 | 畫出來的是 |
 | --- | --- |
 | 衛星 | Esri 的照片。畫面保持平坦，著色的道路才落在街上。 |
-| 街道 | OpenFreeMap 的向量街道圖，數據來自 OpenStreetMap，圖磚樣式來自 OpenMapTiles。 |
-| 樓宇 | 同一張街道圖，樓宇立起來。屋頂蓋住標記。 |
+| 街道 | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style)，由 OpenFreeMap 提供。 |
+| 樓宇 | [OSM Liberty](https://github.com/maputnik/osm-liberty)，樓宇立起來。屋頂蓋住標記。 |
 | 車速 | 策略性道路的顏色，以及沿該車速移動的圓點。 |
 | 快拍 | 公共快拍。 |
 | 工程 | 快速公路上的道路工程。 |
@@ -86,7 +86,7 @@ npm run dev
 | 下一班港鐵 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data)。車站位置是地政總署的[車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map)。 |
 | 下一班九巴 | [九巴及龍運預計到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
 | 警告、氣溫和雨 | 香港天文台的[警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc)和[本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
-| 街道圖和樓宇 | [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者、[OpenMapTiles](https://openmaptiles.org/) 和 [OpenFreeMap](https://openfreemap.org) |
+| 街道圖和樓宇 | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) 和 [OSM Liberty](https://github.com/maputnik/osm-liberty)，由 [OpenFreeMap](https://openfreemap.org) 提供，數據來自 [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者和 [OpenMapTiles](https://openmaptiles.org/) |
 | 衛星照片 | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer)。影像 © Esri |
 
 ## 共用的數據

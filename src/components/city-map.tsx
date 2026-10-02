@@ -13,6 +13,7 @@ import {
   type LngLat,
   type MapGeoJSONFeature,
   type MapMouseEvent,
+  type StyleSpecification,
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useI18n } from "@/components/locale"
@@ -68,50 +69,48 @@ function rasterTileSize(): number {
   return narrowScreen() ? 512 : 256
 }
 
-const CITY_LAYERS = ["city-land", "city-water", "city-roads", "buildings-3d"]
-const STREET_VECTOR = ["city-land", "city-water", "city-roads"]
+// OSM Bright and OSM Liberty. The files in those repositories call a keyed
+// MapTiler endpoint. OpenFreeMap publishes the same styles against its planet
+// tiles, which is the source this map already uses.
+const STREET_STYLE = "https://tiles.openfreemap.org/styles/bright"
+const BUILDINGS_STYLE = "https://tiles.openfreemap.org/styles/liberty"
 
-function showBasemap(map: Map, basemap: Basemap) {
-  const phone = narrowScreen()
+function satelliteStyle(): StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      imagery: {
+        type: "raster",
+        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+        tileSize: rasterTileSize(),
+        // Hong Kong imagery is real through zoom 19. Zoom 20 and above is Esri's
+        // gray "Map Data Not Yet Available" tile, so the map scales the zoom 19 picture.
+        maxzoom: 19,
+        attribution: "© Esri",
+      },
+      labels: {
+        type: "raster",
+        tiles: [
+          "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+        ],
+        tileSize: rasterTileSize(),
+      },
+    },
+    layers: [
+      { id: "satellite", type: "raster", source: "imagery" },
+      { id: "places", type: "raster", source: "labels", paint: { "raster-opacity": 0.88 } },
+    ],
+  }
+}
+
+function basemapStyle(basemap: Basemap): string | StyleSpecification {
   switch (basemap) {
     case "street":
-      setRasterVisible(map, "satellite", false)
-      setRasterVisible(map, "places", false)
-      setCityVisible(map, false)
-      setRasterVisible(map, "osm", false)
-      setStreetVector(map, true)
-      paintStreetRoads(map, true)
-      map.setTerrain(null)
-      map.easeTo({ pitch: 0, bearing: 0, duration: phone ? 200 : 650, essential: true })
-      return
-    case "satellite":
-      setRasterVisible(map, "osm", false)
-      setStreetVector(map, false)
-      setRasterVisible(map, "satellite", true)
-      setRasterVisible(map, "places", true)
-      setCityVisible(map, false)
-      paintStreetRoads(map, false)
-      // The radar surface steps by tens of metres on flat roads. Draping the
-      // satellite picture on it makes the road fall away. Leave the photo flat.
-      map.setTerrain(null)
-      map.easeTo({ pitch: OPENING.pitch, bearing: OPENING.bearing, duration: phone ? 200 : 650, essential: true })
-      return
+      return STREET_STYLE
     case "buildings":
-      setRasterVisible(map, "osm", false)
-      setRasterVisible(map, "satellite", false)
-      setRasterVisible(map, "places", false)
-      setStreetVector(map, false)
-      setCityVisible(map, true)
-      paintStreetRoads(map, phone)
-      map.setTerrain(null)
-      map.easeTo({
-        pitch: phone ? 46 : 64,
-        bearing: -18,
-        zoom: Math.max(map.getZoom(), phone ? 14.05 : 15.4),
-        duration: phone ? 200 : 800,
-        essential: true,
-      })
-      return
+      return BUILDINGS_STYLE
+    case "satellite":
+      return satelliteStyle()
     default: {
       const exhaustive: never = basemap
       return exhaustive
@@ -119,17 +118,25 @@ function showBasemap(map: Map, basemap: Basemap) {
   }
 }
 
-function setStreetVector(map: Map, visible: boolean) {
-  for (const layerId of STREET_VECTOR) setRasterVisible(map, layerId, visible)
-}
-
-function paintStreetRoads(map: Map, readable: boolean) {
-  if (!map.getLayer("city-roads")) return
-  map.setPaintProperty("city-roads", "line-color", readable ? "#6e8496" : "#f7f4ee")
-}
-
-function setCityVisible(map: Map, visible: boolean) {
-  for (const layerId of CITY_LAYERS) setRasterVisible(map, layerId, visible)
+function basemapCamera(map: Map, basemap: Basemap): { pitch: number; bearing: number; zoom?: number; duration: number } {
+  const phone = narrowScreen()
+  switch (basemap) {
+    case "street":
+      return { pitch: 0, bearing: 0, duration: phone ? 200 : 650 }
+    case "satellite":
+      return { pitch: OPENING.pitch, bearing: OPENING.bearing, duration: phone ? 200 : 650 }
+    case "buildings":
+      return {
+        pitch: phone ? 46 : 64,
+        bearing: -18,
+        zoom: Math.max(map.getZoom(), phone ? 14.05 : 15.4),
+        duration: phone ? 200 : 800,
+      }
+    default: {
+      const exhaustive: never = basemap
+      return exhaustive
+    }
+  }
 }
 
 function tourCamera(step: (typeof FLYOVER)[number], basemap: Basemap) {
@@ -145,11 +152,6 @@ function tourCamera(step: (typeof FLYOVER)[number], basemap: Basemap) {
       return exhaustive
     }
   }
-}
-
-function setRasterVisible(map: Map, layerId: string, visible: boolean) {
-  if (!map.getLayer(layerId)) return
-  map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none")
 }
 
 const FLYOVER = [
@@ -227,7 +229,10 @@ export function CityMap({
   const approachesRef = useRef(approaches)
   const viewKeyRef = useRef<string | null>(null)
   const appliedBasemap = useRef<Basemap | null>(null)
+  const restoreOverlaysRef = useRef<(() => void) | null>(null)
+  const styleToken = useRef(0)
   const [mapReady, setMapReady] = useState(false)
+  const [styleEpoch, setStyleEpoch] = useState(0)
   const [gpuFailed, setGpuFailed] = useState(false)
   const [wasDisabled, setWasDisabled] = useState(disabled)
   if (disabled !== wasDisabled) {
@@ -245,7 +250,7 @@ export function CityMap({
     const map = mapRef.current
     if (!map || !readyRef.current) return
     publishCorridors(map, corridors, linesRef, particlesRef, copyRef.current)
-  }, [corridors, locale])
+  }, [corridors, locale, styleEpoch])
 
   useEffect(() => {
     onMapRef.current = onMap
@@ -313,105 +318,7 @@ export function CityMap({
           [113.62, 21.98],
           [114.62, 22.72],
         ],
-        style: {
-          version: 8,
-          sources: {
-            imagery: {
-              type: "raster",
-              tiles: [
-                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-              ],
-              tileSize: rasterTileSize(),
-              // Hong Kong imagery is real through zoom 19. Zoom 20 and above is Esri's
-              // gray "Map Data Not Yet Available" tile, so the map scales the zoom 19 picture.
-              maxzoom: 19,
-              attribution: "© Esri",
-            },
-            labels: {
-              type: "raster",
-              tiles: [
-                "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-              ],
-              tileSize: rasterTileSize(),
-            },
-            osm: {
-              type: "raster",
-              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-              tileSize: rasterTileSize(),
-              maxzoom: 19,
-              attribution: "© OpenStreetMap contributors",
-            },
-            openmap: {
-              type: "vector",
-              url: "https://tiles.openfreemap.org/planet",
-              attribution: "© OpenMapTiles © OpenFreeMap",
-            },
-            terrain: {
-              type: "raster-dem",
-              tiles: ["/api/dem/{z}/{x}/{y}.png?v=3"],
-              encoding: "terrarium",
-              tileSize: 256,
-              maxzoom: 15,
-            },
-          },
-          layers: [
-            { id: "city-land", type: "background", paint: { "background-color": "#e6eef2" }, layout: { visibility: "none" } },
-            {
-              id: "city-water",
-              type: "fill",
-              source: "openmap",
-              "source-layer": "water",
-              layout: { visibility: "none" },
-              paint: { "fill-color": "#b9d7e4" },
-            },
-            {
-              id: "city-roads",
-              type: "line",
-              source: "openmap",
-              "source-layer": "transportation",
-              layout: { visibility: "none", "line-join": "round", "line-cap": "round" },
-              paint: {
-                "line-color": "#f7f4ee",
-                "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 15, 2.2, 17, 5],
-              },
-            },
-            { id: "osm", type: "raster", source: "osm", layout: { visibility: "none" } },
-            { id: "satellite", type: "raster", source: "imagery" },
-            { id: "places", type: "raster", source: "labels", paint: { "raster-opacity": 0.88 } },
-            {
-              id: "buildings-3d",
-              type: "fill-extrusion",
-              source: "openmap",
-              "source-layer": "building",
-              minzoom: 14,
-              filter: ["!=", ["get", "hide_3d"], true],
-              layout: { visibility: "none" },
-              paint: {
-                "fill-extrusion-color": [
-                  "interpolate",
-                  ["linear"],
-                  ["to-number", ["get", "render_height"], 0],
-                  0,
-                  "#d5dee6",
-                  80,
-                  "#b4c4d2",
-                  200,
-                  "#8ea6ba",
-                  400,
-                  "#6d8da6",
-                ],
-                "fill-extrusion-height": [
-                  "case",
-                  [">", ["to-number", ["get", "render_height"], 0], 0],
-                  ["to-number", ["get", "render_height"], 0],
-                  12,
-                ],
-                "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
-                "fill-extrusion-opacity": 1,
-              },
-            },
-          ],
-        },
+        style: satelliteStyle(),
         ...OPENING,
       })
     } catch (error) {
@@ -450,150 +357,19 @@ export function CityMap({
       }
     })
 
+    const cards = popupOpener(map)
+    closeCardRef.current = cards.close
+    const restoreOverlays = () => {
+      mountDataLayers(map)
+      bindOverlayClicks(map, cards.show, copyRef, approachesRef, mtrRef)
+      holdDataCreditOpen(map)
+    }
+    restoreOverlaysRef.current = restoreOverlays
+
     map.on("load", () => {
       map.resize()
       map.setTerrain(null)
-
-      map.addSource("cameras", { type: "geojson", data: emptyCollection() })
-      map.addSource("works", { type: "geojson", data: emptyCollection() })
-      map.addSource("tolls", { type: "geojson", data: emptyCollection() })
-      map.addSource("incidents", { type: "geojson", data: emptyCollection() })
-      map.addSource("control-points", {
-        type: "geojson",
-        data: emptyCollection(),
-        attribution: "© Immigration Department",
-      })
-      map.addSource("mtr-track", {
-        type: "geojson",
-        data: mtrTrackCollection(),
-        attribution: "© MTR Corporation | © Lands Department",
-      })
-      map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
-      map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
-      map.addSource("kmb-stops", { type: "geojson", data: emptyCollection() })
-      map.addSource("approaches", { type: "geojson", data: emptyCollection() })
-      map.addSource("corridors", {
-        type: "geojson",
-        data: emptyCollection(),
-        attribution: "© Transport Department",
-      })
-      map.addSource("particles", { type: "geojson", data: emptyCollection() })
-      // MapLibre paints every layer above the first 3D layer on top of the buildings.
-      // Keep the speed lines underneath so a pitched roof hides the road behind it.
-      const underBuildings = "buildings-3d"
-      map.addLayer({
-        id: "corridor-glow",
-        type: "line",
-        source: "corridors",
-        filter: ["==", ["geometry-type"], "LineString"],
-        paint: {
-          "line-color": ["get", "color"],
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 7, 13, 12, 15, 16],
-          "line-opacity": 0.32,
-          "line-blur": 4,
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      }, underBuildings)
-      map.addLayer({
-        id: "corridor-casing",
-        type: "line",
-        source: "corridors",
-        filter: ["==", ["geometry-type"], "LineString"],
-        paint: {
-          "line-color": "#041018",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3.2, 13, 4.6, 15, 6.5],
-          "line-opacity": 0.45,
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      }, underBuildings)
-      map.addLayer({
-        id: "corridor-line",
-        type: "line",
-        source: "corridors",
-        filter: ["==", ["geometry-type"], "LineString"],
-        paint: {
-          "line-color": ["get", "color"],
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 13, 2.4, 15, 3.4],
-          "line-opacity": 0.95,
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      }, underBuildings)
-      map.addLayer({
-        id: "corridor-point",
-        type: "circle",
-        source: "corridors",
-        filter: ["==", ["geometry-type"], "Point"],
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5.5],
-          "circle-color": ["get", "color"],
-          "circle-stroke-color": "#f7fbff",
-          "circle-stroke-width": 1,
-          "circle-pitch-alignment": "map",
-        },
-      }, underBuildings)
-      map.addLayer({
-        id: "traffic-particles",
-        type: "circle",
-        source: "particles",
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2.2, 13, 3.6],
-          "circle-color": "#f4fff8",
-          "circle-stroke-color": ["get", "color"],
-          "circle-stroke-width": 1.6,
-          "circle-pitch-alignment": "map",
-        },
-      }, underBuildings)
-
-      addWatchLayers(map)
-      const cards = popupOpener(map)
-      closeCardRef.current = cards.close
-      const showPopup = cards.show
-      const watchLayers = WATCH_HITS.filter((layerId) => map.getLayer(layerId))
-      const onCorridorClick = (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
-        if (watchLayers.length > 0) {
-          const covering = map.queryRenderedFeatures(event.point, { layers: watchLayers })
-          if (covering.length > 0) return
-        }
-        const feature = event.features?.[0]
-        if (!feature) return
-        showPopup(event.lngLat, corridorPopup(feature.properties ?? null, copyRef.current))
-      }
-      map.on("click", "corridor-line", onCorridorClick)
-      map.on("click", "corridor-point", onCorridorClick)
-      const featurePopups: Record<string, (properties: GeoJSON.GeoJsonProperties, copy: Messages) => HTMLElement> = {
-        "cameras-harbour": cameraPopup,
-        "cameras-portal": cameraPopup,
-        "cameras-city": cameraPopup,
-        works: workPopup,
-        "tolls-portal": tollPopup,
-        "tolls-overview": tollPopup,
-        incidents: incidentPopup,
-        "control-points": controlPointPopup,
-        "mtr-stations": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
-        "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
-        "kmb-stops": kmbStopPopup,
-      }
-      map.on("click", "approach-times", (event) => {
-        const raw = event.features?.[0]?.properties?.id
-        const id = typeof raw === "string" ? raw : typeof raw === "number" ? String(raw) : ""
-        const point = approachesRef.current.find((item) => item.id === id)
-        if (!point) return
-        showPopup(event.lngLat, approachPopup(point, copyRef.current))
-      })
-      for (const layerId of watchLayers) {
-        const render = featurePopups[layerId]
-        if (!render) continue
-        map.on("click", layerId, (event) => openFeature(showPopup, event, (properties) => render(properties, copyRef.current)))
-      }
-      for (const layerId of ["corridor-line", ...watchLayers]) {
-        map.on("mouseenter", layerId, () => {
-          map.getCanvas().style.cursor = "pointer"
-        })
-        map.on("mouseleave", layerId, () => {
-          map.getCanvas().style.cursor = ""
-        })
-      }
-
+      restoreOverlays()
       readyRef.current = true
       setMapReady(true)
       publishCorridors(map, corridorsRef.current, linesRef, particlesRef, copyRef.current)
@@ -641,6 +417,7 @@ export function CityMap({
         map.remove()
       }
       mapRef.current = null
+      restoreOverlaysRef.current = null
       closeCardRef.current = null
     }
   }, [disabled])
@@ -704,7 +481,19 @@ export function CityMap({
     appliedBasemap.current = basemap
     if (first && basemap === "satellite") return
     cancelFlyRef.current?.()
-    showBasemap(map, basemap)
+    readyRef.current = false
+    const token = styleToken.current + 1
+    styleToken.current = token
+    map.setTerrain(null)
+    map.setStyle(basemapStyle(basemap), { diff: false })
+    map.once("style.load", () => {
+      if (token !== styleToken.current || mapRef.current !== map) return
+      map.setTerrain(null)
+      restoreOverlaysRef.current?.()
+      readyRef.current = true
+      map.easeTo({ ...basemapCamera(map, basemap), essential: true })
+      setStyleEpoch((epoch) => epoch + 1)
+    })
   }, [basemap, disabled, mapReady])
 
   useEffect(() => {
@@ -724,7 +513,7 @@ export function CityMap({
       }
     })
     geoJsonSource(map, "approaches")?.setData({ type: "FeatureCollection", features })
-  }, [approaches, disabled, mapReady, locale, messages])
+  }, [approaches, disabled, mapReady, locale, messages, styleEpoch])
 
   useEffect(() => {
     const map = mapRef.current
@@ -740,7 +529,7 @@ export function CityMap({
     } else if (kmb?.ok) {
       geoJsonSource(map, "kmb-stops")?.setData(kmbStopCollection(kmb))
     }
-  }, [controlPoints, disabled, incidents, kmb, layers.kmb, mapReady, mtr, picture])
+  }, [controlPoints, disabled, incidents, kmb, layers.kmb, mapReady, mtr, picture, styleEpoch])
 
   useEffect(() => {
     const map = mapRef.current
@@ -752,7 +541,7 @@ export function CityMap({
         map.setLayoutProperty(layerId, "visibility", layers[kind] ? "visible" : "none")
       }
     }
-  }, [disabled, layers, mapReady])
+  }, [disabled, layers, mapReady, styleEpoch])
 
   function basemapTitle(mode: Basemap): string {
     switch (mode) {
@@ -786,21 +575,32 @@ export function CityMap({
   )
 }
 
+const creditShow = new WeakMap<HTMLElement, () => void>()
+const creditDragBound = new WeakSet<Map>()
+
 function holdDataCreditOpen(map: Map) {
   const root = map.getContainer().querySelector<HTMLElement>(".maplibregl-ctrl-attrib")
   const button = root?.querySelector<HTMLElement>("summary")
   if (!root || !button) return
-  let closedByUser = false
-  const show = () => {
-    if (closedByUser) return
-    root.classList.add("maplibregl-compact", "maplibregl-compact-show")
-    root.setAttribute("open", "")
+  if (!creditShow.has(root)) {
+    let closedByUser = false
+    const show = () => {
+      if (closedByUser) return
+      root.classList.add("maplibregl-compact", "maplibregl-compact-show")
+      root.setAttribute("open", "")
+    }
+    creditShow.set(root, show)
+    button.addEventListener("click", () => {
+      closedByUser = !root.classList.contains("maplibregl-compact-show")
+    })
   }
-  show()
-  button.addEventListener("click", () => {
-    closedByUser = !root.classList.contains("maplibregl-compact-show")
+  creditShow.get(root)?.()
+  if (creditDragBound.has(map)) return
+  creditDragBound.add(map)
+  map.on("drag", () => {
+    const live = map.getContainer().querySelector<HTMLElement>(".maplibregl-ctrl-attrib")
+    if (live) creditShow.get(live)?.()
   })
-  map.on("drag", show)
 }
 
 function isGpuFailure(error: unknown): boolean {
@@ -990,15 +790,170 @@ function geoJsonSource(map: Map, id: string): GeoJSONSource | null {
   return source instanceof GeoJSONSource ? source : null
 }
 
-function addWatchLayers(map: Map) {
-  // MapLibre paints every layer after the first extrusion on top of the roofs.
-  // These markers stay underneath, so a tower covers the ones behind it.
-  const underBuildings = "buildings-3d"
+function overlaySlot(map: Map): string | undefined {
+  // Style labels stay above the traffic drawing. On Liberty the first label is
+  // also below the extruded buildings, so those roofs still cover the markers.
+  const layers = map.getStyle()?.layers
+  if (!layers) return undefined
+  return layers.find((layer) => layer.type === "symbol")?.id
+}
+
+function addOverlay(map: Map, layer: Parameters<Map["addLayer"]>[0], before: string | undefined) {
+  if (before && map.getLayer(before)) map.addLayer(layer, before)
+  else map.addLayer(layer)
+}
+
+function mountDataLayers(map: Map) {
+  map.addSource("cameras", { type: "geojson", data: emptyCollection() })
+  map.addSource("works", { type: "geojson", data: emptyCollection() })
+  map.addSource("tolls", { type: "geojson", data: emptyCollection() })
+  map.addSource("incidents", { type: "geojson", data: emptyCollection() })
+  map.addSource("control-points", {
+    type: "geojson",
+    data: emptyCollection(),
+    attribution: "© Immigration Department",
+  })
+  map.addSource("mtr-track", {
+    type: "geojson",
+    data: mtrTrackCollection(),
+    attribution: "© MTR Corporation | © Lands Department",
+  })
+  map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
+  map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
+  map.addSource("kmb-stops", { type: "geojson", data: emptyCollection() })
+  map.addSource("approaches", { type: "geojson", data: emptyCollection() })
+  map.addSource("corridors", {
+    type: "geojson",
+    data: emptyCollection(),
+    attribution: "© Transport Department",
+  })
+  map.addSource("particles", { type: "geojson", data: emptyCollection() })
+  const before = overlaySlot(map)
+  addOverlay(map, {
+    id: "corridor-glow",
+    type: "line",
+    source: "corridors",
+    filter: ["==", ["geometry-type"], "LineString"],
+    paint: {
+      "line-color": ["get", "color"],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 7, 13, 12, 15, 16],
+      "line-opacity": 0.32,
+      "line-blur": 4,
+    },
+    layout: { "line-cap": "round", "line-join": "round" },
+  }, before)
+  addOverlay(map, {
+    id: "corridor-casing",
+    type: "line",
+    source: "corridors",
+    filter: ["==", ["geometry-type"], "LineString"],
+    paint: {
+      "line-color": "#041018",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3.2, 13, 4.6, 15, 6.5],
+      "line-opacity": 0.45,
+    },
+    layout: { "line-cap": "round", "line-join": "round" },
+  }, before)
+  addOverlay(map, {
+    id: "corridor-line",
+    type: "line",
+    source: "corridors",
+    filter: ["==", ["geometry-type"], "LineString"],
+    paint: {
+      "line-color": ["get", "color"],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 13, 2.4, 15, 3.4],
+      "line-opacity": 0.95,
+    },
+    layout: { "line-cap": "round", "line-join": "round" },
+  }, before)
+  addOverlay(map, {
+    id: "corridor-point",
+    type: "circle",
+    source: "corridors",
+    filter: ["==", ["geometry-type"], "Point"],
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5.5],
+      "circle-color": ["get", "color"],
+      "circle-stroke-color": "#f7fbff",
+      "circle-stroke-width": 1,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addOverlay(map, {
+    id: "traffic-particles",
+    type: "circle",
+    source: "particles",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2.2, 13, 3.6],
+      "circle-color": "#f4fff8",
+      "circle-stroke-color": ["get", "color"],
+      "circle-stroke-width": 1.6,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addWatchLayers(map, before)
+}
+
+function bindOverlayClicks(
+  map: Map,
+  showPopup: (lngLat: LngLat, content: HTMLElement) => void,
+  copyRef: MutableRefObject<Messages>,
+  approachesRef: MutableRefObject<ApproachPoint[]>,
+  mtrRef: MutableRefObject<MtrResponse | null>,
+) {
+  const watchLayers = WATCH_HITS.filter((layerId) => map.getLayer(layerId))
+  const onCorridorClick = (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
+    if (watchLayers.length > 0) {
+      const covering = map.queryRenderedFeatures(event.point, { layers: watchLayers })
+      if (covering.length > 0) return
+    }
+    const feature = event.features?.[0]
+    if (!feature) return
+    showPopup(event.lngLat, corridorPopup(feature.properties ?? null, copyRef.current))
+  }
+  map.on("click", "corridor-line", onCorridorClick)
+  map.on("click", "corridor-point", onCorridorClick)
+  const featurePopups: Record<string, (properties: GeoJSON.GeoJsonProperties, copy: Messages) => HTMLElement> = {
+    "cameras-harbour": cameraPopup,
+    "cameras-portal": cameraPopup,
+    "cameras-city": cameraPopup,
+    works: workPopup,
+    "tolls-portal": tollPopup,
+    "tolls-overview": tollPopup,
+    incidents: incidentPopup,
+    "control-points": controlPointPopup,
+    "mtr-stations": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
+    "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
+    "kmb-stops": kmbStopPopup,
+  }
+  map.on("click", "approach-times", (event) => {
+    const raw = event.features?.[0]?.properties?.id
+    const id = typeof raw === "string" ? raw : typeof raw === "number" ? String(raw) : ""
+    const point = approachesRef.current.find((item) => item.id === id)
+    if (!point) return
+    showPopup(event.lngLat, approachPopup(point, copyRef.current))
+  })
+  for (const layerId of watchLayers) {
+    const render = featurePopups[layerId]
+    if (!render) continue
+    map.on("click", layerId, (event) => openFeature(showPopup, event, (properties) => render(properties, copyRef.current)))
+  }
+  for (const layerId of ["corridor-line", ...watchLayers]) {
+    map.on("mouseenter", layerId, () => {
+      map.getCanvas().style.cursor = "pointer"
+    })
+    map.on("mouseleave", layerId, () => {
+      map.getCanvas().style.cursor = ""
+    })
+  }
+}
+
+function addWatchLayers(map: Map, before: string | undefined) {
   const cone = cameraCone()
   if (cone && !map.hasImage("camera-cone")) {
     map.addImage("camera-cone", cone, { pixelRatio: 2 })
   }
-  map.addLayer({
+  addOverlay(map, {
     id: "tolls-overview",
     type: "circle",
     source: "tolls",
@@ -1011,8 +966,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "tolls-portal",
     type: "circle",
     source: "tolls",
@@ -1025,8 +980,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "control-points-ring",
     type: "circle",
     source: "control-points",
@@ -1038,8 +993,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "control-points",
     type: "circle",
     source: "control-points",
@@ -1062,8 +1017,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "works",
     type: "circle",
     source: "works",
@@ -1074,13 +1029,13 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 2,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
+  }, before)
   const mark = incidentMark()
   if (mark && !map.hasImage("incident-mark")) {
     map.addImage("incident-mark", mark, { pixelRatio: 2 })
   }
   if (map.hasImage("incident-mark")) {
-    map.addLayer({
+    addOverlay(map, {
       id: "incidents",
       type: "symbol",
       source: "incidents",
@@ -1092,14 +1047,14 @@ function addWatchLayers(map: Map) {
         "icon-pitch-alignment": "map",
         "icon-rotation-alignment": "map",
       },
-    }, underBuildings)
+    }, before)
   }
   if (map.hasImage("camera-cone")) {
-    addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6, underBuildings)
-    addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6, underBuildings)
-    addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14, underBuildings)
+    addCameraLayer(map, "cameras-harbour", ["==", ["get", "harbour"], 1], 11.6, before)
+    addCameraLayer(map, "cameras-portal", ["all", ["==", ["get", "portal"], 1], ["!=", ["get", "harbour"], 1]], 11.6, before)
+    addCameraLayer(map, "cameras-city", ["all", ["!=", ["get", "harbour"], 1], ["!=", ["get", "portal"], 1]], 14, before)
   }
-  map.addLayer({
+  addOverlay(map, {
     id: "mtr-track-casing",
     type: "line",
     source: "mtr-track",
@@ -1109,8 +1064,8 @@ function addWatchLayers(map: Map) {
       "line-opacity": 0.55,
     },
     layout: { "line-cap": "round", "line-join": "round" },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "mtr-track",
     type: "line",
     source: "mtr-track",
@@ -1120,8 +1075,8 @@ function addWatchLayers(map: Map) {
       "line-opacity": 0.92,
     },
     layout: { "line-cap": "round", "line-join": "round" },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "mtr-stations",
     type: "circle",
     source: "mtr-stations",
@@ -1132,8 +1087,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "mtr-trains",
     type: "circle",
     source: "mtr-trains",
@@ -1144,8 +1099,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "kmb-stops",
     type: "circle",
     source: "kmb-stops",
@@ -1157,8 +1112,8 @@ function addWatchLayers(map: Map) {
       "circle-stroke-width": 1.5,
       "circle-pitch-alignment": "map",
     },
-  }, underBuildings)
-  map.addLayer({
+  }, before)
+  addOverlay(map, {
     id: "approach-times",
     type: "symbol",
     source: "approaches",
@@ -1169,7 +1124,7 @@ function addWatchLayers(map: Map) {
       "icon-pitch-alignment": "map",
       "icon-rotation-alignment": "map",
     },
-  }, underBuildings)
+  }, before)
 }
 
 function incidentMark(): ImageData | null {
@@ -1205,8 +1160,8 @@ function incidentMark(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
-function addCameraLayer(map: Map, id: string, filter: FilterSpecification, minzoom: number, beforeId: string) {
-  map.addLayer({
+function addCameraLayer(map: Map, id: string, filter: FilterSpecification, minzoom: number, beforeId: string | undefined) {
+  addOverlay(map, {
     id,
     type: "symbol",
     source: "cameras",

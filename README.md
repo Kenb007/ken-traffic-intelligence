@@ -33,7 +33,7 @@ It opens in Traditional Chinese, the written Chinese of a Hong Kong notice. Engl
 - **MTR.** Next-train minutes, destination, and platform are the board MTR publishes. MTR does not publish a train position. The dot walks those minutes back along the track, and the card says which two stations it falls between. Light rail is not on this layer.
 - **KMB.** The time on a stop is the arrival KMB publishes, including a scheduled row. Stops appear once you are zoomed in, near the middle of the map. KMB does not publish the path a bus takes, so the map shows the stop and leaves the road empty of buses.
 - **Intel.** The list ranks what to read first: an open incident, a road that has gone bad, a hall that is very busy, a warning. Hide it and the same items run along the bottom. Show and hide animate.
-- **Basemaps.** Satellite photography, a street map, or buildings stood up. Press buildings again to return to the map you had. In the buildings view, labels and indicators sit under the roofs.
+- **Basemaps.** Satellite photography, the OSM Bright street map, or OSM Liberty with the buildings stood up. Press buildings again to return to the map you had. In the buildings view, labels and indicators sit under the roofs.
 
 ## Quick start
 
@@ -55,8 +55,8 @@ The dock along the bottom switches the ground and the layers.
 | Control | What it draws |
 | --- | --- |
 | Satellite | Esri photography. The picture stays flat so the coloured roads stay on the streets. |
-| Streets | An OpenFreeMap vector map, from OpenStreetMap data and OpenMapTiles. |
-| Buildings | The same streets with buildings stood up. Roofs cover the markers. |
+| Streets | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style), served by OpenFreeMap. |
+| Buildings | [OSM Liberty](https://github.com/maputnik/osm-liberty), with the buildings stood up. Roofs cover the markers. |
 | Speed | Strategic-road colour, and the dots that move with that speed. |
 | Cameras | Public snapshots. |
 | Works | Road works on fast roads. |
@@ -86,7 +86,7 @@ Road geometry is the Transport Department strategic centreline, stored in Hong K
 | Next MTR train | [Next train](https://data.gov.hk/en-data/dataset/mtr-data2-nexttrain-data). Station locations are the Lands Department [indoor station footprints](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map). |
 | Next KMB arrival | [KMB and LWB estimated time of arrival](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
 | Warnings, temperature, and rain | Hong Kong Observatory [warning summary](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en) and [current weather report](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en) |
-| Street map and buildings | [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, [OpenMapTiles](https://openmaptiles.org/), and [OpenFreeMap](https://openfreemap.org) |
+| Street map and buildings | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) and [OSM Liberty](https://github.com/maputnik/osm-liberty), served by [OpenFreeMap](https://openfreemap.org) from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and [OpenMapTiles](https://openmaptiles.org/) |
 | Satellite photograph | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer). Imagery © Esri |
 
 ## Shared feeds
