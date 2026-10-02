@@ -113,7 +113,7 @@ export function OpsHud(props: OpsHudProps) {
       )}
       <header
         data-map-chrome="top"
-        className={`pointer-events-auto absolute top-2 right-2 left-2 flex flex-col gap-1 border border-cyan-200/30 bg-[#041018]/80 px-1.5 py-1 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:top-3 sm:right-3 sm:left-3 sm:gap-1.5 sm:px-2 sm:py-1.5 sm:flex-row sm:items-center lg:right-4 lg:left-16 ${
+        className={`pointer-events-auto absolute top-2 right-2 left-2 flex flex-col gap-1 overflow-x-clip border border-cyan-200/30 bg-[#041018]/80 px-1.5 py-1 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md sm:top-3 sm:right-3 sm:left-3 sm:gap-1.5 sm:px-2 sm:py-1.5 sm:flex-row sm:items-center lg:right-4 lg:left-16 ${
           barOpen ? "" : "max-sm:hidden"
         }`}
       >
@@ -154,7 +154,7 @@ export function OpsHud(props: OpsHudProps) {
             {m.hide}
           </button>
         </div>
-        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-auto sm:gap-1.5">
+        <div className="@container/bar flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-clip sm:gap-1.5">
           {crossings.map((crossing) => (
             <Metric
               key={crossing.code}
@@ -179,6 +179,7 @@ export function OpsHud(props: OpsHudProps) {
             value={halls.label}
             tone={TONE[halls.tone]}
             hint={m.boundaryHint}
+            className="hidden @min-[36rem]/bar:block"
             onClick={() => show("boundary", worstHall)}
           />
           {weather ? (
@@ -187,13 +188,14 @@ export function OpsHud(props: OpsHudProps) {
               value={weather.label}
               tone={TONE[weather.tone]}
               hint={m.weatherHint}
+              className="hidden @min-[42rem]/bar:block"
               onClick={() => show("weather", undefined)}
             />
           ) : null}
           <button
             type="button"
             onClick={() => show("roads", worstRoad)}
-            className="ml-auto flex shrink-0 items-center gap-1.5 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:block sm:px-2"
+            className="block shrink-0 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:ml-auto sm:px-2"
             title={bandTitle(summary, m)}
           >
             <p className="font-[family-name:var(--font-hud)] text-[0.58rem] tracking-[0.14em] text-cyan-100/80 uppercase">{m.network}</p>
@@ -202,7 +204,7 @@ export function OpsHud(props: OpsHudProps) {
                 {props.trafficLoading ? "…" : formatSpeed(summary?.meanSpeedKmh ?? null)}
               </p>
               {summary && totalBands > 0 ? (
-                <div className="flex h-1.5 w-14 overflow-hidden bg-white/10" aria-label={bandTitle(summary, m)}>
+                <div className="mt-1 hidden h-1.5 w-14 overflow-hidden bg-white/10 @min-[32rem]/bar:flex" aria-label={bandTitle(summary, m)}>
                   <span className="bg-[#3DDC97]" style={{ width: `${(summary.free / totalBands) * 100}%` }} />
                   <span className="bg-[#FFC857]" style={{ width: `${(summary.slow / totalBands) * 100}%` }} />
                   <span className="bg-[#FF5D73]" style={{ width: `${(summary.congested / totalBands) * 100}%` }} />
@@ -217,7 +219,7 @@ export function OpsHud(props: OpsHudProps) {
         data-map-chrome="panel"
         className={
           open
-            ? "pointer-events-auto absolute right-3 bottom-36 z-[6] w-max max-w-[min(26rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-14"
+            ? "pointer-events-auto absolute right-3 bottom-36 z-[6] w-[min(22rem,calc(100%-1.5rem))] border border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md lg:right-4 lg:bottom-14"
             : "pointer-events-auto absolute inset-x-0 bottom-14 z-[6] border-t border-cyan-200/30 bg-[#041018]/88 shadow-[0_0_24px_rgba(34,211,238,0.08)] backdrop-blur-md"
         }
       >
@@ -305,13 +307,13 @@ export function OpsHud(props: OpsHudProps) {
   )
 }
 
-function Metric(props: { label: string; value: string; tone: string; hint?: string; onClick: () => void }) {
+function Metric(props: { label: string; value: string; tone: string; hint?: string; className?: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={props.onClick}
       title={props.hint}
-      className="flex shrink-0 items-baseline gap-1 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:block sm:px-2"
+      className={`block shrink-0 border border-white/10 bg-black/30 px-1.5 py-1 text-left sm:px-2 ${props.className ?? ""}`}
     >
       <p className="font-[family-name:var(--font-hud)] text-[0.58rem] tracking-[0.14em] text-cyan-100/80 uppercase">{props.label}</p>
       <p className="font-[family-name:var(--font-hud)] text-sm leading-none whitespace-nowrap tabular-nums sm:text-base" style={{ color: props.tone }}>
@@ -400,10 +402,10 @@ function IntelRow(props: { item: IntelItem; onFocus: OpsHudProps["onFocus"] }) {
         if (!item.coordinates) return
         props.onFocus({ id: item.id, coordinates: item.coordinates })
       }}
-      className="flex max-w-full items-start gap-2 px-1 py-1 text-left enabled:hover:bg-white/5 disabled:cursor-default"
+      className="flex w-full items-start gap-2 px-1 py-1 text-left enabled:hover:bg-white/5 disabled:cursor-default"
     >
       <span className="mt-1 size-1.5 shrink-0 rounded-full" style={{ background: TONE[item.tone] }} />
-      <span className="max-w-[22rem]">
+      <span className="min-w-0">
         <span className="block font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/80 uppercase">{item.label}</span>
         <span className="block text-sm text-white">{item.title}</span>
         {item.detail ? <span className="block text-xs text-zinc-300">{item.detail}</span> : null}
