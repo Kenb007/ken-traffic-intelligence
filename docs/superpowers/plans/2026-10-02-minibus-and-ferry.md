@@ -12,8 +12,10 @@
 
 - Do not import a full stop catalogue into the client bundle.
 - Dots appear at zoom 13 or closer. Name plates are built only at zoom 16.5 or closer, the same rule as KMB and Citybus.
-- Green minibus stops in one view are capped at 24, inside the same radius helper as KMB (`kmbReachMetres`). One upstream call per stop, `GET https://data.etagmb.gov.hk/eta/stop/{stop_id}`, through `etaQueue`. Not one call per route.
-- New Lantao Bus uses the operator API `https://rt.data.gov.hk/v2/transport/nlb/` the same way Citybus uses its own root: a local stop file that already lists routes, then at most 24 stop-and-route clocks in the view.
+- Green minibus stops in one view are capped at 24, inside the same radius helper as KMB (`kmbReachMetres`). One upstream call per stop, `GET https://data.etagmb.gov.hk/eta/stop/{stop_id}`, through the existing `etaQueue` of 6. Not one call per route. Do not raise that queue.
+- The green minibus catalogue is built offline. There is no bulk stop list. `GET /stop/{stop_id}` is one stop, and its coordinates are `data.coordinates.wgs84` only. The `hk80` pair is a grid position and must not be drawn. Do not walk every route or every stop from a visitor request.
+- New Lantao Bus requests run only when the map centre is inside Lantau (longitude 113.80 to 114.05, latitude 22.18 to 22.34). A view of Kowloon must not wake the nearest Lantau stops.
+- New Lantao Bus list calls are `https://rt.data.gov.hk/v2/transport/nlb/route.php?action=list` and `stop.php?action=list&routeId={id}`. The clock call is confirmed against a live stop before it is copied into the feed. It is not `https://rt.data.gov.hk/v2/transport/nlb/eta`.
 - Ferry clocks are not tied to the map centre. Cache one copy of each route for 60 seconds. Sun Ferry is about 16 route codes. Hong Kong and Kowloon Ferry is 4 route ids and 2 directions. Star Ferry is one timetable file, cached 24 hours.
 - A failed clock keeps the last good reading (`nextReading` in `src/lib/last-reading.ts`). The pier or stop stays on the map.
 - Layer counts stay limited to road works and incidents. New layers have no number.
@@ -43,7 +45,7 @@
 
 ```ts
 import assert from "node:assert/strict"
-import { gmbStopsWithin } from "./gmb-network.ts"
+import { gmbStopsWithin } from "./gmb-reach.ts"
 
 const near = gmbStopsWithin(114.172, 22.305, 400, 24)
 assert.ok(near.length > 0)
@@ -56,11 +58,11 @@ Expected: FAIL because `gmb-network.ts` does not exist.
 
 - [ ] **Step 2: Build the catalogue once**
 
-`scripts/build-gmb-network.mjs` reads `https://data.etagmb.gov.hk/route`, then each route's stop list, and writes `data/gmb-network.json` as `{ stops: { [id]: { tc, en, lng, lat, routes } } }`. Route numbers on a stop are unique. This script is not called from a request.
+`scripts/build-gmb-network.mjs` reads `/route/{region}` for `HKI`, `KLN`, and `NT`, then `/route/{region}/{code}` for each code, then `/route-stop/{route_id}/{route_seq}` for the stop ids and names, then `/stop/{stop_id}` once per unique stop. Latitude and longitude come from `data.coordinates.wgs84`. The script sleeps between calls. It writes `data/gmb-network.json` as `{ stops: { [id]: { tc, en, lng, lat, routes } } }`. It is not called from a request, and the running server does not repeat this walk.
 
 - [ ] **Step 3: Implement the view**
 
-`gmbStopsWithin` copies the east/north metre filter in `kmbStopsWithin` and then slices to the cap. `loadGmbPlaces` returns those stops and calls `refreshGmbCatalogueSoon`, which may replace the in-memory list from `/stop` at most once a day and only when the new list has at least 90 percent as many stops. `loadGmbNear` skips a stop whose clock is younger than 60 seconds, fetches `/eta/stop/{id}` inside `etaQueue`, and still returns the stop when the clock is empty. `cacheable` is false when any stop in the view was missed.
+`gmbStopsWithin` lives in `src/lib/gmb-reach.ts` with no `@/` import, so the node test can load it. `loadGmbPlaces` reads the bundled file and returns those stops. It does not refresh the catalogue from the network. `loadGmbNear` skips a stop whose clock is younger than 60 seconds, fetches `/eta/stop/{id}` inside `etaQueue`, and still returns the stop when the clock is empty. `cacheable` is false when any stop in the view was missed.
 
 - [ ] **Step 4: Run the test**
 
@@ -136,7 +138,7 @@ git commit -m "Show green minibus stops on the map with the bus stop card."
 
 **Interfaces:**
 - Consumes: the Citybus pair picker in `src/lib/citybus-feed.ts`. Move `arrivalPairs` into `src/lib/arrival-pairs.ts` and export `arrivalPairs(stops, pairBudget)`.
-- Produces: `loadNlbPlaces` and `loadNlbNear`. The ETA root is `https://rt.data.gov.hk/v2/transport/nlb/eta`. The pair budget stays 24. The stop cap stays 6, because Lantau stops are sparse and the feed is per stop and route.
+- Produces: `loadNlbPlaces` and `loadNlbNear`. Stop lists come from `stop.php?action=list&routeId={id}`. The pair budget stays 24. The stop cap stays 6. Both functions return an empty list when the centre is outside the Lantau box above.
 
 - [ ] **Step 1: Write the failing pair test**
 
@@ -199,7 +201,7 @@ assert.equal(calls[0]?.route, "CECC")
 
 `loadFerrySnapshot` runs for every visitor, like `loadMtrSnapshot`. It does not take a map centre. Hong Kong and Kowloon Ferry uses `https://www.hkkfeta.com/opendata/eta/{route_id}/{direction}` for route ids 1, 2, 3 and directions `inbound` and `outbound`. Sun Ferry uses `https://www.sunferry.com.hk/eta/?route={code}` for the route codes in its specification. Each route is fetched only when its copy is older than 60 seconds, at most 4 at a time, through `etaQueue`. A route that fails keeps its previous calls for 3 minutes.
 
-Star Ferry uses the Central to Tsim Sha Tsui and Wan Chai to Tsim Sha Tsui timetable CSVs on DATA.GOV.HK. Those files are fetched at most once a day. The next call is the next timestamp on today's table. It is stored on the matching pier with `minutes` set from that timestamp. It is not stored as a vessel, because the file has no position.
+Star Ferry uses the Central to Tsim Sha Tsui and Wan Chai to Tsim Sha Tsui timetable CSVs on DATA.GOV.HK. Those files are fetched at most once a day. The cells are clock times, not ISO timestamps. The next call is the next `HH:MM` on today's Asia/Hong_Kong table. It is stored on the matching pier with `minutes` set from that clock. It is not stored as a vessel, because the file has no position.
 
 - [ ] **Step 3: Draw piers from `data/ferry-piers.json` in the client, not from the clock response.** The clock response only fills `calls` by pier id. Pier dots are drawn at every zoom, because there are fewer than 20. Plates still wait for zoom 16.5. Vessel dots use a separate GeoJSON source and are replaced only when `vessels` changes. Do not interpolate them with `requestAnimationFrame`.
 
