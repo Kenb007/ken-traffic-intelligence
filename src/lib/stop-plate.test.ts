@@ -8,6 +8,10 @@ assert.equal(shortStopTitle("Tuen Mun Road Bus-Bus Interchange (Lower Level), Ca
 assert.equal(shortStopTitle("置樂花園, 青山公路"), "置樂花園")
 assert.equal(shortStopTitle("Chi Lok Fa Yuen, Castle Peak Road"), "Chi Lok Fa Yuen")
 
+const named = stopPlate("金鐘", [])
+assert.equal(named.title, "金鐘")
+assert.deepEqual(named.lines, [])
+
 const lower = stopPlate("屯門公路巴士轉乘站(下層), 青山公路", ["N952", "962", "952", "952C", "962"])
 assert.equal(lower.title, "下層")
 assert.deepEqual(lower.lines, ["952 952C 962", "N952"])

@@ -249,7 +249,7 @@ function kmbCall(call: KmbBoardCall, m: Messages): HTMLElement {
 
 const PLACE_ACRONYMS = new Set(["BBI", "MTR", "KMB", "LWB", "HK", "PTI", "GMB", "CTB", "NWFB"])
 
-function readablePlace(value: string): string {
+export function readablePlace(value: string): string {
   const shaped = /[\u4e00-\u9fff]/.test(value) ? value.replace(/,/g, "，") : value
   const letters = shaped.replace(/[^A-Za-z]/g, "")
   if (!letters || letters !== letters.toUpperCase()) return shaped
