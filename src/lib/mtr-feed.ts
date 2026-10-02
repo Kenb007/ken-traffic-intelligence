@@ -1,12 +1,14 @@
 import { carryArrivalClock, estimateTrains, type TrainObservation } from "@/lib/mtr-estimate"
 import { pool } from "@/lib/pool"
+import { oldestDue } from "@/lib/refresh-slice"
 import { fetchUpstream } from "@/lib/upstream"
 import { mtrQueries, networkRoutes, stationPoint } from "@/lib/mtr-network"
 import { readSchedule } from "@/lib/mtr-schedule"
 import type { MtrBoard, MtrResponse, MtrTrain } from "@/lib/types"
 
-const REMEMBER_MS = 90_000
-const UPSTREAM_GAP_MS = 30_000
+const REMEMBER_MS = 180_000
+const STALE_MS = 20_000
+const REFRESH_SLICE = 16
 const FETCH_LIMIT = 4
 
 type Remembered = { at: number; board: MtrBoard; observations: TrainObservation[] }
@@ -16,15 +18,21 @@ let blockedUntil = 0
 let failures = 0
 
 // One snapshot is about 120 station calls. The published feed has no network
-// dump, and it answers 429 if those calls arrive in a burst. A station is
-// read at most once every 30 seconds; the snapshot in between is built from that copy.
+// dump, and it answers 429 if those calls arrive together. Each refresh reads
+// only the oldest stale stations, so the copy turns over without a burst.
 export async function loadMtrSnapshot(now = Date.now()): Promise<MtrResponse> {
   if (now >= blockedUntil) failures = 0
   if (now >= blockedUntil) {
-    await pool(mtrQueries(), FETCH_LIMIT, async (pair) => {
+    const due = oldestDue(
+      mtrQueries(),
+      (pair) => remembered.get(`${pair.line}-${pair.station}`)?.at ?? null,
+      now,
+      STALE_MS,
+      REFRESH_SLICE,
+    )
+    await pool(due, FETCH_LIMIT, async (pair) => {
       const key = `${pair.line}-${pair.station}`
       const previous = remembered.get(key)
-      if (previous && now - previous.at < UPSTREAM_GAP_MS) return
       let parsed = await fetchPair(pair.line, pair.station)
       if (parsed && parsed.observations.length === 0) {
         const again = await fetchPair(pair.line, pair.station)
