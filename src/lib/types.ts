@@ -193,28 +193,27 @@ export type KmbResponse = {
   stops: KmbStopBoard[]
 }
 
-export type LrtCall = {
+export type LrtCalling = {
   route: string
+  dest: string
   destTc: string
   destEn: string
-  minutes: number
-  arriving: boolean
+  ttnt: number
+  timeType: "A" | "D"
+  plat: string
 }
 
-export type LrtStationBoard = {
-  id: string
-  nameTc: string
-  nameEn: string
-  lng: number
-  lat: number
-  calls: LrtCall[]
+export type LrtBoard = {
+  station: string
+  calls: LrtCalling[]
 }
 
 export type LrtResponse = {
   ok: boolean
   error?: string
   observedAt: string | null
-  stations: LrtStationBoard[]
+  trains: MtrTrain[]
+  boards: LrtBoard[]
 }
 
 export type CitybusCall = {

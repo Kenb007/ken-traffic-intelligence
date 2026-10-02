@@ -12,9 +12,10 @@ import {
 } from "@/lib/i18n"
 import type { TrainSpot } from "@/lib/mtr-estimate"
 import { lineRecord, linesThrough, projectNetworkTrain, stationRecord } from "@/lib/mtr-network"
+import { lrtRoutesThrough, lrtStation } from "@/lib/lrt-network"
 import { isCameraSnapshotUrl } from "@/lib/picture"
 import { isSpeedBand } from "@/lib/speed"
-import type { ApproachPoint, HarbourJourney, MtrCalling, MtrResponse, SpeedBand } from "@/lib/types"
+import type { ApproachPoint, HarbourJourney, LrtResponse, MtrCalling, MtrResponse, SpeedBand } from "@/lib/types"
 
 const TUNNEL_TC: Record<string, string> = {
   "Western Harbour Crossing": "西區海底隧道",
@@ -164,55 +165,47 @@ export function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): H
   return card.root
 }
 
-export function lrtStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.lrt
+export function lrtStationPopup(properties: GeoJSON.GeoJsonProperties, snapshot: LrtResponse | null, m: Messages): HTMLElement {
+  const code = textProp(properties, "code")
+  const record = lrtStation(code)
+  const title = record ? displayText(m.locale, record.tc, record.en) : code || m.lrt
   const card = openCard(title)
-  const calls = lrtBoard(properties)
-  if (calls.length === 0) {
-    card.body.append(paragraph("city-card-copy", m.lrtNone))
+  const routes = lrtRoutesThrough(code)
+  if (routes.length > 0) card.head.append(paragraph("city-card-detail", routes.join(m.locale === "en" ? ", " : "、")))
+  const listing = snapshot?.ok ? snapshot.boards.find((item) => item.station === code) : null
+  if (!listing || listing.calls.length === 0) {
+    card.body.append(paragraph("city-card-copy", snapshot?.ok ? m.lrtNone : m.lrtFailed))
     return card.root
   }
   const board = document.createElement("div")
   board.className = "city-card-board"
-  for (const call of calls) {
-    const row = document.createElement("div")
-    row.className = "city-card-call"
-    const dest = readablePlace(displayText(m.locale, call.destTc, call.destEn))
-    row.append(
-      text("span", "city-card-call-route", call.route),
-      text("span", "city-card-call-dest", dest ? m.towards(dest) : ""),
-      text("span", "city-card-call-when", call.arriving ? m.lrtArriving : m.minutes(call.minutes)),
-    )
-    board.append(row)
+  for (const call of listing.calls) {
+    const dest = displayText(m.locale, call.destTc, call.destEn)
+    const when = call.timeType === "D" ? m.mtrDeparts(call.ttnt) : call.ttnt <= 0 ? m.lrtArriving : m.minutes(call.ttnt)
+    board.append(serviceRow(`${call.route} ${m.towards(dest)}`, when, call.plat))
   }
   card.body.append(board)
   return card.root
 }
 
-type LrtBoardCall = { route: string; destTc: string; destEn: string; minutes: number; arriving: boolean }
-
-function lrtBoard(properties: GeoJSON.GeoJsonProperties): LrtBoardCall[] {
-  const raw = textProp(properties, "board")
-  if (!raw) return []
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.flatMap((item) => {
-      if (typeof item !== "object" || item === null) return []
-      const row = item as Record<string, unknown>
-      const route = typeof row.route === "string" ? row.route : ""
-      if (!route || typeof row.minutes !== "number") return []
-      return [{
-        route,
-        destTc: typeof row.destTc === "string" ? row.destTc : "",
-        destEn: typeof row.destEn === "string" ? row.destEn : "",
-        minutes: row.minutes,
-        arriving: row.arriving === true,
-      }]
-    })
-  } catch {
-    return []
-  }
+export function lrtTrainPopup(properties: GeoJSON.GeoJsonProperties, snapshot: LrtResponse | null, m: Messages): HTMLElement {
+  const listed = snapshot?.trains.find((item) => item.id === textProp(properties, "id"))
+  const route = textProp(properties, "line") || listed?.line || ""
+  const destCode = textProp(properties, "dest") || listed?.dest || ""
+  const dest = lrtStation(destCode)
+  const destName = dest ? displayText(m.locale, dest.tc, dest.en) : destCode || m.lrt
+  const card = openCard(route ? `${route} ${m.towards(destName)}` : m.lrt)
+  const from = textProp(properties, "from")
+  const to = textProp(properties, "to")
+  const next = lrtStation(to || from || listed?.anchor || "")
+  const nextName = next ? displayText(m.locale, next.tc, next.en) : ""
+  if (nextName) card.body.append(fact(m.mtrNext, nextName))
+  const minutes = numberProp(properties, "minutes") ?? listed?.ttnt ?? 0
+  const when = listed?.timeType === "D" && from === to ? m.mtrDeparts(minutes) : minutes <= 0 ? m.lrtArriving : m.minutes(minutes)
+  card.body.append(fact(m.whenLabel, when))
+  const plat = textProp(properties, "plat") || listed?.plat || ""
+  if (plat) card.body.append(fact(m.mtrPlatform, plat))
+  return card.root
 }
 
 export function citybusStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {

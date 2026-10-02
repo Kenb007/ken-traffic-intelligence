@@ -69,17 +69,13 @@ export function Dashboard() {
     layers.kmb && view && view.zoom >= KMB_MIN_ZOOM
       ? `/api/kmb?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
       : null
-  const lrtUrl =
-    layers.lrt && view && view.zoom >= KMB_MIN_ZOOM
-      ? `/api/lrt?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
-      : null
   const citybusUrl =
     layers.citybus && view && view.zoom >= KMB_MIN_ZOOM
       ? `/api/citybus?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
       : null
   const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
   const kmbLive = useLiveJson<KmbResponse>(kmbUrl, KMB_POLL_MS)
-  const lrtLive = useLiveJson<LrtResponse>(lrtUrl, 15_000)
+  const lrtLive = useLiveJson<LrtResponse>(layers.lrt ? "/api/lrt" : null, 15_000)
   const citybusLive = useLiveJson<CitybusResponse>(citybusUrl, 60_000)
   const traffic = trafficLive.data
   const approaches = approachesLive.data
@@ -187,7 +183,7 @@ export function Dashboard() {
           incidents: incidents ? incidents.incidents.features.length : null,
           mtr: mtr?.ok ? mtr.trains.length : null,
           kmb: null,
-          lrt: null,
+          lrt: lrt?.ok ? lrt.trains.length : null,
           citybus: null,
           control: controlPoints?.ok
             ? controlPoints.points.features.filter((feature) => {

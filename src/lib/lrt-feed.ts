@@ -1,10 +1,10 @@
-import { nearestLrtStations } from "@/lib/lrt-network"
+import { carryArrivalClock, estimateTrains, type TrainObservation } from "@/lib/mtr-estimate"
+import { lrtPoint, lrtRoutes, lrtStation, lrtStationId } from "@/lib/lrt-network"
 import { fetchUpstream } from "@/lib/upstream"
-import type { LrtCall, LrtResponse, LrtStationBoard } from "@/lib/types"
+import type { LrtBoard, LrtCalling, LrtResponse, MtrTrain } from "@/lib/types"
 
-const STATION_LIMIT = 8
-const FETCH_LIMIT = 3
 const REMEMBER_MS = 15_000
+const FETCH_LIMIT = 4
 
 type TrainRow = {
   route_no?: string
@@ -15,43 +15,62 @@ type TrainRow = {
   time_ch?: string
   time_en?: string
   stop?: number
+  arrival_departure?: string
 }
 
-type Remembered = { at: number; calls: LrtCall[] }
+type Parsed = { observations: TrainObservation[]; calls: LrtCalling[] }
+type Remembered = { at: number; parsed: Parsed }
 
 const remembered = new Map<string, Remembered>()
 
-export async function loadLrtNear(lng: number, lat: number, now = Date.now()): Promise<LrtResponse> {
-  const nearest = nearestLrtStations(lng, lat, STATION_LIMIT)
-  if (nearest.length === 0) return { ok: true, observedAt: new Date(now).toISOString(), stations: [] }
-  await pool(nearest.map((station) => station.id), FETCH_LIMIT, async (stationId) => {
+export async function loadLrtSnapshot(now = Date.now()): Promise<LrtResponse> {
+  const stations = lrtRoutes().flatMap((route) => route.stations)
+  const ids = [...new Set(stations)]
+  await pool(ids, FETCH_LIMIT, async (stationId) => {
     const cached = remembered.get(stationId)
     if (cached && now - cached.at < REMEMBER_MS) return
-    const calls = await fetchStation(stationId)
-    if (calls) remembered.set(stationId, { at: now, calls })
+    const parsed = await fetchStation(stationId, now)
+    if (!parsed) return
+    const previous = remembered.get(stationId)
+    remembered.set(stationId, {
+      at: now,
+      parsed: {
+        calls: parsed.calls,
+        observations: carryArrivalClock(previous?.parsed.observations ?? [], parsed.observations),
+      },
+    })
   })
 
-  const stations: LrtStationBoard[] = []
-  for (const station of nearest) {
-    const cached = remembered.get(station.id)
-    if (!cached || now - cached.at > REMEMBER_MS) continue
-    if (cached.calls.length === 0) continue
-    stations.push({
-      id: station.id,
-      nameTc: station.tc,
-      nameEn: station.en,
-      lng: station.lng,
-      lat: station.lat,
-      calls: cached.calls,
-    })
+  const boards: LrtBoard[] = []
+  const observations: TrainObservation[] = []
+  for (const [stationId, item] of remembered) {
+    if (now - item.at > REMEMBER_MS) {
+      remembered.delete(stationId)
+      continue
+    }
+    boards.push({ station: stationId, calls: item.parsed.calls })
+    observations.push(...item.parsed.observations)
   }
-  if (stations.length === 0) {
-    return { ok: false, error: "Light Rail arrivals failed", observedAt: null, stations: [] }
+  if (boards.length === 0) {
+    return { ok: false, error: "Light Rail arrivals failed", observedAt: null, trains: [], boards: [] }
   }
-  return { ok: true, observedAt: new Date(now).toISOString(), stations }
+  const trains = estimateTrains(lrtRoutes(), observations, lrtPoint).map((train): MtrTrain => ({
+    id: train.id,
+    line: train.line,
+    dest: train.dest,
+    plat: train.plat,
+    ttnt: train.ttnt,
+    observedAt: new Date(train.observedAt).toISOString(),
+    delay: train.delay,
+    timeType: train.timeType,
+    anchor: train.anchor,
+    path: train.path,
+    hold: train.hold,
+  }))
+  return { ok: true, observedAt: new Date(now).toISOString(), trains, boards }
 }
 
-async function fetchStation(stationId: string): Promise<LrtCall[] | null> {
+async function fetchStation(stationId: string, now: number): Promise<Parsed | null> {
   const url = `https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${encodeURIComponent(stationId)}&with_special=1`
   try {
     const response = await fetchUpstream(url, REMEMBER_MS, {
@@ -64,18 +83,20 @@ async function fetchStation(stationId: string): Promise<LrtCall[] | null> {
     if (response.status !== 200) return null
     const body = JSON.parse(new TextDecoder().decode(response.body)) as {
       status?: number
-      platform_list?: { route_list?: TrainRow[] }[]
+      platform_list?: { platform_id?: number; route_list?: TrainRow[] }[]
     }
-    if (body.status === 0) return []
-    return callsFrom(body.platform_list ?? [])
+    if (body.status === 0) return { observations: [], calls: [] }
+    return parsePlatforms(stationId, body.platform_list ?? [], now)
   } catch {
     return null
   }
 }
 
-function callsFrom(platforms: { route_list?: TrainRow[] }[]): LrtCall[] {
-  const calls: LrtCall[] = []
+function parsePlatforms(stationId: string, platforms: { platform_id?: number; route_list?: TrainRow[] }[], now: number): Parsed {
+  const observations: TrainObservation[] = []
+  const calls: LrtCalling[] = []
   for (const platform of platforms) {
+    const plat = platform.platform_id == null ? "" : String(platform.platform_id)
     for (const row of platform.route_list ?? []) {
       if (row.stop === 1) continue
       const special = row.special === 1
@@ -83,22 +104,41 @@ function callsFrom(platforms: { route_list?: TrainRow[] }[]): LrtCall[] {
       if (!route || route === "SPR") continue
       const minutes = minutesOf(text(row.time_en), text(row.time_ch))
       if (minutes == null) continue
+      const destName = text(row.dest_ch) || text(row.dest_en)
+      const dest = lrtStationId(destName)
+      if (!dest) continue
+      const timeType = row.arrival_departure === "D" ? "D" : "A"
+      const station = lrtStation(dest)
       calls.push({
         route,
-        destTc: text(row.dest_ch),
-        destEn: text(row.dest_en),
-        minutes,
-        arriving: minutes === 0,
+        dest,
+        destTc: station?.tc ?? text(row.dest_ch),
+        destEn: station?.en ?? text(row.dest_en),
+        ttnt: minutes,
+        timeType,
+        plat,
+      })
+      observations.push({
+        line: route,
+        station: stationId,
+        dest,
+        plat,
+        ttnt: minutes,
+        dueAt: now + minutes * 60_000,
+        observedAt: now,
+        delay: false,
+        timeType,
+        viaRacecourse: false,
       })
     }
   }
-  const soonest = new Map<string, LrtCall>()
+  const soonest = new Map<string, LrtCalling>()
   for (const call of calls) {
-    const key = `${call.route}|${call.destTc}`
+    const key = `${call.route}|${call.dest}|${call.plat}`
     const current = soonest.get(key)
-    if (!current || call.minutes < current.minutes) soonest.set(key, call)
+    if (!current || call.ttnt < current.ttnt) soonest.set(key, call)
   }
-  return [...soonest.values()].sort((a, b) => a.minutes - b.minutes || a.route.localeCompare(b.route)).slice(0, 8)
+  return { observations, calls: [...soonest.values()] }
 }
 
 function minutesOf(timeEn: string, timeCh: string): number | null {
