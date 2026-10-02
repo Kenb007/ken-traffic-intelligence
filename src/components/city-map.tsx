@@ -1284,14 +1284,26 @@ function keepCardInView(map: Map, popup: Popup) {
   observer.observe(element)
   const image = element.querySelector("img")
   image?.addEventListener("load", fit)
+  const release = () => {
+    if (!popup.isOpen()) return
+    if (!anchorOnMap(map, popup)) popup.remove()
+  }
+  map.on("move", release)
   map.on("moveend", fit)
   map.on("idle", fit)
   popup.once("close", () => {
     observer.disconnect()
     image?.removeEventListener("load", fit)
+    map.off("move", release)
     map.off("moveend", fit)
     map.off("idle", fit)
   })
+}
+
+function anchorOnMap(map: Map, popup: Popup): boolean {
+  const point = map.project(popup.getLngLat())
+  const canvas = map.getCanvas()
+  return point.x >= 0 && point.y >= 0 && point.x <= canvas.clientWidth && point.y <= canvas.clientHeight
 }
 
 function placeCard(map: Map, popup: Popup, element: HTMLElement, anchorLocked: boolean) {
