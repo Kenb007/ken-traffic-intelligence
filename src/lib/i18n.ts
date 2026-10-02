@@ -170,7 +170,6 @@ export type Messages = {
   kmb: string
   kmbFailed: string
   kmbScheduled: string
-  kmbEstimate: string
   kmbNone: string
 }
 
@@ -313,7 +312,6 @@ const en: Messages = {
   kmb: "KMB",
   kmbFailed: "KMB arrivals did not load.",
   kmbScheduled: "Scheduled",
-  kmbEstimate: "Estimated",
   kmbNone: "No arrival on the board",
 }
 
@@ -456,7 +454,6 @@ const zhHK: Messages = {
   kmb: "九巴",
   kmbFailed: "未能取得九巴到站時間。",
   kmbScheduled: "原定班次",
-  kmbEstimate: "預計到站",
   kmbNone: "班次表沒有到站時間",
 }
 
@@ -588,7 +585,6 @@ const zhCN: Messages = {
   mtrDeparts: (n) => `${n} 分钟后开出`,
   mtrDue: (when, platform) => (platform ? `${when} · ${platform} 号站台` : when),
   kmbFailed: "未能取得九巴到站时间。",
-  kmbEstimate: "预计到站",
   kmbNone: "班次表没有到站时间",
 }
 

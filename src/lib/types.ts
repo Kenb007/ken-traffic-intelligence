@@ -172,6 +172,8 @@ export type KmbCall = {
   eta: string
   minutes: number | null
   scheduled: boolean
+  remarkTc: string
+  remarkEn: string
 }
 
 export type KmbStopBoard = {

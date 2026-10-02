@@ -184,7 +184,8 @@ function kmbCall(call: KmbBoardCall, m: Messages): HTMLElement {
   row.className = call.scheduled ? "city-card-call city-card-call-timetable" : "city-card-call"
   const dest = readablePlace(displayText(m.locale, call.destTc, call.destEn))
   const when = call.minutes == null ? clock(call.eta, m.locale) : m.minutes(call.minutes)
-  const kind = call.scheduled ? m.kmbScheduled : when ? "" : m.kmbEstimate
+  const remark = displayText(m.locale, call.remarkTc, call.remarkEn)
+  const kind = call.scheduled ? m.kmbScheduled : when ? "" : remark
   row.append(
     text("span", "city-card-call-route", call.route),
     text("span", "city-card-call-dest", dest ? m.towards(dest) : ""),
@@ -208,7 +209,16 @@ function readablePlace(value: string): string {
   })
 }
 
-type KmbBoardCall = { route: string; destTc: string; destEn: string; eta: string; minutes: number | null; scheduled: boolean }
+type KmbBoardCall = {
+  route: string
+  destTc: string
+  destEn: string
+  eta: string
+  minutes: number | null
+  scheduled: boolean
+  remarkTc: string
+  remarkEn: string
+}
 
 function kmbBoard(properties: GeoJSON.GeoJsonProperties): KmbBoardCall[] {
   const raw = textProp(properties, "board")
@@ -228,6 +238,8 @@ function kmbBoard(properties: GeoJSON.GeoJsonProperties): KmbBoardCall[] {
         eta: typeof row.eta === "string" ? row.eta : "",
         minutes: typeof row.minutes === "number" ? row.minutes : null,
         scheduled: row.scheduled === true,
+        remarkTc: typeof row.remarkTc === "string" ? row.remarkTc : "",
+        remarkEn: typeof row.remarkEn === "string" ? row.remarkEn : "",
       }]
     })
   } catch {

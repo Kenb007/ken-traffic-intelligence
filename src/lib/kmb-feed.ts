@@ -53,13 +53,20 @@ function callsAt(rows: EtaRow[], now: number): KmbCall[] {
     const route = text(row.route)
     if (!route) continue
     const etaMs = row.eta ? Date.parse(row.eta) : NaN
+    const hasEta = Number.isFinite(etaMs)
+    const remarkTc = isScheduled(row) ? "" : text(row.rmk_tc)
+    const remarkEn = isScheduled(row) ? "" : text(row.rmk_en)
+    // A route with neither a time nor a published note is not an estimate.
+    if (!hasEta && !remarkTc && !remarkEn) continue
     calls.push({
       route,
       destTc: text(row.dest_tc),
       destEn: text(row.dest_en),
-      eta: Number.isFinite(etaMs) ? new Date(etaMs).toISOString() : "",
-      minutes: Number.isFinite(etaMs) ? Math.max(0, Math.round((etaMs - now) / 60_000)) : null,
+      eta: hasEta ? new Date(etaMs).toISOString() : "",
+      minutes: hasEta ? Math.max(0, Math.round((etaMs - now) / 60_000)) : null,
       scheduled: isScheduled(row),
+      remarkTc,
+      remarkEn,
     })
   }
   calls.sort((a, b) => (a.minutes ?? 999) - (b.minutes ?? 999) || a.route.localeCompare(b.route))
