@@ -118,7 +118,8 @@ export type Messages = {
   faultWeather: string
   language: string
   creditBy: string
-  creditLink: string
+  creditLinkedIn: string
+  creditGitHub: string
   satellite: string
   streets: string
   buildings: string
@@ -259,8 +260,9 @@ const en: Messages = {
   faultBoundary: "Hall feed unavailable",
   faultWeather: "Weather warnings unavailable",
   language: "Language",
-  creditBy: "Created by Keith Li —",
-  creditLink: "Follow me on LinkedIn",
+  creditBy: "Created by: Keith Li -",
+  creditLinkedIn: "LinkedIn",
+  creditGitHub: "GitHub",
   satellite: "Satellite",
   streets: "Streets",
   buildings: "Buildings",
@@ -401,8 +403,9 @@ const zhHK: Messages = {
   faultBoundary: "未能取得管制站資料",
   faultWeather: "未能取得天氣警告",
   language: "語言",
-  creditBy: "製作：Keith Li —",
-  creditLink: "在 LinkedIn 關注我",
+  creditBy: "製作：Keith Li -",
+  creditLinkedIn: "LinkedIn",
+  creditGitHub: "GitHub",
   satellite: "衛星",
   streets: "街道",
   buildings: "樓宇",
@@ -539,8 +542,9 @@ const zhCN: Messages = {
   faultBoundary: "未能取得管制站资料",
   faultWeather: "未能取得天气警告",
   language: "语言",
-  creditBy: "制作：Keith Li —",
-  creditLink: "在 LinkedIn 关注我",
+  creditBy: "制作：Keith Li -",
+  creditLinkedIn: "LinkedIn",
+  creditGitHub: "GitHub",
   satellite: "卫星",
   streets: "街道",
   buildings: "楼宇",

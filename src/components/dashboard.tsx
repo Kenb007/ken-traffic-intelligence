@@ -146,7 +146,16 @@ export function Dashboard() {
           rel="noopener noreferrer"
           className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
         >
-          {m.creditLink}
+          {m.creditLinkedIn}
+        </a>
+        {" / "}
+        <a
+          href="https://github.com/keithligh"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-100 underline decoration-cyan-200/60 underline-offset-2"
+        >
+          {m.creditGitHub}
         </a>
       </p>
       <LayerDock
