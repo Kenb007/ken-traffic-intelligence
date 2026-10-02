@@ -4,9 +4,9 @@
 
 # HK Traffic Intelligence
 
-**One map. Every open feed Hong Kong already publishes.**
+**One map. The live open feeds this board wires together.**
 
-See harbour crossings, road speed, cameras, works, border queues, weather, MTR, and KMB — on the same board, updating in real time.
+Not everything on [DATA.GOV.HK](https://data.gov.hk) — just the public traffic, transit, border, and weather APIs that belong on one ops-style board: harbour minutes, strategic-road speed, cameras, works, toll points, incidents, land control points, Observatory warnings, MTR next train, and KMB ETA.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
@@ -25,9 +25,9 @@ No account. No install. Opens in **Traditional Chinese** (Hong Kong written form
 
 Hong Kong does not hide its traffic story. Transport Department paints strategic roads. HKeMobility posts harbour minutes and camera stills. Immigration publishes border hall times. The Observatory raises warnings. MTR and KMB publish the next train and the next bus.
 
-The data is **public**. The problem is **fragmentation** — eight agencies, eight rhythms, eight websites. You cannot *feel* the city in one glance.
+The data is **public**. The problem is **fragmentation** — even this *subset* of feeds lives on different portals and refreshes on different clocks. You cannot read them in one glance.
 
-**HK Traffic Intelligence** fuses those feeds into a single MapLibre canvas: read the crossing you care about, spot the road that just turned red, glance at Lo Wu, check whether the Black Rain signal is up — without opening six tabs.
+**HK Traffic Intelligence** fuses **these wired-in feeds** into a single MapLibre canvas: read the crossing you care about, spot the road that just turned red, glance at Lo Wu, check whether the Black Rain signal is up — without opening six tabs.
 
 > This is not a turn-by-turn navigator. It is a **city pulse** for commuters, journalists, students, and anyone who wants to see how open data becomes something you can actually use.
 
@@ -136,7 +136,7 @@ Open **[http://127.0.0.1:4317](http://127.0.0.1:4317)**.
 
 ---
 
-## Where every number comes from
+## Where this board’s numbers come from
 
 Road geometry: TD **strategic centreline** (Hong Kong 1980 grid), shifted by Lands Department territory correction (**+8.8″ lon, −5.5″ lat**) so lines land on the pavement.
 
