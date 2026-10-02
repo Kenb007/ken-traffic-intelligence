@@ -26,9 +26,9 @@ export function viewCachedGet<T extends OkBody>(options: {
     const current = pending.get(key) ?? options.load(lng, lat, now, zoom).finally(() => pending.delete(key))
     pending.set(key, current)
     try {
-    const body = await current
-    if (body.ok && body.cacheable !== false) cached.set(key, { at: Date.now(), body })
-    else if (hit) return Response.json(hit.body)
+      const body = await current
+      if (body.ok && body.cacheable !== false) cached.set(key, { at: Date.now(), body })
+      else if (!body.ok && hit) return Response.json(hit.body)
       return Response.json(body, { status: body.ok ? 200 : 502 })
     } catch (error) {
       if (hit) return Response.json(hit.body)

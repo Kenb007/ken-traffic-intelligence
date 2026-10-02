@@ -186,6 +186,12 @@ export type KmbStopBoard = {
   calls: KmbCall[]
 }
 
+export type KmbPlacesResponse = {
+  ok: boolean
+  error?: string
+  stops: Omit<KmbStopBoard, "calls">[]
+}
+
 export type KmbResponse = {
   ok: boolean
   error?: string
@@ -234,7 +240,14 @@ export type CitybusStopBoard = {
   nameEn: string
   lng: number
   lat: number
+  routes: string[]
   calls: CitybusCall[]
+}
+
+export type CitybusPlacesResponse = {
+  ok: boolean
+  error?: string
+  stops: Omit<CitybusStopBoard, "calls">[]
 }
 
 export type CitybusResponse = {
@@ -242,6 +255,7 @@ export type CitybusResponse = {
   error?: string
   observedAt: string | null
   stops: CitybusStopBoard[]
+  cacheable?: boolean
 }
 
 export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb" | "lrt" | "citybus"

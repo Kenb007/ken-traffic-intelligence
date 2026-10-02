@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CityMap } from "@/components/city-map"
 import { LayerDock } from "@/components/layer-dock"
@@ -8,13 +8,16 @@ import { OpsHud } from "@/components/ops-hud"
 import { useLiveJson } from "@/components/use-live-json"
 import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
-import { KMB_MIN_ZOOM, KMB_POLL_MS } from "@/lib/kmb-view"
+import { KMB_MIN_ZOOM, KMB_POLL_MS, PLACE_POLL_MS } from "@/lib/kmb-view"
+import { mergePlaceArrivals } from "@/lib/place-arrivals"
 import { hkoLang } from "@/lib/i18n"
 import type {
   ApproachesResponse,
+  CitybusPlacesResponse,
   CitybusResponse,
   ControlPointsResponse,
   IncidentsResponse,
+  KmbPlacesResponse,
   KmbResponse,
   LrtResponse,
   MtrResponse,
@@ -25,6 +28,12 @@ import type {
   WatchLayers,
   Basemap,
 } from "@/lib/types"
+
+function liveError(error: string | null, body: { ok: boolean; error?: string } | null, fallback: string): string | null {
+  if (error) return error
+  if (!body) return null
+  return body.error ?? (body.ok ? null : fallback)
+}
 
 const LAYERS_ON: WatchLayers = {
   speed: true,
@@ -56,18 +65,32 @@ export function Dashboard() {
   const controlLive = useLiveJson<ControlPointsResponse>("/api/control-points")
   const warningsLive = useLiveJson<WarningsResponse>(`/api/warnings?lang=${hkoLang(locale)}`)
   const [view, setView] = useState<{ lng: number; lat: number; zoom: number } | null>(null)
-  const kmbUrl =
-    layers.kmb && view && view.zoom >= KMB_MIN_ZOOM
-      ? `/api/kmb?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}&zoom=${view.zoom.toFixed(2)}`
+  const kmbQuery =
+    view && view.zoom >= KMB_MIN_ZOOM
+      ? `lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}&zoom=${view.zoom.toFixed(2)}`
       : null
-  const citybusUrl =
-    layers.citybus && view && view.zoom >= KMB_MIN_ZOOM
-      ? `/api/citybus?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
+  const citybusQuery =
+    view && view.zoom >= KMB_MIN_ZOOM
+      ? `lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
       : null
+  const kmbPlacesUrl = layers.kmb && kmbQuery ? `/api/kmb/places?${kmbQuery}` : null
+  const kmbUrl = layers.kmb && kmbQuery ? `/api/kmb?${kmbQuery}` : null
+  const citybusPlacesUrl = layers.citybus && citybusQuery ? `/api/citybus/places?${citybusQuery}` : null
+  const citybusUrl = layers.citybus && citybusQuery ? `/api/citybus?${citybusQuery}` : null
   const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
+  const kmbPlacesLive = useLiveJson<KmbPlacesResponse>(kmbPlacesUrl, PLACE_POLL_MS)
   const kmbLive = useLiveJson<KmbResponse>(kmbUrl, KMB_POLL_MS)
   const lrtLive = useLiveJson<LrtResponse>(layers.lrt ? "/api/lrt" : null, 15_000)
+  const citybusPlacesLive = useLiveJson<CitybusPlacesResponse>(citybusPlacesUrl, PLACE_POLL_MS)
   const citybusLive = useLiveJson<CitybusResponse>(citybusUrl, 60_000)
+  const kmbMerged = useMemo(
+    () => mergePlaceArrivals(kmbPlacesLive.data, kmbLive.data),
+    [kmbLive.data, kmbPlacesLive.data],
+  )
+  const citybusMerged = useMemo(
+    () => mergePlaceArrivals(citybusPlacesLive.data, citybusLive.data),
+    [citybusLive.data, citybusPlacesLive.data],
+  )
   const traffic = trafficLive.data
   const approaches = approachesLive.data
   const picture = pictureLive.data
@@ -75,9 +98,9 @@ export function Dashboard() {
   const controlPoints = controlLive.data
   const warnings = warningsLive.data
   const mtr = mtrLive.data
-  const kmb = kmbLive.data
+  const kmb = kmbMerged
   const lrt = lrtLive.data
-  const citybus = citybusLive.data
+  const citybus = citybusMerged
   const trafficLoading = traffic === null && trafficLive.error === null
   const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
   const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
@@ -109,9 +132,9 @@ export function Dashboard() {
         incidents={incidents?.ok ? incidents.incidents : null}
         controlPoints={boundary}
         mtr={mtr?.ok ? mtr : null}
-        kmb={kmb?.ok ? kmb : null}
+        kmb={kmb}
         lrt={lrt?.ok ? lrt : null}
-        citybus={citybus?.ok ? citybus : null}
+        citybus={citybus}
         onView={setView}
         layers={layers}
         basemap={basemap}
@@ -184,9 +207,9 @@ export function Dashboard() {
         mapLive={mapLive}
         pictureError={pictureError}
         mtrError={mtrLive.error ?? (mtr && !mtr.ok ? mtr.error ?? "Next train feed failed" : null)}
-        kmbError={kmbLive.error ?? (kmb && !kmb.ok ? kmb.error ?? "KMB arrivals failed" : null)}
+        kmbError={liveError(kmbLive.error, kmbLive.data, "KMB arrivals failed")}
         lrtError={lrtLive.error ?? (lrt && !lrt.ok ? lrt.error ?? "Light Rail arrivals failed" : null)}
-        citybusError={citybusLive.error ?? (citybus && !citybus.ok ? citybus.error ?? "Citybus arrivals failed" : null)}
+        citybusError={liveError(citybusLive.error, citybusLive.data, "Citybus arrivals failed")}
         aboveMarquee={!intelOpen}
       />
     </main>

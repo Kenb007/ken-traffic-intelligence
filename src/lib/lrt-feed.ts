@@ -27,6 +27,7 @@ type Remembered = { at: number; parsed: Parsed }
 
 const remembered = new Map<string, Remembered>()
 
+// Station positions stay in the network file. These calls only refresh arrival minutes.
 export async function loadLrtSnapshot(now = Date.now()): Promise<LrtResponse> {
   const stations = lrtRoutes().flatMap((route) => route.stations)
   const ids = [...new Set(stations)]

@@ -1046,7 +1046,6 @@ function addStopLabel(map: Map, id: string, source: string, before: string | und
     source,
     minzoom: LABEL_MIN_ZOOM,
     filter: ["has", "icon"],
-    filter: ["has", "icon"],
     layout: {
       "icon-image": ["get", "icon"],
       "icon-anchor": "bottom",
@@ -1554,7 +1553,8 @@ function citybusStopCollection(map: Map, citybus: CitybusResponse, locale: Local
     type: "FeatureCollection",
     features: citybus.stops.map((stop) => {
       const name = readablePlace(displayText(locale, stop.nameTc, stop.nameEn))
-      const icon = labels ? placeStopPlate(map, name, stop.calls.map((call) => call.route), "#c2410c") : ""
+      const marks = stop.routes.length > 0 ? stop.routes : stop.calls.map((call) => call.route)
+      const icon = labels ? placeStopPlate(map, name, marks, "#c2410c") : ""
       return {
         type: "Feature" as const,
         geometry: { type: "Point" as const, coordinates: [stop.lng, stop.lat] },

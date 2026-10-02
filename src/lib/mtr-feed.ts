@@ -17,9 +17,10 @@ const remembered = new Map<string, Remembered>()
 let blockedUntil = 0
 let failures = 0
 
-// One snapshot is about 120 station calls. The published feed has no network
-// dump, and it answers 429 if those calls arrive together. Each refresh reads
-// only the oldest stale stations, so the copy turns over without a burst.
+// Station positions stay in the network file. These calls are only the next-train
+// clock. One snapshot is about 120 station calls. The published feed has no
+// network dump, and it answers 429 if those calls arrive together. Each refresh
+// reads only the oldest stale stations, so the clock turns over without a burst.
 export async function loadMtrSnapshot(now = Date.now()): Promise<MtrResponse> {
   if (now >= blockedUntil) failures = 0
   if (now >= blockedUntil) {
