@@ -16,7 +16,7 @@ If this Smart City map helped you pick a better time to cross the harbour, or yo
 
 ## What the site is for
 
-The site answers a small set of practical questions. How long do the three harbour crossings take right now. Whether the road you plan to use is running well. Whether the boundary hall you plan to use is busy. Whether an Observatory warning is in force. When the next train or bus actually comes.
+The site answers a small set of practical questions: how long the three harbour crossings take right now, whether the road you plan to use is running well, whether the boundary hall you plan to use is busy, whether an Observatory warning is in force, and when the next train or bus actually comes.
 
 It does not plan driving routes. It reads the figures that public bodies already publish and places them side by side, so the harbour, the roads, the boundary, the weather, and public transport can be weighed together.
 
@@ -24,15 +24,15 @@ Those figures come from the Transport Department, HKeMobility, the Immigration D
 
 ## What you can see on the map
 
-Crossing the harbour and driving in town come first. The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing each show a journey time measured on a real approach. Strategic roads take the Transport Department grades of Good, Average, and Bad, and show a live speed wherever one has been published. Public cameras can be opened, including the tunnel mouths. Road works on the faster roads, toll points at the harbour crossings and Tai Lam Tunnel, and special traffic notices that are still in force are all on the same view.
+For crossing the harbour and driving in town, the map starts with the essentials. The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing each show a journey time measured on a real approach. Strategic roads use the Transport Department grades of Good, Average, and Bad, and show a live speed wherever one has been published. You can open the public cameras, including the tunnel mouths. Road works on the major routes, toll points at the harbour crossings and Tai Lam Tunnel, and special traffic notices that are still in force are all on the same view.
 
-Going through the boundary and checking the weather come next. The eight land control points show the passenger halls for residents and visitors, arriving and departing, together with the live speed on the strategic road that leads to each port. Lo Wu serves passengers rather than private cars, so its published figures carry no car queue. Every Observatory warning in force is listed. On a quiet day the site still reports the Observatory temperature and whether rain fell in the past hour.
+For going through the boundary and checking the weather, the next group follows. The eight land control points show the passenger halls for residents and visitors, arriving and departing, together with the live speed on the strategic road that leads to each port. Lo Wu serves passengers rather than private cars, so its published figures include no private car queue. Every Observatory warning in force is listed. On a quiet day the site still reports the Observatory temperature and whether rain fell in the past hour.
 
-Catching a train or a bus is drawn the same way. MTR lines are drawn on the map and each train moves from the next-train minutes, destination, and platform that MTR publishes. Light Rail keeps its own tracks through Tuen Mun, Yuen Long, and Tin Shui Wai, and each car moves from the minutes published for those stations. KMB and Long Win stops show the published arrival, including trips marked as scheduled. Long Win in this feed means the airport and Tung Chung work, including the A, E, and S routes. Citybus stops show the published arrival on Hong Kong Island and on the routes Citybus runs elsewhere.
+For catching a train or a bus, the map works the same way. MTR lines are drawn on the map and each train moves from the next-train minutes, destination, and platform that MTR publishes. Light Rail keeps its own tracks through Tuen Mun, Yuen Long, and Tin Shui Wai, and each train moves from the minutes published for those stations. KMB and Long Win stops show the published arrival, including trips marked as scheduled because no live position is available yet. Long Win in this feed covers the airport and Tung Chung routes, including the A, E, S, N, NA, and R series. Citybus stops show the published arrival across Hong Kong Island and the other routes Citybus runs.
 
 When several things need attention at once, the site puts them in order. An open traffic notice, a road graded Bad, a very busy hall, or a weather warning rises to the top, so the urgent item is read first.
 
-Hong Kong publishes far more open data than this Smart City map uses. What appears here is the traffic, boundary, weather, MTR, Light Rail, KMB, Long Win, and Citybus material listed further down.
+Hong Kong publishes far more open data than this Smart City map uses. What appears here is the traffic, boundary, weather, MTR, Light Rail, KMB, Long Win, and Citybus coverage listed further down.
 
 ## Open source
 
@@ -68,7 +68,7 @@ Each row is one part of the map and the publication it is drawn from. This table
 
 | On the map | Open data |
 | --- | --- |
-| Speed and official grade on strategic roads | [Traffic data of strategic and major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads), graded on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| Speed and official grade on strategic roads | [Traffic data of strategic and major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads), with grades as shown on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
 | The shape of those roads | [Road Network, second generation](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) |
 | Journey times at the harbour crossings | Journey-time information on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
 | Cameras, in English and Traditional Chinese | Camera images on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
