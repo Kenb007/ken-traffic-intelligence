@@ -1,3 +1,4 @@
+import { busCompany } from "@/lib/bus-company"
 import { kmbStop, nearestKmbStops } from "@/lib/kmb-network"
 import { fetchUpstream } from "@/lib/upstream"
 import type { KmbCall, KmbResponse, KmbStopBoard } from "@/lib/types"
@@ -8,6 +9,7 @@ const REMEMBER_MS = 30_000
 const ETA_ROOT = "https://data.etabus.gov.hk/v1/transport/kmb/stop-eta"
 
 type EtaRow = {
+  co?: string
   route?: string
   dest_tc?: string
   dest_en?: string
@@ -67,6 +69,7 @@ function callsAt(rows: EtaRow[], now: number): KmbCall[] {
       scheduled: isScheduled(row),
       remarkTc,
       remarkEn,
+      company: busCompany(route, text(row.co)),
     })
   }
   calls.sort((a, b) => (a.minutes ?? 999) - (b.minutes ?? 999) || a.route.localeCompare(b.route))

@@ -22,6 +22,7 @@ import {
   cameraPopup,
   controlPointPopup,
   kmbStopPopup,
+  lrtStopPopup,
   corridorPopup,
   incidentPopup,
   stationPopup,
@@ -33,7 +34,7 @@ import { displayText, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint } from "@/lib/mtr-network"
 import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
 import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
-import type { ApproachPoint, Basemap, Corridor, HarbourJourney, KmbResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
+import type { ApproachPoint, Basemap, Corridor, HarbourJourney, KmbResponse, LrtResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
 
 // Turbopack rewrites MapLibre's own worker URL into a chunk the worker cannot run.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
@@ -160,7 +161,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops"]
+const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-trains", "kmb-stops", "lrt-stops"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -179,6 +180,7 @@ type CityMapProps = {
   controlPoints: GeoJSON.FeatureCollection | null
   mtr: MtrResponse | null
   kmb: KmbResponse | null
+  lrt: LrtResponse | null
   onView: (view: { lng: number; lat: number; zoom: number }) => void
   layers: WatchLayers
   basemap: Basemap
@@ -203,6 +205,7 @@ export function CityMap({
   controlPoints,
   mtr,
   kmb,
+  lrt,
   onView,
   layers,
   basemap,
@@ -529,12 +532,17 @@ export function CityMap({
     } else if (kmb?.ok) {
       geoJsonSource(map, "kmb-stops")?.setData(kmbStopCollection(kmb))
     }
-  }, [controlPoints, disabled, incidents, kmb, layers.kmb, mapReady, mtr, picture, styleEpoch])
+    if (!layers.lrt) {
+      geoJsonSource(map, "lrt-stops")?.setData(emptyCollection())
+    } else if (lrt?.ok) {
+      geoJsonSource(map, "lrt-stops")?.setData(lrtStopCollection(lrt))
+    }
+  }, [controlPoints, disabled, incidents, kmb, layers.kmb, layers.lrt, lrt, mapReady, mtr, picture, styleEpoch])
 
   useEffect(() => {
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control", "mtr", "kmb"]
+    const kinds: WatchLayer[] = ["speed", "cameras", "works", "tolls", "incidents", "control", "mtr", "kmb", "lrt"]
     for (const kind of kinds) {
       for (const layerId of layerIds(kind)) {
         if (!map.getLayer(layerId)) continue
@@ -821,6 +829,7 @@ function mountDataLayers(map: Map) {
   map.addSource("mtr-stations", { type: "geojson", data: mtrStationCollection() })
   map.addSource("mtr-trains", { type: "geojson", data: emptyCollection() })
   map.addSource("kmb-stops", { type: "geojson", data: emptyCollection() })
+  map.addSource("lrt-stops", { type: "geojson", data: emptyCollection() })
   map.addSource("approaches", { type: "geojson", data: emptyCollection() })
   map.addSource("corridors", {
     type: "geojson",
@@ -925,6 +934,7 @@ function bindOverlayClicks(
     "mtr-stations": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
     "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
     "kmb-stops": kmbStopPopup,
+    "lrt-stops": lrtStopPopup,
   }
   map.on("click", "approach-times", (event) => {
     const raw = event.features?.[0]?.properties?.id
@@ -1114,6 +1124,19 @@ function addWatchLayers(map: Map, before: string | undefined) {
     },
   }, before)
   addOverlay(map, {
+    id: "lrt-stops",
+    type: "circle",
+    source: "lrt-stops",
+    minzoom: KMB_MIN_ZOOM,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 16, 6],
+      "circle-color": "#1a1404",
+      "circle-stroke-color": "#f5c518",
+      "circle-stroke-width": 1.5,
+      "circle-pitch-alignment": "map",
+    },
+  }, before)
+  addOverlay(map, {
     id: "approach-times",
     type: "symbol",
     source: "approaches",
@@ -1208,6 +1231,17 @@ function cameraCone(): ImageData | null {
   return context.getImageData(0, 0, size, size)
 }
 
+function lrtStopCollection(lrt: LrtResponse): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: lrt.stations.map((station) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [station.lng, station.lat] },
+      properties: { nameTc: station.nameTc, nameEn: station.nameEn, board: JSON.stringify(station.calls) },
+    })),
+  }
+}
+
 function kmbStopCollection(kmb: KmbResponse): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -1237,6 +1271,8 @@ function layerIds(kind: WatchLayer): string[] {
       return ["mtr-track-casing", "mtr-track", "mtr-stations", "mtr-trains"]
     case "kmb":
       return ["kmb-stops"]
+    case "lrt":
+      return ["lrt-stops"]
     default: {
       const exhaustive: never = kind
       return exhaustive

@@ -15,6 +15,7 @@ import type {
   ControlPointsResponse,
   IncidentsResponse,
   KmbResponse,
+  LrtResponse,
   MtrResponse,
   PictureResponse,
   TrafficResponse,
@@ -32,6 +33,7 @@ const LAYERS_ON: WatchLayers = {
   incidents: true,
   control: true,
   mtr: true,
+  lrt: true,
   kmb: true,
 }
 
@@ -65,8 +67,13 @@ export function Dashboard() {
     layers.kmb && view && view.zoom >= KMB_MIN_ZOOM
       ? `/api/kmb?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
       : null
+  const lrtUrl =
+    layers.lrt && view && view.zoom >= KMB_MIN_ZOOM
+      ? `/api/lrt?lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
+      : null
   const mtrLive = useLiveJson<MtrResponse>("/api/mtr", 15_000)
   const kmbLive = useLiveJson<KmbResponse>(kmbUrl, KMB_POLL_MS)
+  const lrtLive = useLiveJson<LrtResponse>(lrtUrl, 15_000)
   const traffic = trafficLive.data
   const approaches = approachesLive.data
   const picture = pictureLive.data
@@ -75,6 +82,7 @@ export function Dashboard() {
   const warnings = warningsLive.data
   const mtr = mtrLive.data
   const kmb = kmbLive.data
+  const lrt = lrtLive.data
   const trafficLoading = traffic === null && trafficLive.error === null
   const trafficError = trafficLive.error ?? (traffic && !traffic.ok ? traffic.error ?? "Speed feed failed" : null)
   const pictureError = pictureLive.error ?? picture?.error ?? (picture && !picture.ok ? "Picture failed" : null)
@@ -107,6 +115,7 @@ export function Dashboard() {
         controlPoints={boundary}
         mtr={mtr?.ok ? mtr : null}
         kmb={kmb?.ok ? kmb : null}
+        lrt={lrt?.ok ? lrt : null}
         onView={setView}
         layers={layers}
         basemap={basemap}
@@ -169,6 +178,7 @@ export function Dashboard() {
           incidents: incidents ? incidents.incidents.features.length : null,
           mtr: mtr?.ok ? mtr.trains.length : null,
           kmb: null,
+          lrt: null,
           control: controlPoints?.ok
             ? controlPoints.points.features.filter((feature) => {
                 const worst = feature.properties && feature.properties.worst
@@ -183,6 +193,7 @@ export function Dashboard() {
         pictureError={pictureError}
         mtrError={mtrLive.error ?? (mtr && !mtr.ok ? mtr.error ?? "Next train feed failed" : null)}
         kmbError={kmbLive.error ?? (kmb && !kmb.ok ? kmb.error ?? "KMB arrivals failed" : null)}
+        lrtError={lrtLive.error ?? (lrt && !lrt.ok ? lrt.error ?? "Light Rail arrivals failed" : null)}
         aboveMarquee={!intelOpen}
       />
     </main>

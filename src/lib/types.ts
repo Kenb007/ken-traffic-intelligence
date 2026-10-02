@@ -174,6 +174,7 @@ export type KmbCall = {
   scheduled: boolean
   remarkTc: string
   remarkEn: string
+  company: "KMB" | "LWB"
 }
 
 export type KmbStopBoard = {
@@ -192,7 +193,31 @@ export type KmbResponse = {
   stops: KmbStopBoard[]
 }
 
-export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb"
+export type LrtCall = {
+  route: string
+  destTc: string
+  destEn: string
+  minutes: number
+  arriving: boolean
+}
+
+export type LrtStationBoard = {
+  id: string
+  nameTc: string
+  nameEn: string
+  lng: number
+  lat: number
+  calls: LrtCall[]
+}
+
+export type LrtResponse = {
+  ok: boolean
+  error?: string
+  observedAt: string | null
+  stations: LrtStationBoard[]
+}
+
+export type WatchLayer = "speed" | "cameras" | "works" | "tolls" | "incidents" | "control" | "mtr" | "kmb" | "lrt"
 
 export type WatchLayers = Record<WatchLayer, boolean>
 

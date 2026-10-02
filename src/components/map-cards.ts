@@ -164,6 +164,57 @@ export function workPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): H
   return card.root
 }
 
+export function lrtStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.lrt
+  const card = openCard(title)
+  const calls = lrtBoard(properties)
+  if (calls.length === 0) {
+    card.body.append(paragraph("city-card-copy", m.lrtNone))
+    return card.root
+  }
+  const board = document.createElement("div")
+  board.className = "city-card-board"
+  for (const call of calls) {
+    const row = document.createElement("div")
+    row.className = "city-card-call"
+    const dest = readablePlace(displayText(m.locale, call.destTc, call.destEn))
+    row.append(
+      text("span", "city-card-call-route", call.route),
+      text("span", "city-card-call-dest", dest ? m.towards(dest) : ""),
+      text("span", "city-card-call-when", call.arriving ? m.lrtArriving : m.minutes(call.minutes)),
+    )
+    board.append(row)
+  }
+  card.body.append(board)
+  return card.root
+}
+
+type LrtBoardCall = { route: string; destTc: string; destEn: string; minutes: number; arriving: boolean }
+
+function lrtBoard(properties: GeoJSON.GeoJsonProperties): LrtBoardCall[] {
+  const raw = textProp(properties, "board")
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((item) => {
+      if (typeof item !== "object" || item === null) return []
+      const row = item as Record<string, unknown>
+      const route = typeof row.route === "string" ? row.route : ""
+      if (!route || typeof row.minutes !== "number") return []
+      return [{
+        route,
+        destTc: typeof row.destTc === "string" ? row.destTc : "",
+        destEn: typeof row.destEn === "string" ? row.destEn : "",
+        minutes: row.minutes,
+        arriving: row.arriving === true,
+      }]
+    })
+  } catch {
+    return []
+  }
+}
+
 export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
   const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.kmb
   const card = openCard(title)
@@ -187,7 +238,7 @@ function kmbCall(call: KmbBoardCall, m: Messages): HTMLElement {
   const remark = displayText(m.locale, call.remarkTc, call.remarkEn)
   const kind = call.scheduled ? m.kmbScheduled : when ? "" : remark
   row.append(
-    text("span", "city-card-call-route", call.route),
+    text("span", "city-card-call-route", call.company === "LWB" ? `${call.route} ${m.lwb}` : call.route),
     text("span", "city-card-call-dest", dest ? m.towards(dest) : ""),
     text("span", "city-card-call-when", when),
   )
@@ -218,6 +269,7 @@ type KmbBoardCall = {
   scheduled: boolean
   remarkTc: string
   remarkEn: string
+  company?: "KMB" | "LWB"
 }
 
 function kmbBoard(properties: GeoJSON.GeoJsonProperties): KmbBoardCall[] {
@@ -240,6 +292,7 @@ function kmbBoard(properties: GeoJSON.GeoJsonProperties): KmbBoardCall[] {
         scheduled: row.scheduled === true,
         remarkTc: typeof row.remarkTc === "string" ? row.remarkTc : "",
         remarkEn: typeof row.remarkEn === "string" ? row.remarkEn : "",
+        company: row.company === "LWB" ? "LWB" : "KMB",
       }]
     })
   } catch {

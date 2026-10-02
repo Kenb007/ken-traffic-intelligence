@@ -169,9 +169,15 @@ export type Messages = {
   mtrDeparts: (n: number) => string
   mtrDue: (when: string, platform: string) => string
   kmb: string
+  kmbLwb: string
+  lwb: string
   kmbFailed: string
   kmbScheduled: string
   kmbNone: string
+  lrt: string
+  lrtFailed: string
+  lrtNone: string
+  lrtArriving: string
 }
 
 const en: Messages = {
@@ -312,9 +318,15 @@ const en: Messages = {
   mtrDeparts: (n) => `Departs in ${n} min`,
   mtrDue: (when, platform) => (platform ? `${when} · platform ${platform}` : when),
   kmb: "KMB",
+  kmbLwb: "KMB / LWB",
+  lwb: "LWB",
   kmbFailed: "KMB arrivals did not load.",
   kmbScheduled: "Scheduled",
   kmbNone: "No arrival on the board",
+  lrt: "Light Rail",
+  lrtFailed: "Light Rail arrivals did not load.",
+  lrtNone: "No arrival on the board",
+  lrtArriving: "Arriving",
 }
 
 const zhHK: Messages = {
@@ -455,9 +467,15 @@ const zhHK: Messages = {
   mtrDeparts: (n) => `${n} 分鐘後開出`,
   mtrDue: (when, platform) => (platform ? `${when} · ${platform} 號月台` : when),
   kmb: "九巴",
+  kmbLwb: "九巴／龍運",
+  lwb: "龍運",
   kmbFailed: "未能取得九巴到站時間。",
   kmbScheduled: "原定班次",
   kmbNone: "班次表沒有到站時間",
+  lrt: "輕鐵",
+  lrtFailed: "未能取得輕鐵到站時間。",
+  lrtNone: "班次表沒有到站時間",
+  lrtArriving: "即將抵達",
 }
 
 const zhCN: Messages = {
@@ -589,7 +607,14 @@ const zhCN: Messages = {
   mtrDeparts: (n) => `${n} 分钟后开出`,
   mtrDue: (when, platform) => (platform ? `${when} · ${platform} 号站台` : when),
   kmbFailed: "未能取得九巴到站时间。",
+  kmbScheduled: "原定班次",
   kmbNone: "班次表没有到站时间",
+  kmbLwb: "九巴／龙运",
+  lwb: "龙运",
+  lrt: "轻铁",
+  lrtFailed: "未能取得轻铁到站时间。",
+  lrtNone: "班次表没有到站时间",
+  lrtArriving: "即将抵达",
 }
 
 export const MESSAGES: Record<Locale, Messages> = {
