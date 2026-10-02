@@ -15,21 +15,17 @@ The site is [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.
 
 If you find the map useful, please [star this repository](https://github.com/keithligh/hk-traffic-intelligence). A star is how more people discover an open source picture of Hong Kong's smart city, and it is the most direct way to support the work.
 
-## What you will see
+## What the site is for
 
-The first numbers on the page are the three harbour crossings. For the Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing, you see the journey time measured on a real approach road. The colour follows that journey. An ordinary run stays green, a delay that has settled in turns amber, and a crossing that has changed turns red. When you click one of those times, the map moves to the approach it was measured on, and the card tells you which road it is, which way the traffic is heading, what is nearby, and how long each crossing on that approach is taking.
+You can read the journey time for the Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing, measured on a real approach. You can read the strategic roads in the Transport Department classes of Good, Average, and Bad, and see a live speed where one has been published. You can open the public cameras, including those at the tunnel mouths, and follow road works on the faster roads, the toll points at the harbour crossings and Tai Lam Tunnel, and special traffic news that is still open.
 
-The roads under those times are the strategic network, coloured with the Good, Average, and Bad classes published by the Transport Department. A short length of road that has no class is coloured from its speed instead. Where a live speed is available, dots move along the road at a matching pace, and they are shown only while the speed layer is switched on.
+At the eight land control points you can read the passenger halls, for residents and visitors, arriving and departing, together with the live speed on the strategic road that leads to that port. Lo Wu is a passenger crossing, and the published figures do not include a queue for private cars. You can also read every Hong Kong Observatory warning that is in force. When none is in force, the site still gives the temperature at the Observatory and whether rain fell in the past hour.
 
-The cameras are the stills already published for the public, including the mouths of the tunnels. Around the harbour, and at those mouths, they remain on the map while you are zoomed out. Elsewhere they appear as you come closer. Open one and you see where it is and which way it faces before the picture itself. From the same map you can also turn on road works along the faster roads, the toll points at the harbour crossings and at Tai Lam Tunnel, and any special traffic news that is still open.
+For the MTR you can read the next train that has been published: how many minutes away it is, where it is going, and which platform it will use. The position shown between stations is worked out from those minutes. For KMB you can read the published arrival at a stop, including a trip that is shown as scheduled.
 
-The eight land control points are the passenger halls, for residents and visitors, arriving and departing. Beside each hall, the vehicle figure is the live speed on the strategic road that leads to that port. Lo Wu is a passenger crossing, and the published figures do not include a queue for private cars, so that part of the card is left empty. The weather line in the header lists every Observatory warning that is in force. On a day when none is in force, it still gives the temperature at the Observatory and says whether rain fell in the past hour.
+When several of these need attention together, the site orders them, starting with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning. The ground under the data can be a satellite photograph, a street map, or a map with the buildings raised.
 
-The MTR layer follows the next train that MTR publishes, including how many minutes away it is, where it is going, and which platform it will use. The dot on the track is placed by taking those minutes back along the line, and the card names the two stations it falls between. KMB follows the arrivals that KMB publishes, and a trip shown as scheduled stays on the list. Those arrivals are given for a stop, so the stops appear when you zoom in toward the middle of the map.
-
-When several things deserve attention at once, the list beside the map puts them in order, beginning with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning. Closing the list keeps those items on screen. They continue along the bottom. Underneath all of this, you can leave the satellite photograph in place, change to the OSM Bright street map, or raise the buildings with OSM Liberty. Choosing the buildings a second time brings back the map you had, and in that view the labels sit beneath the roofs.
-
-What you are looking at is the set of traffic, border, weather, MTR, and KMB feeds described later on this page. Hong Kong publishes much more open data than this map draws on.
+These are the traffic, border, weather, MTR, and KMB feeds described later on this page. Hong Kong publishes much more open data than this site uses.
 
 ## Open source
 
