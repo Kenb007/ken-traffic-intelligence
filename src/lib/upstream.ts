@@ -3,22 +3,14 @@ type UpstreamBody = { status: number; body: ArrayBuffer; contentType: string }
 type UpstreamOptions = {
   headers?: HeadersInit
   timeoutMs?: number
-  bypassMemory?: boolean
 }
-
-export let lastCacheOutcome = "none"
 
 const memory = new Map<string, { expires: number; body: UpstreamBody }>()
 const pending = new Map<string, Promise<UpstreamBody>>()
 
 export async function fetchUpstream(url: string, ttlMs: number, options: UpstreamOptions = {}): Promise<UpstreamBody> {
-  if (!options.bypassMemory) {
-    const fresh = memory.get(url)
-    if (fresh && fresh.expires > Date.now()) {
-      lastCacheOutcome = "memory"
-      return fresh.body
-    }
-  }
+  const fresh = memory.get(url)
+  if (fresh && fresh.expires > Date.now()) return fresh.body
   const current = pending.get(url)
   if (current) return current
   const task = readThrough(url, ttlMs, options).finally(() => pending.delete(url))
@@ -28,10 +20,7 @@ export async function fetchUpstream(url: string, ttlMs: number, options: Upstrea
 
 async function readThrough(url: string, ttlMs: number, options: UpstreamOptions): Promise<UpstreamBody> {
   const shared = await readShared(url, ttlMs)
-  if (shared) {
-    lastCacheOutcome = "hit"
-    return shared
-  }
+  if (shared) return shared
 
   const seconds = Math.max(1, Math.round(ttlMs / 1000))
   let response: Response
@@ -48,9 +37,7 @@ async function readThrough(url: string, ttlMs: number, options: UpstreamOptions)
         cacheTtlByStatus: { "200-299": seconds, "300-599": 0 },
       },
     } as RequestInit)
-    lastCacheOutcome = "stored"
   } catch {
-    lastCacheOutcome = "fetched"
     response = await rawFetch()(url, {
       signal: AbortSignal.timeout(options.timeoutMs ?? 25_000),
       headers: options.headers,
@@ -81,10 +68,7 @@ async function readShared(url: string, ttlMs: number): Promise<UpstreamBody | nu
 
 async function writeShared(url: string, ttlMs: number, body: UpstreamBody): Promise<void> {
   const cache = await openCache()
-  if (!cache) {
-    if (lastCacheOutcome === "stored") lastCacheOutcome = "stored-no-cache-api"
-    return
-  }
+  if (!cache) return
   const seconds = Math.max(1, Math.round(ttlMs / 1000))
   try {
     await cache.put(
@@ -97,9 +81,7 @@ async function writeShared(url: string, ttlMs: number, body: UpstreamBody): Prom
         },
       }),
     )
-    if (lastCacheOutcome === "stored") lastCacheOutcome = "stored+cache-api"
   } catch {
-    lastCacheOutcome = `${lastCacheOutcome}; put-failed`
     // A rejected write must not fail the feed. The caller already has the body.
   }
 }
