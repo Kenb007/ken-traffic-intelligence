@@ -4,7 +4,7 @@
 
 # HK Traffic Intelligence
 
-香港交通的實時地圖。畫面上的數字，來自運輸署、HKeMobility、入境事務處、天文台、港鐵及九巴等已公布的開放數據。
+香港 **智慧城市（Smart City）** 的實時交通地圖。畫面上的數字，來自運輸署、HKeMobility、入境事務處、天文台、港鐵及九巴等已公布的開放數據。
 
 [![實時示範](https://img.shields.io/badge/▶_開啟_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
@@ -31,7 +31,7 @@
 
 難處在分散：這些數據分別在不同網站更新，也不涵蓋 [DATA.GOV.HK](https://data.gov.hk) 上的每一個數據集。本項目把畫面上用到的來源合成一幅 MapLibre 地圖，方便讀過海時間、擠塞路段、羅湖大堂或生效中的警告，而毋須同時開六個分頁。
 
-**不提供行車路線。** 這個網站用來讀一座城市，也用來說明公開數據怎樣變成同一幅畫面。
+**不提供行車路線。** 這個網站用來讀全港交通，也用來說明智慧城市（Smart City）的公開數據怎樣變成同一幅畫面。
 
 ---
 
@@ -164,8 +164,10 @@ npm run dev
 
 ## 作者及授權
 
-[Keith Li](https://www.linkedin.com/in/keithlihk)。這個項目用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的城市。
+[Keith Li](https://www.linkedin.com/in/keithlihk)。這個項目用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的智慧城市。
 
 以 [MIT License](LICENSE) 發布。歡迎 fork 及重用；請保留版權聲明，並致謝本項目。
+
+若這個項目對你有用，請 **star**。這是支持本項目最直接的方法。
 
 **製作：** [Keith Li](https://www.linkedin.com/in/keithlihk) / [GitHub](https://github.com/keithligh)

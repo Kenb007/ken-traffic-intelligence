@@ -4,7 +4,7 @@
 
 # HK Traffic Intelligence
 
-A live map of Hong Kong traffic. The numbers on screen come from open data published by Transport Department, HKeMobility, Immigration, the Observatory, MTR, and KMB.
+A live Hong Kong **Smart City** traffic map. The numbers on screen come from open data published by Transport Department, HKeMobility, Immigration, the Observatory, MTR, and KMB.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
@@ -31,7 +31,7 @@ Hong Kong already publishes the numbers: Transport Department on strategic roads
 
 The feeds are **public**. They are also **scattered** across portals and refresh on different clocks. This project does not cover every dataset on [DATA.GOV.HK](https://data.gov.hk). It draws the feeds used on this board onto one MapLibre map so you can read a crossing, a red road, Lo Wu, or an active warning without opening six tabs.
 
-It is **not** a turn-by-turn navigator. It is a traffic board for reading the city, and for showing how open data becomes one picture.
+It is **not** a turn-by-turn navigator. It is a Smart City picture of the roads: one map, so you can read the city, and see how open data becomes one picture.
 
 ---
 
@@ -164,8 +164,10 @@ Road geometry uses the TD **strategic centreline** (Hong Kong 1980 grid), shifte
 
 ## Author and licence
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) built this for **Agentic Engineer** classes, public talks, and guest lectures. The data was already public. The work is to make those feeds one city a person can read.
+[Keith Li](https://www.linkedin.com/in/keithlihk) built this for **Agentic Engineer** classes, public talks, and guest lectures. The data was already public. The work is to make Hong Kong's Smart City feeds something a person can read.
 
 Released under the [MIT License](LICENSE). Forks and reuse are welcome. Please keep the copyright notice and credit this project.
+
+If this is useful, **star the repo**. That is the best way to support the project.
 
 **Created by:** [Keith Li](https://www.linkedin.com/in/keithlihk), [GitHub](https://github.com/keithligh)
