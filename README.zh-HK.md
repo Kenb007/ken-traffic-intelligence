@@ -2,80 +2,110 @@
 
 # HK Traffic Intelligence
 
-香港的智慧城市儀表板。它讀取這個城市已經公布的開放數據 API，把它們畫成一幅實時的城市。
+香港交通的實時地圖。畫面上的數字，全部來自這個城市已經公布的開放數據。
 
-儀表板正在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev) 運行。看它不需要帳戶，也不需要安裝。
+[![實時示範](https://img.shields.io/badge/live_demo-hktraffic.keith--li.workers.dev-0891b2)](https://hktraffic.keith-li.workers.dev)
 
-![三條過海隧道、著色的道路、快拍，和當刻的警告，在同一個畫面](docs/board.png)
+儀表板在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。不需要帳戶，也不需要安裝。
 
-打開它，最先讀到的是海港。紅磡海底隧道、東區海底隧道、西區海底隧道各自帶着分鐘，數字的顏色說出這次行程怎樣。同一列還有尚未結束的交通意外、八個陸路管制站的旅客大堂、生效中的天文台警告，以及整個策略性路網的車速。一條慢的隧道，在整個早上都慢的城市裏，意思並不一樣。單看一個數字說不出這件事。這一列可以。
+![香港交通儀表板：衛星地圖、著色道路，以及頂端的實時讀數](docs/board.png)
 
-列的下面，地圖就是城市。道路用運輸署自己的顏色。快拍可以打開。快速公路上的工程標了出來。隧道在那裏，找得到。點一下某條隧道，地圖就移到產生那些分鐘的進路。
+畫面以繁體中文開啟，用的是香港通告的書面中文。英文在時鐘旁邊。這塊板用來讀一座城市，也用來說明公開數據怎樣變成同一幅畫面。它不提供行車路線。
 
-這是用來讀一座城市的儀表板，也是用來說明公開 API 怎樣變成一幅人用得着的畫面。它不是給駕車的人導航的。畫面以繁體中文開啟，用的是香港通告的書面中文。英文在時鐘旁邊。
+## 目錄
 
-[畫面上有什麼](#畫面上有什麼) · [自己跑起來](#自己跑起來) · [數字從哪裏來](#數字從哪裏來) · [這是怎樣做成的](#這是怎樣做成的)
+- [功能](#功能)
+- [快速開始](#快速開始)
+- [可以開關的圖層](#可以開關的圖層)
+- [數據來源](#數據來源)
+- [共用的數據](#共用的數據)
+- [開發](#開發)
+- [作者](#作者)
 
-## 畫面上有什麼
+## 功能
 
-**三條過海隧道。** 每一個分鐘都來自一條真實的進路，不是畫在隧道上的估計。點下去，就到那條進路。卡片寫出路名、方向、附近是什麼，以及儀表板正在量度的每一條隧道要多少分鐘。綠色是平常的行程。黃色是已經陷進去的延誤。紅色是這條過海路已經變了質。
+- **過海隧道。** 紅磡海底隧道、東區海底隧道、西區海底隧道各自顯示分鐘，分鐘來自真實的進路。綠色是平常的行程，黃色是已經形成的延誤，紅色是這條過海路已經變了。點一下讀數，地圖就移到那條進路。卡片寫出路名、方向、附近是什麼，以及該板正在量度的每一條隧道要多少分鐘。
+- **車速。** 策略性道路用運輸署的飽和等級：暢順、緩慢、擠塞，顏色是 `#3DDC97`、`#FFC857`、`#FF5D73`。某一小段沒有等級時，顏色退回車速本身：低於 30 km/h、30 至 50、50 或更快。圖例保留官方用詞，不會把這個退回的讀法改成另一個名稱。有實時車速的路段上有流動的圓點，圓點表示的是該段車速。關掉車速，圓點一併消失。
+- **快拍。** 運輸署公布的公共快拍，包括隧道口。海港一帶和隧道口的快拍，在尚未放大時就留在地圖上。其餘的要走近才出現。快拍卡片拆開道路、方向、附近的地方、地區、區域、鏡頭朝向和編號，然後才顯示畫面。中文名稱來自署方自己的中文圖層。
+- **工程、隧道、意外。** 限速 70 km/h 或以上道路的工程、三條過海隧道和大欖隧道，以及尚未結束的特別交通消息。
+- **陸路管制站。** 八個陸路口岸的旅客大堂：居民和訪客，入境和出境。大堂旁邊的車輛讀數，是通往該口岸的策略性道路的實時車速。羅湖是旅客過關的地方。公開檔案沒有私家車輪候，那一欄就留空。
+- **天氣。** 生效中的香港天文台警告全部列出。嚴重的警告放在會被看見的地方。天色安靜時，這一列仍顯示天文台的氣溫，以及過去一小時有沒有下雨。
+- **港鐵。** 到站分鐘、終點、月台是港鐵公布的下一班車。港鐵沒有公布列車位置。圓點把那些分鐘沿路軌往回推，卡片寫明它落在哪兩個站之間。輕鐵不在這一層。
+- **九巴。** 車站上的時間是九巴公布的到站時間，原定班次也留在班次表上。把地圖拉近，才會看到畫面中間附近的車站。九巴沒有公布巴士所行的路，所以地圖只顯示車站。
+- **情報。** 清單把值得先讀的事項排好：未結束的意外、擠塞的路、非常繁忙的大堂、警告。收起之後，同一批事項沿底部移動。收起和展開都有動畫。
+- **底圖。** 衛星照片、街道圖，或立起來的樓宇。樓宇按鈕再按一次，就回到剛才的地圖。樓宇畫面裏，標籤和標記在屋頂之下。
 
-**策略性道路，用署方自己的詞。** 繁體中文畫面上，這三個詞是暢順、緩慢、擠塞。暢順，是路還在走。緩慢，是它已經陷進一種延誤。擠塞，是它不再像一條路。顏色是運輸署的飽和等級，來自實時數據。某一小段沒有等級的時候，儀表板退回車速本身：低於 30 km/h、30 至 50、以及 50 或更快。圖例不會把這個退回的讀法說成官方的名稱。
+## 快速開始
 
-**快拍。** 這些是運輸署已經公布的公共快拍，包括隧道口的。海港一帶和隧道口的快拍，在你尚未放大時就留在地圖上。城市其餘的快拍，要走近才出現。點開一個快拍，卡片把原本黏在一句英文裏的資料拆開：道路、方向、附近的地方、地區、區域、鏡頭朝向，以及編號。然後才是畫面。中文名稱來自署方自己的中文圖層，不是為了這張卡片才譯出來的。
-
-**八個陸路管制站。** 入境事務處公布每個大堂的情況，居民和訪客，入境和出境。旁邊的車輛，是通往口岸的策略性道路上的實時車速，這是公開車速 API 能夠說出的部分。羅湖報告大堂。它是旅客過關的地方。公開檔案沒有私家車的輪候，卡片就把那裏留空，而不去編一個數字。
-
-**天氣。** 生效中的天文台警告全部列出。嚴重的，放在會被看見的地方。天色安靜的時候，這一列仍顯示天文台的氣溫，以及過去一小時有沒有下雨。城市和天空放在同一塊板上，是因為一道警告會改變你怎樣讀一條慢的路。
-
-**港鐵。** 到站分鐘、終點、月台，是港鐵公布的下一班車。港鐵沒有公布列車在哪裏。地圖上的圓點，是把那個分鐘沿車站之間的距離往回推。卡片寫明它落在哪兩個站之間，以及那個分鐘是哪一站的讀數。倒數比剩下的路更長，或者路線在交匯前分了叉而班次表沒有寫明，圓點就停在還能確定的最後一站，卡片也這樣寫。
-
-**九巴。** 車站上的時間是九巴公布的到站時間。一列可以是原定班次，也可以是預計到站。兩者都留在班次表上。九巴公布的是車站，不是巴士所行的路，所以地圖不會畫一輛在車站之間移動的巴士。把地圖拉近，才會看到畫面中間附近的車站。
-
-**這些 API 正在說什麼。** 右下方的情報已經把值得先讀的事項排好：一宗未結束的意外、一段擠塞的路、一個非常繁忙的大堂、一道警告。你可以把它收起。它變成底部移動的一行，讓你看着地圖的時候，緊急的事項仍在眼前。沿底部可以換脚下的地面：衛星、街道，或者立起來的三維樓宇。車速、快拍、工程、隧道、意外、管制站、港鐵、九巴，都可以各自打開或關掉。樓宇那個按鈕是來回的。再按一次，就回到你剛才的地圖。
-
-## 自己跑起來
-
-公開的那一份在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。
-
-要自己跑，你需要 Node.js。在這個資料夾：
+需要 Node.js 22。
 
 ```bash
+git clone https://github.com/keithligh/hk-traffic-intelligence.git
+cd hk-traffic-intelligence
 npm install
 npm run dev
 ```
 
-然後開啟 [http://127.0.0.1:4317](http://127.0.0.1:4317)。
+開啟 [http://127.0.0.1:4317](http://127.0.0.1:4317)。
 
-如果你是在改這個儀表板，加上 `?feed=down`，可以看到車速 API 失敗時的樣子。加上 `?map=down`，地圖不在的時候，上方那一列仍在。數字應該自己站得住。地圖沒有啟動，不是把城市藏起來的理由。
+## 可以開關的圖層
 
-## 數字從哪裏來
+底部的一列用來換底圖和圖層。
 
-畫面上每一個數字，都來自香港早已公布的開放數據 API。各部門把它們分成不同的接口，放在不同的網頁。這個儀表板做的，是讀那些接口，把它們畫成同一個城市。
-
-道路是運輸署的策略性中心線。檔案用香港 1980 坐標。把那些數字直接畫在現代地圖上，每條路都會偏到真實街道的左上方一點。地政總署公布了全港的改正：經度加 8.8 角秒，緯度減 5.5 角秒。改完，線就落在路上。顏色是署方的飽和等級。衛星圖保持平坦。雷達高程會把平路抬成一級一級，顏色線就從照片上跌下去。地圖仍俯在那張平坦的衛星圖上。
-
-| 你在看的 | 開放數據 |
+| 控制 | 畫出來的是 |
 | --- | --- |
-| 哪些策略性道路在走，以及官方對那種走動的顏色 | [策略性道路及主要道路交通數據](https://data.gov.hk/tc-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads)，等級見 [HKeMobility](https://www.hkemobility.gov.hk/tc/) |
+| 衛星 | Esri 的照片。畫面保持平坦，著色的道路才落在街上。 |
+| 街道 | OpenFreeMap 的向量街道圖，數據來自 OpenStreetMap，圖磚樣式來自 OpenMapTiles。 |
+| 樓宇 | 同一張街道圖，樓宇立起來。屋頂蓋住標記。 |
+| 車速 | 策略性道路的顏色，以及沿該車速移動的圓點。 |
+| 快拍 | 公共快拍。 |
+| 工程 | 快速公路上的道路工程。 |
+| 隧道 | 過海隧道和大欖隧道的收費點。 |
+| 意外 | 未結束的特別交通消息。 |
+| 管制站 | 八個陸路管制站。 |
+| 港鐵 | 公布的下一班車，以及按那些分鐘推算的位置。 |
+| 九巴 | 附近車站公布的到站時間。 |
+
+## 數據來源
+
+每一個數字都來自香港早已公布的開放數據。
+
+道路形狀是運輸署的策略性中心線，檔案用香港 1980 坐標。地政總署公布的全港改正是經度加 8.8 角秒、緯度減 5.5 角秒。改完，線就落在路上。
+
+| 畫面上的 | 開放數據 |
+| --- | --- |
+| 哪些策略性道路在走，以及官方的顏色 | [策略性道路及主要道路交通數據](https://data.gov.hk/tc-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads)，等級見 [HKeMobility](https://www.hkemobility.gov.hk/tc/) |
 | 那些道路的形狀 | [道路網絡（第二代）](https://data.gov.hk/tc-data/dataset/hk-td-tis_15-road-network-v2) |
-| 三條過海隧道當時要多少分鐘 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的行車時間 |
-| 公共快拍，英文和繁體中文都有 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的快拍圖層 |
-| 哪一段快速公路正在開挖 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的道路工程，限速 70 km/h 或以上 |
-| 隧道本身在哪裏 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的收費點，三條過海隧道和大欖隧道 |
+| 過海隧道的分鐘 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的行車時間 |
+| 快拍，英文和繁體中文 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的快拍圖層 |
+| 快速公路正在開挖的位置 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的道路工程 |
+| 隧道的位置 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的收費點 |
 | 剛剛出了什麼事 | [特別交通消息](https://data.gov.hk/tc-data/dataset/hk-td-tis_19-special-traffic-news-v2) |
-| 市區燈柱上的一小批探測器 | [智慧燈柱交通探測器](https://data.gov.hk/tc-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
-| 陸路管制站的旅客大堂怎樣 | 入境事務處的 [陸路管制站輪候時間](https://data.gov.hk/tc-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
-| 下一班港鐵在哪裏，分鐘是公布的，位置是按分鐘推算的 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data) 的分鐘、月台和終點。圓點把那些分鐘沿車站之間的距離往回推。車站位置是地政總署的 [車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map)。港鐵沒有公布列車位置。 |
-| 下一班九巴的到站時間 | [九巴及龍運到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop)。時間是公布的，並標明是否原定班次。九巴沒有公布行車路線，地圖顯示車站，不在路上畫巴士。 |
-| 蓋在城市上的警告、氣溫和雨 | 天文台的 [警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc) 和 [本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
-| 街道圖，以及可以俯看的樓宇 | [OpenStreetMap](https://www.openstreetmap.org/copyright) 和 [OpenFreeMap](https://openfreemap.org) |
-| 地面的照片 | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer)。影像 © Esri |
+| 市區燈柱上的探測器 | [智慧燈柱交通探測器](https://data.gov.hk/tc-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
+| 陸路管制站的旅客大堂 | 入境事務處，[陸路管制站輪候時間](https://data.gov.hk/tc-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
+| 下一班港鐵 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data)。車站位置是地政總署的[車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map)。 |
+| 下一班九巴 | [九巴及龍運預計到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
+| 警告、氣溫和雨 | 香港天文台的[警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc)和[本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
+| 街道圖和樓宇 | [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者、[OpenMapTiles](https://openmaptiles.org/) 和 [OpenFreeMap](https://openfreemap.org) |
+| 衛星照片 | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer)。影像 © Esri |
 
-## 這是怎樣做成的
+## 共用的數據
 
-我用二十四小時做成這件事。那是餘暇，而餘暇來自別的工作。當時我同時在做幾個人工智能的編程項目。一個 AI agent 需要時間。它在寫，在想，或者停在一個問題上。我在等的時候，就轉去另一個項目，繼續做。這個儀表板就是這樣轉過來的。
+公開網站為每一項上游數據保留一份共用副本，訪客讀的是這份副本。副本仍然有效時，新的訪客不會再向部門的伺服器要一次。副本按 Cloudflare 的城市分開存放，有效時間和畫面的更新節奏一致：港鐵約 15 秒，九巴約 30 秒，其餘約一分鐘。
 
-我開它，有兩個連在一起的原因。我想在 Cursor 裏做一次試驗，看看 Grok 4.7 實際能寫出什麼。我也想要一個可以放上螢幕、可以講下去的示範：公開的 API 怎樣變成一個有意思的儀表板。香港已經公布了城市的實時狀態。運輸署有過海隧道、道路、快拍、工程和意外。入境事務處有管制站。天文台有天氣。那一天，就是 Grok 4.7 和我把這些接口讀到，直到它們成為同一幅畫面。
+## 開發
 
-這個項目主要是用來教的。我是 [Keith Li](https://www.linkedin.com/in/keithlihk)。我在 Agentic Engineer 的課堂上用這個儀表板，公開演講的時候用它，到大學做客席講座的時候也用它。房間裏的人得到的，和這個倉庫給你的，是同一課。編程有很大一部分是 agent 做的。數據本來就是公開的。你看着的，是那些 API 拼成的一個城市，而一個人讀得懂。
+| 指令 | 作用 |
+| --- | --- |
+| `npm run dev` | 在 [http://127.0.0.1:4317](http://127.0.0.1:4317) 啟動 Next.js |
+| `npm run lint` | ESLint |
+| `npm run dev:vinext` | 在 4318 埠啟動面向 Cloudflare 的開發伺服器 |
+| `npm run deploy:vinext` | 在已有 Cloudflare 憑證時部署 Worker |
+
+加上 `?feed=down`，可以看到車速數據失敗時的畫面。加上 `?map=down`，地圖不在的時候，頂端那一列仍在。
+
+程式用 Next.js、React、MapLibre GL 和 Tailwind CSS，以 Cloudflare Worker 提供。
+
+## 作者
+
+[Keith Li](https://www.linkedin.com/in/keithlihk)。這塊板用在 Agentic Engineer 的課堂、公開演講，以及大學的客席講座。數據本來就是公開的。要做的，是讓這些數據成為一座人讀得懂的城市。
