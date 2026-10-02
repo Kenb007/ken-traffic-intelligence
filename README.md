@@ -23,7 +23,7 @@ At the eight land control points you can read the passenger halls, for residents
 
 For the MTR you can read the next train that has been published: how many minutes away it is, where it is going, and which platform it will use. The position shown between stations is worked out from those minutes. For KMB you can read the published arrival at a stop, including a trip that is shown as scheduled.
 
-When several of these need attention together, the site orders them, starting with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning. The ground under the data can be a satellite photograph, a street map, or a map with the buildings raised.
+When several of these need attention together, the site orders them, starting with an open traffic notice, a road classed as bad, a hall that is very busy, or a weather warning.
 
 These are the traffic, border, weather, MTR, and KMB feeds described later on this page. Hong Kong publishes much more open data than this site uses.
 
@@ -42,8 +42,6 @@ npm run dev
 
 Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 
-Along the bottom of the map you choose what to look at. You can keep the Esri satellite photograph, which stays flat so the coloured roads remain on the streets, change to the [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) street map served by [OpenFreeMap](https://openfreemap.org), or raise the buildings with [OSM Liberty](https://github.com/maputnik/osm-liberty) and choose it again when you want the previous map back. The other controls show or hide speed, cameras, works, tunnels, incidents, the land control points, the MTR, and KMB.
-
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Next.js on port 4317 |
@@ -58,8 +56,6 @@ If you want to see the screen when the speed feed cannot be reached, add `?feed=
 Anyone who opens the public site is reading a shared copy of each feed, kept on Cloudflare for that city. The copy is renewed at about the same pace as the map itself, roughly every fifteen seconds for the MTR, every thirty seconds for KMB, and about once a minute for the rest. While that copy is still current, the next visitor is served from it. A new request goes out to the publishing organisation only when the copy is ready to be renewed, so the site can be read widely while staying with the rhythm of the feeds that are already published.
 
 ## Where the numbers come from
-
-The strategic roads are drawn from the Transport Department centreline. The file is held in Hong Kong 1980 grid coordinates, and it is shifted by the Lands Department correction for the whole territory, which adds 8.8 arcseconds of longitude and subtracts 5.5 arcseconds of latitude, so that the lines sit on the carriageway.
 
 Each row below is one part of the screen and the publication it comes from. This is only what the map uses. The open data Hong Kong publishes as a whole is much larger.
 
