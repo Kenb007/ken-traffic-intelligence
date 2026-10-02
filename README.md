@@ -6,7 +6,7 @@
 
 **One map for the open feeds this board actually uses.**
 
-This is not all of [DATA.GOV.HK](https://data.gov.hk). It is the public traffic, transit, border, and weather APIs wired into one ops-style board: harbour minutes, strategic-road speed, cameras, works, toll points, incidents, land control points, Observatory warnings, MTR next train, and KMB ETA.
+Harbour minutes, strategic-road speed, cameras, works, toll points, incidents, land control points, Observatory warnings, MTR next train, and KMB ETA on one live board. Scope is limited to what this app wires in, not every dataset on [DATA.GOV.HK](https://data.gov.hk).
 
 [![Live demo](https://img.shields.io/badge/▶_Open_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
