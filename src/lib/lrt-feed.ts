@@ -4,7 +4,7 @@ import { pool } from "@/lib/pool"
 import { fetchUpstream } from "@/lib/upstream"
 import type { LrtBoard, LrtCalling, LrtResponse, MtrTrain } from "@/lib/types"
 
-const REMEMBER_MS = 15_000
+const REMEMBER_MS = 30_000
 const FETCH_LIMIT = 4
 
 type TrainRow = {

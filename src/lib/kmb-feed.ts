@@ -1,12 +1,13 @@
 import { busCompany } from "@/lib/bus-company"
 import { kmbStop, kmbStopsWithin } from "@/lib/kmb-network"
 import { isListedKmbRow, kmbReachMetres, STOP_CAP } from "@/lib/kmb-reach"
+import { etaQueue } from "@/lib/polite-fetch"
 import { pool } from "@/lib/pool"
 import { fetchUpstream } from "@/lib/upstream"
 import type { KmbCall, KmbResponse, KmbStopBoard } from "@/lib/types"
 
-const FETCH_LIMIT = 8
-const REMEMBER_MS = 30_000
+const FETCH_LIMIT = 6
+const REMEMBER_MS = 60_000
 const ETA_ROOT = "https://data.etabus.gov.hk/v1/transport/kmb/stop-eta"
 
 type EtaRow = {
@@ -88,13 +89,13 @@ function text(value: unknown): string {
 
 async function fetchStop(stopId: string): Promise<EtaRow[] | null> {
   try {
-    const response = await fetchUpstream(`${ETA_ROOT}/${encodeURIComponent(stopId)}`, REMEMBER_MS, {
+    const response = await etaQueue(() => fetchUpstream(`${ETA_ROOT}/${encodeURIComponent(stopId)}`, REMEMBER_MS, {
       timeoutMs: 5_000,
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 (compatible; HKTrafficIntelligence/1.0; +https://hktraffic.keith-li.workers.dev)",
       },
-    })
+    }))
     if (response.status !== 200) return null
     const body = JSON.parse(new TextDecoder().decode(response.body)) as { data?: EtaRow[] }
     return Array.isArray(body.data) ? body.data : []

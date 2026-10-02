@@ -6,6 +6,7 @@ import { readSchedule } from "@/lib/mtr-schedule"
 import type { MtrBoard, MtrResponse, MtrTrain } from "@/lib/types"
 
 const REMEMBER_MS = 90_000
+const UPSTREAM_GAP_MS = 30_000
 const FETCH_LIMIT = 4
 
 type Remembered = { at: number; board: MtrBoard; observations: TrainObservation[] }
@@ -15,20 +16,21 @@ let blockedUntil = 0
 let failures = 0
 
 // One snapshot is about 120 station calls. The published feed has no network
-// dump, and it answers 429 if those calls arrive in a burst. A short memory
-// keeps one isolate from asking again for every visitor.
+// dump, and it answers 429 if those calls arrive in a burst. A station is
+// read at most once every 30 seconds; the snapshot in between is built from that copy.
 export async function loadMtrSnapshot(now = Date.now()): Promise<MtrResponse> {
   if (now >= blockedUntil) failures = 0
   if (now >= blockedUntil) {
     await pool(mtrQueries(), FETCH_LIMIT, async (pair) => {
       const key = `${pair.line}-${pair.station}`
+      const previous = remembered.get(key)
+      if (previous && now - previous.at < UPSTREAM_GAP_MS) return
       let parsed = await fetchPair(pair.line, pair.station)
       if (parsed && parsed.observations.length === 0) {
         const again = await fetchPair(pair.line, pair.station)
         if (again && again.observations.length > 0) parsed = again
       }
       if (!parsed) return
-      const previous = remembered.get(key)
       if (parsed.observations.length === 0 && previous && previous.observations.length > 0 && now - previous.at < 180_000) return
       remembered.set(key, {
         at: now,

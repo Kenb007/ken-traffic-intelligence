@@ -1,4 +1,5 @@
 import { citybusStop, nearestCitybusStops } from "@/lib/citybus-network"
+import { etaQueue } from "@/lib/polite-fetch"
 import { pool } from "@/lib/pool"
 import { fetchUpstream } from "@/lib/upstream"
 import type { CitybusCall, CitybusResponse, CitybusStopBoard } from "@/lib/types"
@@ -118,13 +119,13 @@ function text(value: unknown): string {
 
 async function fetchEta(stopId: string, route: string): Promise<EtaRow[] | null> {
   try {
-    const response = await fetchUpstream(`${ETA_ROOT}/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}`, REMEMBER_MS, {
+    const response = await etaQueue(() => fetchUpstream(`${ETA_ROOT}/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}`, REMEMBER_MS, {
       timeoutMs: 5_000,
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 (compatible; HKTrafficIntelligence/1.0; +https://hktraffic.keith-li.workers.dev)",
       },
-    })
+    }))
     if (response.status !== 200) return null
     const body = JSON.parse(new TextDecoder().decode(response.body)) as { data?: EtaRow[] }
     return Array.isArray(body.data) ? body.data : []

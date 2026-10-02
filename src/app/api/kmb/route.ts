@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 const empty = (error: string): KmbResponse => ({ ok: false, error, observedAt: null, stops: [] })
 
 export const GET = viewCachedGet({
-  freshMs: 30_000,
+  freshMs: 60_000,
   load: loadKmbNear,
   cacheKey: kmbCacheKey,
   missing: () => empty("KMB centre missing"),
