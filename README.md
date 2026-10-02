@@ -61,7 +61,7 @@ The live site keeps **one shared copy** of each upstream feed on Cloudflare's ed
 | KMB ETA | ~30 s |
 | TD, ImmD, HKO, cameras, works | ~60 s |
 
-Same rhythm as the board's polling. One city, one cache namespace (`hktraffic-feeds`), `Cache-Control: public`, sized for many concurrent readers without becoming a denial-of-service against government APIs.
+Same rhythm as the board's polling. One city, one cache namespace (`hktraffic-feeds`), `Cache-Control: public`. Many people can read the site at once without overloading government servers.
 
 <details>
 <summary><strong>How the cache fits together (click to expand)</strong></summary>
