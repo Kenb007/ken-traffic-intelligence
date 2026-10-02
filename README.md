@@ -1,43 +1,107 @@
 [繁體中文](README.zh-HK.md)
 
+<div align="center">
+
 # HK Traffic Intelligence
 
-A live map of Hong Kong traffic, drawn from the open feeds the city already publishes.
+**One map. Every open feed Hong Kong already publishes.**
 
-[![Live demo](https://img.shields.io/badge/live_demo-hktraffic.keith--li.workers.dev-0891b2)](https://hktraffic.keith-li.workers.dev)
+See harbour crossings, road speed, cameras, works, border queues, weather, MTR, and KMB — on the same board, updating in real time.
 
-The board is at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). No account, and nothing to install.
+[![Live demo](https://img.shields.io/badge/▶_Open_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
 
-![Hong Kong traffic board on a satellite map, with coloured roads and the live header](docs/board.png)
+No account. No install. Opens in **Traditional Chinese** (Hong Kong written form); **English** sits beside the clock.
 
-It opens in Traditional Chinese, the written Chinese of a Hong Kong notice. English sits beside the clock. The board is for reading the city, and for showing how public feeds become one picture. It does not give driving directions.
+</div>
 
-## Contents
+![Hong Kong traffic board — satellite map, coloured strategic roads, live harbour minutes, and the ops header](docs/board.png)
 
-- [Features](#features)
-- [Quick start](#quick-start)
-- [What you can turn on](#what-you-can-turn-on)
-- [Data sources](#data-sources)
-- [Shared feeds](#shared-feeds)
-- [Development](#development)
-- [Author](#author)
+---
 
-## Features
+## The city already talks. This board listens.
 
-- **Harbour crossings.** The Cross-Harbour Tunnel, the Eastern Harbour Crossing, and the Western Harbour Crossing each show minutes from a real approach road. Green is an ordinary run, amber is a delay that has settled in, and red is a crossing that has turned. Click a reading and the map moves to that approach. The card names the road, the direction, what is nearby, and the minutes to each crossing on that board.
-- **Road speed.** Strategic roads use the Transport Department saturation class: Good, Average, and Bad, coloured `#3DDC97`, `#FFC857`, and `#FF5D73`. Where a segment has no class, the colour falls back to the speed itself: under 30 km/h, 30 to 50, and 50 or faster. The legend keeps the official words and does not relabel those bands. Moving dots follow corridors that have a live speed. They are that speed drawn along the road, and they are removed when the speed layer is off.
-- **Cameras.** Public Transport Department snapshots, including the tunnel mouths. Harbour and tunnel-mouth cameras stay visible while zoomed out. The rest of the city appears as you come closer. A camera card separates the road, direction, nearby place, district, region, lens direction, and camera number, then shows the still.
-- **Works, tunnels, and incidents.** Road works on roads with a limit of 70 km/h or above, the three harbour crossings and Tai Lam Tunnel, and special traffic news that is still open.
-- **Land control points.** Passenger halls at the eight land crossings: residents and visitors, arriving and departing. The vehicle line beside a hall is the live speed on the strategic road that feeds that port. Lo Wu is a passenger crossing. The public file has no private-car queue, so that line stays empty.
-- **Weather.** Every Hong Kong Observatory warning in force. A severe warning is placed where it will be seen. When the sky is quiet, the row still shows the temperature at the Observatory and whether the past hour brought rain.
-- **MTR.** Next-train minutes, destination, and platform are the board MTR publishes. MTR does not publish a train position. The dot walks those minutes back along the track, and the card says which two stations it falls between. Light rail is not on this layer.
-- **KMB.** The time on a stop is the arrival KMB publishes, including a scheduled row. Stops appear once you are zoomed in, near the middle of the map. KMB does not publish the path a bus takes, so the map shows the stop and leaves the road empty of buses.
-- **Intel.** The list ranks what to read first: an open incident, a road that has gone bad, a hall that is very busy, a warning. Hide it and the same items run along the bottom. Show and hide animate.
-- **Basemaps.** Satellite photography, the OSM Bright street map, or OSM Liberty with the buildings stood up. Press buildings again to return to the map you had. In the buildings view, labels and indicators sit under the roofs.
+Hong Kong does not hide its traffic story. Transport Department paints strategic roads. HKeMobility posts harbour minutes and camera stills. Immigration publishes border hall times. The Observatory raises warnings. MTR and KMB publish the next train and the next bus.
 
-## Quick start
+The data is **public**. The problem is **fragmentation** — eight agencies, eight rhythms, eight websites. You cannot *feel* the city in one glance.
 
-You need Node.js 22.
+**HK Traffic Intelligence** fuses those feeds into a single MapLibre canvas: read the crossing you care about, spot the road that just turned red, glance at Lo Wu, check whether the Black Rain signal is up — without opening six tabs.
+
+> This is not a turn-by-turn navigator. It is a **city pulse** for commuters, journalists, students, and anyone who wants to see how open data becomes something you can actually use.
+
+---
+
+## What you get in sixty seconds
+
+| | |
+| --- | --- |
+| **Harbour crossings** | Cross-Harbour, Eastern Harbour, Western Harbour — **minutes from real approach roads**. Green · amber · red. Tap a reading; the map flies to that approach. |
+| **Road speed** | Official TD saturation (**Good · Average · Bad**) on strategic centrelines, with moving dots that match live speed. |
+| **Cameras** | Public TD snapshots — tunnel mouths stay visible when zoomed out; the rest appear as you move in. |
+| **Works · tunnels · incidents** | Fast-road works, toll points, open special traffic news. |
+| **Border control** | Eight land points — passenger halls; vehicle line shows live speed on the road that feeds each port. |
+| **Weather** | Every HKO warning in force; quiet skies still show Observatory temp and rain in the last hour. |
+| **MTR** | Published next-train minutes (position is **estimated** along track — MTR does not ship GPS). |
+| **KMB** | Published ETAs at nearby stops when you zoom in (no published route geometry — stops only). |
+| **Intel strip** | Ranked “read this first”: incidents, bad roads, busy halls, warnings — dock or ticker, with show/hide animation. |
+| **Basemaps** | Satellite · [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) streets · [OSM Liberty](https://github.com/maputnik/osm-liberty) **3D buildings** (labels and markers tuck under the roofs). |
+
+---
+
+## Built so popularity does not punish the sources
+
+**Principle: never hammer other people’s servers.**
+
+The live site keeps **one shared copy** of each upstream feed on Cloudflare’s edge. While that copy is fresh, the next ten thousand visitors read the cache — not Transport Department again.
+
+| Feed family | Typical refresh |
+| --- | --- |
+| MTR next train | ~15 s |
+| KMB ETA | ~30 s |
+| TD · ImmD · HKO · cameras · works | ~60 s |
+
+Same rhythm as the board’s polling. One city, one cache namespace (`hktraffic-feeds`), **`Cache-Control: public`** — designed for **10k+ concurrent readers** without becoming a denial-of-service against government APIs.
+
+<details>
+<summary><strong>How the cache fits together (click to expand)</strong></summary>
+
+```mermaid
+flowchart LR
+  subgraph Visitors
+    U1[User 1]
+    U2[User N]
+  end
+  subgraph Edge["Cloudflare Worker + shared cache"]
+    W[HK Traffic Intelligence]
+    C[(Per-city cache)]
+  end
+  subgraph Open_data["Hong Kong open feeds"]
+    TD[Transport Dept]
+    HKO[Observatory]
+    IMMD[Immigration]
+    MTR[MTR]
+    KMB[KMB]
+  end
+  U1 --> W
+  U2 --> W
+  W --> C
+  C -->|miss, then store| W
+  W -->|only when stale| TD
+  W --> HKO
+  W --> IMMD
+  W --> MTR
+  W --> KMB
+```
+
+</details>
+
+---
+
+## Try it locally
+
+**Node.js 22**
 
 ```bash
 git clone https://github.com/keithligh/hk-traffic-intelligence.git
@@ -46,66 +110,60 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
+Open **[http://127.0.0.1:4317](http://127.0.0.1:4317)**.
 
-## What you can turn on
+### Dock controls (bottom bar)
 
-The dock along the bottom switches the ground and the layers.
-
-| Control | What it draws |
+| Control | Layer |
 | --- | --- |
-| Satellite | Esri photography. The picture stays flat so the coloured roads stay on the streets. |
-| Streets | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style), served by OpenFreeMap. |
-| Buildings | [OSM Liberty](https://github.com/maputnik/osm-liberty), with the buildings stood up. Roofs cover the markers. |
-| Speed | Strategic-road colour, and the dots that move with that speed. |
-| Cameras | Public snapshots. |
-| Works | Road works on fast roads. |
-| Tunnels | Toll points for the harbour crossings and Tai Lam Tunnel. |
-| Incidents | Open special traffic news. |
-| Boundary | The eight land control points. |
-| MTR | Published next trains, and a position estimated from those minutes. |
-| KMB | Published arrivals at nearby stops. |
+| **Satellite** | Esri imagery — flat so coloured roads sit on the pavement |
+| **Streets** | OSM Bright via [OpenFreeMap](https://openfreemap.org) |
+| **Buildings** | OSM Liberty 3D — press again to return to your previous basemap |
+| **Speed · Cameras · Works · Tunnels · Incidents · Boundary · MTR · KMB** | Toggle data overlays |
 
-## Data sources
+### Dev commands
 
-Every number comes from an open feed Hong Kong had already published.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Next.js dev server (4317) |
+| `npm run lint` | ESLint |
+| `npm run dev:vinext` | Cloudflare-oriented dev (4318) |
+| `npm run deploy:vinext` | Deploy Worker (needs Cloudflare credentials) |
 
-Road geometry is the Transport Department strategic centreline, stored in Hong Kong 1980 grid coordinates. The Lands Department correction for the whole territory is 8.8 arcseconds of longitude added, and 5.5 arcseconds of latitude subtracted. After that, the line lies on the road.
+**Failure modes for QA:** `?feed=down` (speed feed dead) · `?map=down` (header stays, map absent).
+
+**Stack:** Next.js · React · MapLibre GL · Tailwind CSS · TypeScript · `@vinext/cloudflare` on Workers.
+
+---
+
+## Where every number comes from
+
+Road geometry: TD **strategic centreline** (Hong Kong 1980 grid), shifted by Lands Department territory correction (**+8.8″ lon, −5.5″ lat**) so lines land on the pavement.
 
 | On the board | Open data |
 | --- | --- |
-| Which strategic roads are moving, and the official colour | [Traffic data of strategic and major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads), classed on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
-| The shape of those roads | [Road Network, second generation](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) |
-| Minutes for the harbour crossings | Journey-time boards on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
-| Cameras, in English and Traditional Chinese | Snapshot layers on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
-| Where a fast road is opened up | Road works on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
-| Where a tunnel is | Toll points on [HKeMobility](https://www.hkemobility.gov.hk/en/) |
-| What has just gone wrong | [Special traffic news](https://data.gov.hk/en-data/dataset/hk-td-tis_19-special-traffic-news-v2) |
-| Detectors on urban lampposts | [Smart lamppost traffic detectors](https://data.gov.hk/en-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
-| Passenger halls at the land control points | Immigration Department, [land boundary control point waiting time](https://data.gov.hk/en-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
-| Next MTR train | [Next train](https://data.gov.hk/en-data/dataset/mtr-data2-nexttrain-data). Station locations are the Lands Department [indoor station footprints](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map). |
-| Next KMB arrival | [KMB and LWB estimated time of arrival](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
-| Warnings, temperature, and rain | Hong Kong Observatory [warning summary](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en) and [current weather report](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en) |
-| Street map and buildings | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) and [OSM Liberty](https://github.com/maputnik/osm-liberty), served by [OpenFreeMap](https://openfreemap.org) from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and [OpenMapTiles](https://openmaptiles.org/) |
-| Satellite photograph | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer). Imagery © Esri |
+| Strategic road speed & official colour | [Traffic data — strategic & major roads](https://data.gov.hk/en-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads) · [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| Road shapes | [Road Network v2](https://data.gov.hk/en-data/dataset/hk-td-tis_15-road-network-v2) |
+| Harbour minutes | Journey-time boards · [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| Cameras (EN + 繁) | Snapshot layers · [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| Road works · toll points | [HKeMobility](https://www.hkemobility.gov.hk/en/) |
+| Special traffic news | [Dataset](https://data.gov.hk/en-data/dataset/hk-td-tis_19-special-traffic-news-v2) |
+| Smart lamppost detectors | [Dataset](https://data.gov.hk/en-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
+| Border waiting times | [ImmD land BCP](https://data.gov.hk/en-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
+| MTR next train | [Dataset](https://data.gov.hk/en-data/dataset/mtr-data2-nexttrain-data) · station footprints [CSDI](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map) |
+| KMB ETA | [eTA Bus API](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
+| Warnings · weather | [HKO warnsum](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en) · [rhrread](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en) |
+| Vector basemaps | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) · [OSM Liberty](https://github.com/maputnik/osm-liberty) · [OpenFreeMap](https://openfreemap.org) · © OpenStreetMap |
+| Satellite | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer) |
 
-## Shared feeds
+---
 
-The live site keeps one shared copy of each upstream feed and serves that copy to visitors. A new visitor does not cause a new call to a department server while that copy is still fresh. The copy is per city on Cloudflare’s network, and it expires on the same rhythm as the board polls: about 15 seconds for MTR, 30 seconds for KMB, and about a minute for the other feeds.
+## Why this repo exists
 
-## Development
+Government open data is only half the story. The other half is **craft**: geodesy that matches Hong Kong’s grid, colours that respect TD’s legend, Chinese copy that reads like a notice, edge caching that scales without guilt, and a map that still works when one feed drops.
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Next.js on [http://127.0.0.1:4317](http://127.0.0.1:4317) |
-| `npm run lint` | ESLint |
-| `npm run dev:vinext` | The Cloudflare-oriented dev server on port 4318 |
-| `npm run deploy:vinext` | Deploy the worker, when Cloudflare credentials are available |
+**[Keith Li](https://www.linkedin.com/in/keithlihk)** built this board for **Agentic Engineer** classes, public talks, and guest lectures — to show how agents (and engineers) can turn scattered APIs into something a human loves to open.
 
-Add `?feed=down` to see the screen when the speed feed fails. Add `?map=down` and the header stays up while the map is absent.
+**Created by:** [Keith Li](https://www.linkedin.com/in/keithlihk) · [GitHub](https://github.com/keithligh)
 
-The app is Next.js, React, MapLibre GL, and Tailwind CSS, served as a Cloudflare Worker.
-
-## Author
-
-[Keith Li](https://www.linkedin.com/in/keithlihk). This board is used in Agentic Engineer classes, in public talks, and in guest lectures. The data was already public. The work is to make those feeds one city a person can read.
+If this saves you a crossing or teaches one student what “open” really means, **star the repo** and share the live link.
