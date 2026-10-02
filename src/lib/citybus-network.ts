@@ -1,4 +1,5 @@
 import networkFile from "../../data/citybus-network.json"
+import { nearestPoints } from "@/lib/nearest"
 
 type StopRecord = { tc: string; en: string; lng: number; lat: number; routes: string[] }
 type NetworkFile = { stops: Record<string, StopRecord> }
@@ -17,13 +18,5 @@ export function citybusStop(id: string): StopRecord | null {
 }
 
 export function nearestCitybusStops(lng: number, lat: number, limit: number): CitybusStopPoint[] {
-  const cos = Math.cos((lat * Math.PI) / 180)
-  const ranked = stopList
-    .map((stop) => {
-      const x = (stop.lng - lng) * cos
-      const y = stop.lat - lat
-      return { stop, distance: x * x + y * y }
-    })
-    .sort((a, b) => a.distance - b.distance)
-  return ranked.slice(0, limit).map((item) => item.stop)
+  return nearestPoints(stopList, lng, lat, limit)
 }

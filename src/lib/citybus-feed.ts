@@ -1,4 +1,5 @@
 import { citybusStop, nearestCitybusStops } from "@/lib/citybus-network"
+import { pool } from "@/lib/pool"
 import { fetchUpstream } from "@/lib/upstream"
 import type { CitybusCall, CitybusResponse, CitybusStopBoard } from "@/lib/types"
 
@@ -130,17 +131,4 @@ async function fetchEta(stopId: string, route: string): Promise<EtaRow[] | null>
   } catch {
     return null
   }
-}
-
-async function pool<T>(items: T[], limit: number, task: (item: T) => Promise<void>) {
-  let index = 0
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (index < items.length) {
-      const current = items[index]
-      index += 1
-      if (current === undefined) return
-      await task(current)
-    }
-  })
-  await Promise.all(workers)
 }

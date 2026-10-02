@@ -2,7 +2,7 @@ import routesFile from "../../data/light-rail-routes.json"
 import stationsFile from "../../data/light-rail-stations.json"
 import type { EstimateRoute, GeoPoint } from "@/lib/mtr-estimate"
 
-type StationRecord = { id: string; tc: string; en: string; lng: number; lat: number }
+type StationRecord = { id: string; tc: string; en: string; lng: number; lat: number; aliases?: string[] }
 type RoutesFile = { color: string; routes: EstimateRoute[] }
 
 const stations = (stationsFile as { stations: StationRecord[] }).stations
@@ -13,9 +13,8 @@ const byName = new Map<string, string>()
 for (const station of stations) {
   byName.set(station.tc.replace(/\s/g, ""), station.id)
   byName.set(station.en.toLowerCase(), station.id)
+  for (const alias of station.aliases ?? []) byName.set(alias.replace(/\s/g, ""), station.id)
 }
-byName.set("天水圍循環綫", "430")
-byName.set("天水圍循環線", "430")
 
 export function lrtRoutes(): EstimateRoute[] {
   return routes.routes

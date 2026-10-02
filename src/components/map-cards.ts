@@ -208,27 +208,12 @@ export function lrtTrainPopup(properties: GeoJSON.GeoJsonProperties, snapshot: L
   return card.root
 }
 
-export function citybusStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.citybus
-  const card = openCard(title)
+function busStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages, title: string, empty: string): HTMLElement {
+  const heading = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || title
+  const card = openCard(heading)
   const calls = kmbBoard(properties)
   if (calls.length === 0) {
-    card.body.append(paragraph("city-card-copy", m.citybusNone))
-    return card.root
-  }
-  const board = document.createElement("div")
-  board.className = "city-card-board"
-  for (const call of calls) board.append(kmbCall({ ...call, company: "KMB" }, m))
-  card.body.append(board)
-  return card.root
-}
-
-export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
-  const title = readablePlace(displayText(m.locale, textProp(properties, "nameTc"), textProp(properties, "nameEn"))) || m.kmb
-  const card = openCard(title)
-  const calls = kmbBoard(properties)
-  if (calls.length === 0) {
-    card.body.append(paragraph("city-card-copy", m.kmbNone))
+    card.body.append(paragraph("city-card-copy", empty))
     return card.root
   }
   const board = document.createElement("div")
@@ -236,6 +221,14 @@ export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages)
   for (const call of calls) board.append(kmbCall(call, m))
   card.body.append(board)
   return card.root
+}
+
+export function citybusStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  return busStopPopup(properties, m, m.citybus, m.citybusNone)
+}
+
+export function kmbStopPopup(properties: GeoJSON.GeoJsonProperties, m: Messages): HTMLElement {
+  return busStopPopup(properties, m, m.kmb, m.kmbNone)
 }
 
 function kmbCall(call: KmbBoardCall, m: Messages): HTMLElement {

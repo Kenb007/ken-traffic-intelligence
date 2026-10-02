@@ -1,4 +1,5 @@
 import { carryArrivalClock, estimateTrains, type TrainObservation } from "@/lib/mtr-estimate"
+import { pool } from "@/lib/pool"
 import { fetchUpstream } from "@/lib/upstream"
 import { mtrQueries, networkRoutes, stationPoint } from "@/lib/mtr-network"
 import { readSchedule } from "@/lib/mtr-schedule"
@@ -94,19 +95,4 @@ async function fetchPair(line: string, station: string) {
     failures += 1
     return null
   }
-}
-
-async function pool<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
-  let cursor = 0
-  async function run(): Promise<void> {
-    for (;;) {
-      const index = cursor
-      cursor += 1
-      if (index >= items.length) return
-      const item = items[index]
-      if (item === undefined) return
-      await worker(item)
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => run()))
 }
