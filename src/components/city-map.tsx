@@ -35,6 +35,7 @@ import {
 import { displayText, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint } from "@/lib/mtr-network"
 import { lrtColor, lrtPoint, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
+import { beginPush, endPush, type PushGate } from "@/lib/frame-push"
 import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
 import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import type { ApproachPoint, Basemap, CitybusResponse, Corridor, HarbourJourney, KmbResponse, LrtResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
@@ -58,6 +59,12 @@ const OPENING = {
 
 function narrowScreen(): boolean {
   return window.matchMedia("(max-width: 760px)").matches
+}
+
+function iosWebKit(): boolean {
+  const agent = navigator.userAgent
+  const touchMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1
+  return /iPhone|iPad|iPod/.test(agent) || touchMac
 }
 
 function mapPixelRatio(): number {
@@ -402,7 +409,24 @@ export function CityMap({
     let frame = 0
     let last = performance.now()
     let drewParticles = false
-    const tick = (now: number) => {
+    // iOS Safari stops requestAnimationFrame on a WebGL page it considers idle,
+    // and a GeoJSON push every frame aborts the tile reload before the dot moves.
+    const ios = iosWebKit()
+    const pushGap = ios ? 140 : 0
+    const gates: Record<"particles" | "mtr" | "lrt", PushGate> = {
+      particles: { busy: false, at: 0 },
+      mtr: { busy: false, at: 0 },
+      lrt: { busy: false, at: 0 },
+    }
+    let keep: HTMLDivElement | null = null
+    if (ios) {
+      keep = document.createElement("div")
+      keep.setAttribute("aria-hidden", "true")
+      keep.className = "ios-frame-keep"
+      document.body.appendChild(keep)
+    }
+    const step = () => {
+      const now = performance.now()
       const elapsed = Math.max(0, (now - last) / 1000)
       last = now
       const dt = Math.min(0.05, elapsed)
@@ -411,7 +435,9 @@ export function CityMap({
         const particles = geoJsonSource(current, "particles")
         const particlesMoving = layerShown(current, "traffic-particles") && linesRef.current.length > 0 && particlesRef.current.length > 0
         if (particles && particlesMoving) {
-          stepParticles(current, linesRef.current, particlesRef.current, dt)
+          const moving = particleCollection(linesRef.current, particlesRef.current, dt)
+          if (ios) pushMovingSource(particles, gates.particles, moving, now, pushGap)
+          else particles.setData(moving)
           drewParticles = true
         } else if (particles && drewParticles) {
           particles.setData(emptyCollection())
@@ -421,26 +447,35 @@ export function CityMap({
           const pulse = 0.15 + 0.2 * (0.5 + 0.5 * Math.sin(now / 320))
           current.setPaintProperty("control-points-ring", "circle-opacity", pulse)
         }
+        const trainStep = Math.min(1, elapsed)
         const trains = geoJsonSource(current, "mtr-trains")
         if (trains && layerShown(current, "mtr-trains")) {
-          const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          if (!reduced) runsRef.current = advanceRuns(runsRef.current, Math.min(1, elapsed), stationPoint)
-          trains.setData(runCollection(runsRef.current, stationPoint))
+          runsRef.current = advanceRuns(runsRef.current, trainStep, stationPoint)
+          const moving = runCollection(runsRef.current, stationPoint)
+          if (ios) pushMovingSource(trains, gates.mtr, moving, now, pushGap)
+          else trains.setData(moving)
         }
         const lightRail = geoJsonSource(current, "lrt-trains")
         if (lightRail && layerShown(current, "lrt-trains")) {
-          const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          if (!reduced) lrtRunsRef.current = advanceRuns(lrtRunsRef.current, Math.min(1, elapsed), lrtPoint)
-          lightRail.setData(runCollection(lrtRunsRef.current, lrtPoint))
+          lrtRunsRef.current = advanceRuns(lrtRunsRef.current, trainStep, lrtPoint)
+          const moving = runCollection(lrtRunsRef.current, lrtPoint)
+          if (ios) pushMovingSource(lightRail, gates.lrt, moving, now, pushGap)
+          else lightRail.setData(moving)
         }
       }
+    }
+    const tick = () => {
+      step()
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
+    const pulse = ios ? window.setInterval(step, 140) : 0
 
     return () => {
       active = false
       cancelAnimationFrame(frame)
+      if (pulse) window.clearInterval(pulse)
+      keep?.remove()
       readyRef.current = false
       if (!removed) {
         removed = true
@@ -789,9 +824,7 @@ function layerShown(map: Map, layerId: string): boolean {
   return Boolean(map.getLayer(layerId)) && map.getLayoutProperty(layerId, "visibility") !== "none"
 }
 
-function stepParticles(map: Map, lines: AnimLine[], particles: Particle[], dt: number) {
-  const source = geoJsonSource(map, "particles")
-  if (!source || lines.length === 0 || particles.length === 0) return
+function particleCollection(lines: AnimLine[], particles: Particle[], dt: number): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = []
   for (const particle of particles) {
     const line = lines[particle.line]
@@ -804,7 +837,26 @@ function stepParticles(map: Map, lines: AnimLine[], particles: Particle[], dt: n
       geometry: { type: "Point", coordinates: pointAlong(line, particle.t) },
     })
   }
-  source.setData({ type: "FeatureCollection", features })
+  return { type: "FeatureCollection", features }
+}
+
+function pushMovingSource(
+  source: GeoJSONSource,
+  gate: PushGate,
+  data: GeoJSON.FeatureCollection,
+  now: number,
+  gapMs: number,
+): void {
+  if (!source.loaded()) return
+  if (!beginPush(gate, now, gapMs)) return
+  try {
+    source.setData(data).then(
+      () => endPush(gate),
+      () => endPush(gate),
+    )
+  } catch {
+    endPush(gate)
+  }
 }
 
 function pointAlong(line: AnimLine, t: number): [number, number] {
