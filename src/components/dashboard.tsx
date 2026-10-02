@@ -9,6 +9,7 @@ import { useLiveJson } from "@/components/use-live-json"
 import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
 import { KMB_MIN_ZOOM, KMB_POLL_MS, PLACE_POLL_MS } from "@/lib/kmb-view"
+import { PICTURE_POLL_MS } from "@/lib/picture"
 import { mergePlaceArrivals } from "@/lib/place-arrivals"
 import { hkoLang } from "@/lib/i18n"
 import type {
@@ -60,7 +61,7 @@ export function Dashboard() {
   const [ground, setGround] = useState<Exclude<Basemap, "buildings">>("satellite")
   const trafficLive = useLiveJson<TrafficResponse>(forceDown ? "/api/traffic?simulate=fail" : "/api/traffic")
   const approachesLive = useLiveJson<ApproachesResponse>("/api/approaches")
-  const pictureLive = useLiveJson<PictureResponse>("/api/picture")
+  const pictureLive = useLiveJson<PictureResponse>("/api/picture", PICTURE_POLL_MS)
   const incidentsLive = useLiveJson<IncidentsResponse>("/api/incidents")
   const controlLive = useLiveJson<ControlPointsResponse>("/api/control-points")
   const warningsLive = useLiveJson<WarningsResponse>(`/api/warnings?lang=${hkoLang(locale)}`)
