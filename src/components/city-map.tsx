@@ -36,8 +36,8 @@ import {
 import { stopPlate, stopPlateKey, type StopPlate } from "@/lib/stop-plate"
 import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import { displayText, type Locale, type Messages } from "@/lib/i18n"
-import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint } from "@/lib/mtr-network"
-import { lrtColor, lrtPoint, lrtRoutesThrough, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
+import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint, stationRecord } from "@/lib/mtr-network"
+import { lrtColor, lrtPoint, lrtRoutesThrough, lrtStation, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
 import { beginPush, endPush, type PushGate } from "@/lib/frame-push"
 import { advanceRuns, mergeRuns, runCollection, runsFromTrains, type TrainRun } from "@/lib/mtr-run"
 import type { ApproachPoint, Basemap, CitybusResponse, Corridor, HarbourJourney, KmbResponse, LrtResponse, MtrResponse, PictureResponse, SpeedBand, WatchLayer, WatchLayers } from "@/lib/types"
@@ -173,7 +173,7 @@ const FLYOVER = [
   { center: [114.178, 22.292] as [number, number], zoom: 13.05, pitch: 52, bearing: -12, duration: 7200, curve: 1.2 },
 ]
 
-const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-station-label", "mtr-trains", "kmb-stops", "kmb-stop-label", "lrt-stations", "lrt-station-label", "lrt-trains", "citybus-stops", "citybus-stop-label"]
+const WATCH_HITS = ["approach-times", "incidents", "cameras-harbour", "cameras-portal", "cameras-city", "works", "tolls-portal", "tolls-overview", "control-points", "mtr-stations", "mtr-station-label", "mtr-trains", "mtr-train-label", "kmb-stops", "kmb-stop-label", "lrt-stations", "lrt-station-label", "lrt-trains", "lrt-train-label", "citybus-stops", "citybus-stop-label"]
 
 type AnimLine = {
   coords: [number, number][]
@@ -230,6 +230,7 @@ export function CityMap({
 }: CityMapProps) {
   const { locale, messages } = useI18n()
   const copyRef = useRef(messages)
+  const localeRef = useRef(locale)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const linesRef = useRef<AnimLine[]>([])
@@ -262,7 +263,8 @@ export function CityMap({
 
   useEffect(() => {
     copyRef.current = messages
-  }, [messages])
+    localeRef.current = locale
+  }, [locale, messages])
 
   useEffect(() => {
     corridorsRef.current = corridors
@@ -453,14 +455,14 @@ export function CityMap({
         const trains = geoJsonSource(current, "mtr-trains")
         if (trains && layerShown(current, "mtr-trains")) {
           runsRef.current = advanceRuns(runsRef.current, trainStep, stationPoint)
-          const moving = runCollection(runsRef.current, stationPoint)
+          const moving = withTrainMarks(current, runCollection(runsRef.current, stationPoint), localeRef.current, "mtr")
           if (ios) pushMovingSource(trains, gates.mtr, moving, now, pushGap)
           else trains.setData(moving)
         }
         const lightRail = geoJsonSource(current, "lrt-trains")
         if (lightRail && layerShown(current, "lrt-trains")) {
           lrtRunsRef.current = advanceRuns(lrtRunsRef.current, trainStep, lrtPoint)
-          const moving = runCollection(lrtRunsRef.current, lrtPoint)
+          const moving = withTrainMarks(current, runCollection(lrtRunsRef.current, lrtPoint), localeRef.current, "lrt")
           if (ios) pushMovingSource(lightRail, gates.lrt, moving, now, pushGap)
           else lightRail.setData(moving)
         }
@@ -743,6 +745,26 @@ function placeStopPlate(map: Map, name: string, routes: string[], stroke: string
   const icon = stopPlateIconId(plate, stroke)
   ensureStopPlate(map, icon, plate, stroke)
   return map.hasImage(icon) ? icon : ""
+}
+
+function withTrainMarks(
+  map: Map,
+  collection: GeoJSON.FeatureCollection,
+  locale: Locale,
+  mode: "mtr" | "lrt",
+): GeoJSON.FeatureCollection {
+  for (const feature of collection.features) {
+    const properties = feature.properties
+    if (!properties) continue
+    const dest = typeof properties.dest === "string" ? properties.dest : ""
+    const record = mode === "mtr" ? stationRecord(dest) : lrtStation(dest)
+    const name = record ? readablePlace(displayText(locale, record.tc, record.en)) : dest
+    const route = mode === "lrt" && typeof properties.line === "string" ? properties.line : ""
+    const stroke = typeof properties.color === "string" && properties.color ? properties.color : "#f7fbff"
+    const icon = placeStopPlate(map, name, route ? [route] : [], stroke)
+    if (icon) properties.icon = icon
+  }
+  return collection
 }
 
 function ensureStopPlate(map: Map, id: string, plate: StopPlate, stroke: string) {
@@ -1114,11 +1136,13 @@ function bindOverlayClicks(
     "mtr-stations": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
     "mtr-station-label": (properties) => stationPopup(properties, mtrRef.current, copyRef.current),
     "mtr-trains": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
+    "mtr-train-label": (properties) => trainPopup(properties, mtrRef.current, copyRef.current),
     "kmb-stops": kmbStopPopup,
     "kmb-stop-label": kmbStopPopup,
     "lrt-stations": (properties) => lrtStationPopup(properties, lrtRef.current, copyRef.current),
     "lrt-station-label": (properties) => lrtStationPopup(properties, lrtRef.current, copyRef.current),
     "lrt-trains": (properties) => lrtTrainPopup(properties, lrtRef.current, copyRef.current),
+    "lrt-train-label": (properties) => lrtTrainPopup(properties, lrtRef.current, copyRef.current),
     "citybus-stops": citybusStopPopup,
     "citybus-stop-label": citybusStopPopup,
   }
@@ -1297,6 +1321,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
+  addStopLabel(map, "mtr-train-label", "mtr-trains", 15, before)
   addOverlay(map, {
     id: "kmb-stops",
     type: "circle",
@@ -1358,6 +1383,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
+  addStopLabel(map, "lrt-train-label", "lrt-trains", 15, before)
   addOverlay(map, {
     id: "citybus-stops",
     type: "circle",
@@ -1545,11 +1571,11 @@ function layerIds(kind: WatchLayer): string[] {
     case "control":
       return ["control-points", "control-points-ring"]
     case "mtr":
-      return ["mtr-track-casing", "mtr-track", "mtr-stations", "mtr-station-label", "mtr-trains"]
+      return ["mtr-track-casing", "mtr-track", "mtr-stations", "mtr-station-label", "mtr-trains", "mtr-train-label"]
     case "kmb":
       return ["kmb-stops", "kmb-stop-label"]
     case "lrt":
-      return ["lrt-track-casing", "lrt-track", "lrt-stations", "lrt-station-label", "lrt-trains"]
+      return ["lrt-track-casing", "lrt-track", "lrt-stations", "lrt-station-label", "lrt-trains", "lrt-train-label"]
     case "citybus":
       return ["citybus-stops", "citybus-stop-label"]
     default: {
