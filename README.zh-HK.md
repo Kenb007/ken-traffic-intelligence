@@ -1,8 +1,8 @@
 [English](README.md)
 
-# HK Traffic Intelligence
+# 香港智慧城市交通情報網
 
-這是一個香港智慧城市儀表板。它把即時城市集中在同一幅地圖上：過海隧道、策略性道路、港鐵和輕鐵列車、九巴、龍運和城巴到站時間、陸路口岸輪候，以及天文台天氣。
+香港智慧城市交通情報網把即時城市集中在同一幅地圖上：過海隧道、策略性道路、港鐵和輕鐵列車、九巴、龍運和城巴到站時間、陸路口岸輪候，以及天文台天氣。
 
 這個儀表板之所以做得到，是因為香港政府把這些資料以開放數據形式公布。運輸署、入境事務處、天文台，以及負責 HKeMobility 和 DATA.GOV.HK 的團隊，向公眾發放這些數字，港鐵、九巴、龍運和城巴亦公布各自的班次資料，而這個網站只是把它們放在一起閱讀。
 
@@ -14,7 +14,7 @@
 
 ![香港交通地圖：衛星底圖、著色道路，以及頂端的實時讀數](docs/board.png)
 
-如果這個智慧城市儀表板幫你選了較好的過海時間，或者你希望更多人看見這個項目，請在 GitHub [按 star](https://github.com/keithligh/hk-traffic-intelligence)。Star 會讓下一位讀者找到這個項目，也是支持它最簡單的方法。
+如果香港智慧城市交通情報網幫你選了較好的過海時間，或者你希望更多人看見它，請在 GitHub [按 star](https://github.com/keithligh/hk-traffic-intelligence)。Star 會讓下一位讀者找到它，也是支持它最簡單的方法。
 
 ## 這個網站做什麼
 
@@ -36,7 +36,7 @@
 
 ## 開源
 
-這個智慧城市儀表板的程式以 [MIT License](LICENSE) 開源。歡迎複製、在本機運行、修改和 fork。如果你 fork 或重用這些程式，請保留版權聲明，並致謝 [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) 和 [Keith Li](https://github.com/keithligh)。
+香港智慧城市交通情報網的程式以 [MIT License](LICENSE) 開源。歡迎複製、在本機運行、修改和 fork。如果你 fork 或重用這些程式，請保留版權聲明，並致謝 [香港智慧城市交通情報網](https://github.com/keithligh/hk-traffic-intelligence) 和 [Keith Li](https://github.com/keithligh)。
 
 需要 Node.js 22。
 
@@ -87,8 +87,8 @@ npm run dev
 
 ## 作者
 
-[Keith Li](https://www.linkedin.com/in/keithlihk) 製作這個智慧城市儀表板，用於 Agentic Engineer 的課堂、公開演講和大學客席講座。儀表板之所以做得到，是因為運輸署、入境事務處、香港天文台、港鐵、九巴、龍運、城巴，以及負責 HKeMobility 的團隊，已經把這些數字向公眾公布。
+[Keith Li](https://www.linkedin.com/in/keithlihk) 製作香港智慧城市交通情報網，用於 Agentic Engineer 的課堂、公開演講和大學客席講座。它之所以做得到，是因為運輸署、入境事務處、香港天文台、港鐵、九巴、龍運、城巴，以及負責 HKeMobility 的團隊，已經把這些數字向公眾公布。
 
-如果你用過這個儀表板，請 [按 star](https://github.com/keithligh/hk-traffic-intelligence)。下一位讀者就是這樣找到這個智慧城市項目的。
+如果你用過香港智慧城市交通情報網，請 [按 star](https://github.com/keithligh/hk-traffic-intelligence)。下一位讀者就是這樣找到它的。
 
 Keith 的 [LinkedIn](https://www.linkedin.com/in/keithlihk) 和 [GitHub](https://github.com/keithligh)。
