@@ -4,6 +4,8 @@
 
 This is a Hong Kong Smart City map. It shows the live city in one place: the harbour crossings, the strategic roads, MTR and Light Rail trains, KMB, Long Win and Citybus arrivals, the land boundary waits, and Observatory weather.
 
+This map is possible because the Hong Kong Government publishes these feeds as open data. The Transport Department, the Immigration Department, the Observatory, and the teams behind HKeMobility and DATA.GOV.HK release the figures to the public, alongside MTR, KMB, Long Win, and Citybus, and this site simply reads them together.
+
 Open it at [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev). There is no account to create and nothing to install. The site opens in Traditional Chinese as written in Hong Kong, with English beside the clock.
 
 [![Live demo](https://img.shields.io/badge/▶_Open_the_map-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
@@ -18,9 +20,7 @@ If this Smart City map helped you pick a better time to cross the harbour, or yo
 
 The site answers a small set of practical questions: how long the three harbour crossings take right now, whether the road you plan to use is running well, whether the boundary hall you plan to use is busy, whether an Observatory warning is in force, and when the next train or bus actually comes.
 
-It does not plan driving routes. It reads the figures that public bodies already publish and places them side by side, so the harbour, the roads, the boundary, the weather, and public transport can be weighed together.
-
-Those figures come from the Transport Department, HKeMobility, the Immigration Department, the Observatory, MTR, KMB, Long Win, and Citybus. The map exists only because these organisations already release their numbers to the public.
+It does not plan driving routes. It reads the figures that public bodies already publish and places them side by side, so the harbour, the roads, the boundary, the weather, and public transport can be weighed together. The source behind each part of the map is listed further down.
 
 ## What you can see on the map
 
