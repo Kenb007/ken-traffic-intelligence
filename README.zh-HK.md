@@ -8,17 +8,17 @@
 
 [![實時示範](https://img.shields.io/badge/▶_開啟_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 
-儀表板在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。
+網址：[hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
 
-儀表板毋須帳戶，亦毋須安裝。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁。
+毋須帳戶，亦毋須安裝。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁。
 
 </div>
 
-![香港交通儀表板：衛星地圖、著色道路，以及頂端的實時讀數](docs/board.png)
+![香港交通地圖：衛星底圖、著色道路，以及頂端的實時讀數](docs/board.png)
 
 ---
 
@@ -28,7 +28,7 @@
 
 難處在分散：這些數據分別在不同網站更新，也不涵蓋 [DATA.GOV.HK](https://data.gov.hk) 上的每一個數據集。本項目把畫面上用到的來源合成一幅 MapLibre 地圖，方便讀過海時間、擠塞路段、羅湖大堂或生效中的警告，而毋須同時開六個分頁。
 
-**不提供行車路線。** 儀表板用來讀一座城市，也用來說明公開數據怎樣變成同一幅畫面。
+**不提供行車路線。** 這個網站用來讀一座城市，也用來說明公開數據怎樣變成同一幅畫面。
 
 ---
 
@@ -61,7 +61,7 @@
 | 九巴到站 | ~30 秒 |
 | 運輸署、入境處、天文台、快拍、工程 | ~60 秒 |
 
-有效時間與儀表板的更新節奏一致。按 Cloudflare 城市存放（`hktraffic-feeds`），`Cache-Control: public`，供大量同時在線讀者使用，而不對政府 API 造成拒絕服務。
+有效時間與畫面的更新節奏一致。按 Cloudflare 城市存放（`hktraffic-feeds`），`Cache-Control: public`，供大量同時在線讀者使用，而不對政府 API 造成拒絕服務。
 
 <details>
 <summary><strong>快取如何配合（按此開啟）</strong></summary>
@@ -159,6 +159,6 @@ npm run dev
 
 ## 作者
 
-[Keith Li](https://www.linkedin.com/in/keithlihk)。這個儀表板用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的城市。
+[Keith Li](https://www.linkedin.com/in/keithlihk)。這個項目用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的城市。
 
 **製作：** [Keith Li](https://www.linkedin.com/in/keithlihk) / [GitHub](https://github.com/keithligh)
