@@ -1,109 +1,43 @@
 [English](README.md)
 
-<div align="center">
-
 # HK Traffic Intelligence
 
-香港 **智慧城市（Smart City）** 的實時交通地圖。畫面上的數字，來自運輸署、HKeMobility、入境事務處、天文台、港鐵及九巴等已公布的開放數據。
+香港推動智慧城市已有多年。路上有車速、過海隧道有行車時間、隧道口有快拍、港鐵會告訴你下一班車還有多久。這些資料大多已經公開，只是分散在不同的政府網站。你要逐個開啟，才勉強拼出城市現在的樣子。
+
+這個項目把這些資料放在同一幅實時地圖上。你可以查看過海時間、哪些策略性道路慢了下來、快拍畫面、天氣警告，以及附近九巴的到站時間，而不必同時開著六個分頁。它不提供行車路線。它的用途，是讓人讀懂這座城市，也讓人看見香港的開放數據集合在一起時是什麼樣子。
+
+網站在 [hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。不需要帳戶。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁邊。
 
 [![實時示範](https://img.shields.io/badge/▶_開啟_live_board-hktraffic.keith--li.workers.dev-0891b2?style=for-the-badge)](https://hktraffic.keith-li.workers.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 
-網址：[hktraffic.keith-li.workers.dev](https://hktraffic.keith-li.workers.dev)。
-
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?style=flat-square)](https://maplibre.org/)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
-
-開源項目（[MIT](LICENSE)）。可直接開啟公開網址，亦可自行安裝。歡迎 fork；請保留對本項目的致謝。
-
-毋須帳戶。畫面以繁體中文開啟，用的是香港通告的書面中文；英文在時鐘旁。
-
-</div>
-
 ![香港交通地圖：衛星底圖、著色道路，以及頂端的實時讀數](docs/board.png)
 
----
+如果你覺得這幅地圖有用，請在 GitHub [按 star](https://github.com/keithligh/hk-traffic-intelligence)。Star 會讓更多人發現這個開源的香港智慧城市地圖，也是支持這個項目最直接的方法。
 
-## 這是什麼
+## 畫面上有什麼
 
-運輸署為策略性道路提供車速與飽和等級；HKeMobility 公布過海分鐘與快拍；入境事務處公布陸路管制站輪候；天文台公布生效警告；港鐵與九巴公布下一班車。數字本來就是公開的。
+紅磡海底隧道、東區海底隧道和西區海底隧道各自顯示分鐘，分鐘來自真實的進路。綠色是平常的行程，黃色是已經形成的延誤，紅色是這條過海路已經變了。點一下讀數，地圖就移到那條進路。
 
-難處在分散：這些數據分別在不同網站更新，也不涵蓋 [DATA.GOV.HK](https://data.gov.hk) 上的每一個數據集。本項目把畫面上用到的來源合成一幅 MapLibre 地圖，方便讀過海時間、擠塞路段、羅湖大堂或生效中的警告，而毋須同時開六個分頁。
+策略性道路用運輸署的飽和等級著色：暢順、緩慢、擠塞。某一小段沒有等級時，顏色退回車速本身。有實時車速的路段上有流動的圓點；關掉車速，圓點一併消失。
 
-**不提供行車路線。** 這個網站用來讀全港交通，也用來說明智慧城市（Smart City）的公開數據怎樣變成同一幅畫面。
+快拍包括隧道口。海港一帶和隧道口的快拍，在尚未放大時就留在地圖上，其餘的要走近才出現。限速每小時七十公里或以上道路的工程、收費點，以及尚未結束的特別交通消息，各有自己的圖層。
 
----
+八個陸路口岸顯示旅客大堂：居民和訪客，入境和出境。大堂旁邊的車輛讀數，是通往該口岸的策略性道路的實時車速。羅湖是旅客過關的地方，公開檔案沒有私家車輪候，那一欄就留空。
 
-## 功能
+生效中的香港天文台警告全部列出。天色安靜時，這一列仍顯示天文台的氣溫，以及過去一小時有沒有下雨。
 
-| | |
-| --- | --- |
-| **過海隧道** | 紅磡海底隧道、東區海底隧道、西區海底隧道。分鐘來自真實進路。綠、黃、紅。點一下讀數，地圖移到該進路。 |
-| **車速** | 運輸署飽和等級（暢順、緩慢、擠塞）畫在策略性中心線上；有實時車速的路段上有流動圓點。 |
-| **快拍** | 運輸署公共快拍，包括隧道口。海港與隧道口在縮小畫面時仍會顯示；其餘須放大才出現。 |
-| **工程、隧道、意外** | 限速 70 km/h 或以上道路的工程、過海隧道與大欖隧道收費點、未結束的特別交通消息。 |
-| **陸路管制站** | 八個口岸的旅客大堂。大堂旁車輛讀數為通往該口岸的策略性道路實時車速。 |
-| **天氣** | 生效中的天文台警告；天色平靜時仍顯示天文台氣溫，以及過去一小時有否下雨。 |
-| **港鐵** | 公布的下一班分鐘、終點與月台。港鐵沒有公布列車位置；圓點按分鐘沿路軌推算，卡片寫明落在哪兩個站之間。 |
-| **九巴** | 九巴公布的到站時間。放大後顯示畫面中間附近的車站；九巴沒有公布行車路線，地圖只顯示車站。 |
-| **情報** | 優先閱讀清單：意外、擠塞道路、繁忙大堂、警告。可收起，收起後沿底部顯示；收起與展開均有動畫。 |
-| **底圖** | 衛星照片、[OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) 街道圖、[OSM Liberty](https://github.com/maputnik/osm-liberty) 立體樓宇。樓宇畫面中，標籤與標記在屋頂之下。 |
+港鐵的到站分鐘、終點和月台，是港鐵公布的下一班車。港鐵沒有公布列車位置，圓點把那些分鐘沿路軌往回推，卡片寫明它落在哪兩個站之間。輕鐵不在這一層。九巴顯示九巴公布的到站時間，原定班次也留在班次表上；把地圖拉近，才會看到畫面中間附近的車站。九巴沒有公布巴士所行的路，所以地圖只顯示車站。
 
----
+旁邊的清單把值得先讀的事項排好：未結束的意外、擠塞的路、非常繁忙的大堂、警告。收起之後，同一批事項沿底部移動。
 
-## 共用的數據
+底圖可以在衛星照片、OSM Bright 街道圖，以及立起來的 OSM Liberty 樓宇之間切換。樓宇畫面裏，標籤和標記在屋頂之下。
 
-**原則：不要加重他人伺服器的負擔。**
+這幅地圖用的是運輸署、HKeMobility、入境事務處、天文台、港鐵和九巴已經公布的資料，並不是 [DATA.GOV.HK](https://data.gov.hk) 上的每一個數據集。
 
-公開網站為每一項所用的數據保留一份共用副本。訪客讀的是這份副本。副本仍然有效時，新訪客不會再向運輸署等部門的伺服器發出請求。
+## 開源
 
-| 數據類別 | 大約更新間隔 |
-| --- | --- |
-| 港鐵下一班 | ~15 秒 |
-| 九巴到站 | ~30 秒 |
-| 運輸署、入境處、天文台、快拍、工程 | ~60 秒 |
-
-有效時間與畫面的更新節奏一致。按 Cloudflare 城市存放（`hktraffic-feeds`），`Cache-Control: public`。即使同時有大量訪客，亦不會加重政府伺服器的負擔。
-
-<details>
-<summary><strong>快取怎樣運作（按此開啟）</strong></summary>
-
-```mermaid
-flowchart LR
-  subgraph Visitors
-    U1[訪客 1]
-    U2[訪客 N]
-  end
-  subgraph Edge["Cloudflare Worker + 共用快取"]
-    W[HK Traffic Intelligence]
-    C[(按城市快取)]
-  end
-  subgraph Open_data["香港開放數據"]
-    TD[運輸署]
-    HKO[天文台]
-    IMMD[入境處]
-    MTR[港鐵]
-    KMB[九巴]
-  end
-  U1 --> W
-  U2 --> W
-  W --> C
-  C -->|未命中再寫入| W
-  W -->|僅在過期時| TD
-  W --> HKO
-  W --> IMMD
-  W --> MTR
-  W --> KMB
-```
-
-</details>
-
----
-
-## 自行安裝
-
-本項目為**開源**。你可以複製程式、在本機運行，亦可 fork。請保留版權聲明，並致謝 [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) / [Keith Li](https://github.com/keithligh)。
+程式以 [MIT License](LICENSE) 開源。歡迎你自行安裝、修改，以及 fork。如果你 fork 或重用這些程式，請保留版權聲明，並致謝 [HK Traffic Intelligence](https://github.com/keithligh/hk-traffic-intelligence) 和 [Keith Li](https://github.com/keithligh)。
 
 需要 Node.js 22。
 
@@ -116,58 +50,46 @@ npm run dev
 
 開啟 [http://127.0.0.1:4317](http://127.0.0.1:4317)。
 
-### 底部控制列
-
-| 控制 | 圖層 |
-| --- | --- |
-| **衛星** | Esri 照片。畫面保持平坦，著色道路才落在街上。 |
-| **街道** | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style)，由 [OpenFreeMap](https://openfreemap.org) 提供。 |
-| **樓宇** | [OSM Liberty](https://github.com/maputnik/osm-liberty) 立體樓宇。再按一次返回先前的底圖。 |
-| **車速、快拍、工程、隧道、意外、管制站、港鐵、九巴** | 開關數據圖層。 |
-
-### 開發
+底部一列用來換底圖和圖層。衛星是 Esri 的照片，畫面保持平坦，著色的道路才落在街上。街道是 [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style)，由 [OpenFreeMap](https://openfreemap.org) 提供。樓宇是 [OSM Liberty](https://github.com/maputnik/osm-liberty)，再按一次就回到剛才的地圖。其餘按鈕開關車速、快拍、工程、隧道、意外、管制站、港鐵和九巴。
 
 | 指令 | 作用 |
 | --- | --- |
 | `npm run dev` | 在 4317 埠啟動 Next.js |
 | `npm run lint` | ESLint |
-| `npm run dev:vinext` | 在 4318 埠啟動供 Cloudflare 使用的開發伺服器 |
+| `npm run dev:vinext` | 在 4318 埠啟動面向 Cloudflare 的開發伺服器 |
 | `npm run deploy:vinext` | 在已有 Cloudflare 憑證時部署 Worker |
 
-加上 `?feed=down` 可查看車速數據失敗時的畫面；加上 `?map=down`，地圖不在時頂列仍在。
+加上 `?feed=down`，可以看到車速數據失敗時的畫面。加上 `?map=down`，地圖不在的時候，頂端那一列仍在。程式用 Next.js、React、MapLibre GL 和 Tailwind CSS，以 Cloudflare Worker 提供。
 
-程式以 Next.js、React、MapLibre GL、Tailwind CSS 及 TypeScript 撰寫，以 Cloudflare Worker 提供服務。
+## 同一份資料
 
----
+公開網站為每一項資料保留一份共用副本，訪客讀的是這份副本。副本仍然有效時，新的訪客不會再向部門的伺服器要一次。副本按 Cloudflare 的城市分開存放，有效時間和畫面的更新節奏一致：港鐵大約十五秒，九巴大約三十秒，其餘大約一分鐘。這樣做，是避免網站人多了，反而加重政府伺服器的負擔。
 
-## 畫面上的數字從哪裏來
+## 數字從哪裏來
 
-道路形狀為運輸署策略性中心線（香港 1980 坐標）。地政總署公布的全港改正為經度加 8.8 角秒、緯度減 5.5 角秒；改完後，線才落在路上。
+道路形狀是運輸署的策略性中心線，檔案用香港 1980 坐標。地政總署公布的全港改正是經度加 8.8 角秒、緯度減 5.5 角秒。改完，線就落在路上。
 
-| 畫面上 | 開放數據 |
+| 畫面上的 | 開放數據 |
 | --- | --- |
-| 策略性道路車速與官方顏色 | [策略性道路及主要道路交通數據](https://data.gov.hk/tc-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads)、[HKeMobility](https://www.hkemobility.gov.hk/tc/) |
-| 道路形狀 | [道路網絡（第二代）](https://data.gov.hk/tc-data/dataset/hk-td-tis_15-road-network-v2) |
-| 過海分鐘 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 行車時間 |
-| 快拍（英、繁） | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 快拍圖層 |
-| 道路工程、收費點 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) |
-| 特別交通消息 | [特別交通消息](https://data.gov.hk/tc-data/dataset/hk-td-tis_19-special-traffic-news-v2) |
-| 智慧燈柱探測器 | [智慧燈柱交通探測器](https://data.gov.hk/tc-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
-| 口岸輪候 | 入境事務處 [陸路管制站輪候時間](https://data.gov.hk/tc-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
-| 港鐵下一班 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data)；車站位置為地政總署 [車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map) |
-| 九巴到站 | [九巴及龍運預計到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
-| 警告、氣溫、雨量 | 天文台 [警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc)、[本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
-| 街道圖與樓宇 | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style)、[OSM Liberty](https://github.com/maputnik/osm-liberty)，由 [OpenFreeMap](https://openfreemap.org) 提供；© [OpenStreetMap](https://www.openstreetmap.org/copyright) |
+| 哪些策略性道路在走，以及官方的顏色 | [策略性道路及主要道路交通數據](https://data.gov.hk/tc-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads)，等級見 [HKeMobility](https://www.hkemobility.gov.hk/tc/) |
+| 那些道路的形狀 | [道路網絡（第二代）](https://data.gov.hk/tc-data/dataset/hk-td-tis_15-road-network-v2) |
+| 過海隧道的分鐘 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的行車時間 |
+| 快拍，英文和繁體中文 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的快拍圖層 |
+| 快速公路正在開挖的位置 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的道路工程 |
+| 隧道的位置 | [HKeMobility](https://www.hkemobility.gov.hk/tc/) 的收費點 |
+| 剛剛出了什麼事 | [特別交通消息](https://data.gov.hk/tc-data/dataset/hk-td-tis_19-special-traffic-news-v2) |
+| 市區燈柱上的探測器 | [智慧燈柱交通探測器](https://data.gov.hk/tc-data/dataset/hk-td-tis_33-traffic-data-traffic-detectors-installed-at-smart-lampposts) |
+| 陸路管制站的旅客大堂 | 入境事務處，[陸路管制站輪候時間](https://data.gov.hk/tc-data/dataset/hk-immd-set28-land-boundary-control-points-waiting-time) |
+| 下一班港鐵 | [下一班車](https://data.gov.hk/tc-data/dataset/mtr-data2-nexttrain-data)。車站位置是地政總署的[車站室內平面](https://portal.csdi.gov.hk/csdi-webpage/apidoc/3d-indoor-mtr-station-map)。 |
+| 下一班九巴 | [九巴及龍運預計到站時間](https://data.etabus.gov.hk/v1/transport/kmb/stop) |
+| 警告、氣溫和雨 | 香港天文台的[警告摘要](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc)和[本港地區天氣報告](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc) |
+| 街道圖和樓宇 | [OSM Bright](https://github.com/openmaptiles/osm-bright-gl-style) 和 [OSM Liberty](https://github.com/maputnik/osm-liberty)，由 [OpenFreeMap](https://openfreemap.org) 提供，數據來自 [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者和 [OpenMapTiles](https://openmaptiles.org/) |
 | 衛星照片 | [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer)。影像 © Esri |
 
----
+## 作者
 
-## 作者及授權
+[Keith Li](https://www.linkedin.com/in/keithlihk)。這幅地圖用在 Agentic Engineer 的課堂、公開演講，以及大學的客席講座。智慧城市的數據本來就是公開的。要做的，是讓人讀得懂。
 
-[Keith Li](https://www.linkedin.com/in/keithlihk)。這個項目用於 Agentic Engineer 課堂、公開演講及大學客席講座。數據本來就是公開的；要做的是讓這些數據成為一座人讀得懂的智慧城市。
+如果你希望更多人看見這個項目，請 [按 star](https://github.com/keithligh/hk-traffic-intelligence)。
 
-以 [MIT License](LICENSE) 發布。歡迎 fork 及重用；請保留版權聲明，並致謝本項目。
-
-若這個項目對你有用，請 **star**。這是支持本項目最直接的方法。
-
-**製作：** [Keith Li](https://www.linkedin.com/in/keithlihk) / [GitHub](https://github.com/keithligh)
+製作：[Keith Li](https://www.linkedin.com/in/keithlihk) / [GitHub](https://github.com/keithligh)
