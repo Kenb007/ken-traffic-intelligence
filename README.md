@@ -49,7 +49,7 @@ Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 | `npm run dev:vinext` | The Cloudflare-oriented dev server on port 4318 |
 | `npm run deploy:vinext` | Deploy the worker, when Cloudflare credentials are available |
 
-If you want to see the screen when the speed feed cannot be reached, add `?feed=down` to the address. If you want to see the header while the map itself is absent, add `?map=down`. The application is written with Next.js, React, MapLibre GL, and Tailwind CSS, and the public site runs as a Cloudflare Worker.
+The application is written with Next.js, React, MapLibre GL, and Tailwind CSS, and the public site runs as a Cloudflare Worker.
 
 ## One copy of each feed
 

@@ -49,7 +49,7 @@ npm run dev
 | `npm run dev:vinext` | 在 4318 埠啟動面向 Cloudflare 的開發伺服器 |
 | `npm run deploy:vinext` | 在已有 Cloudflare 憑證時部署 Worker |
 
-若要查看車速資料未能讀取時的畫面，可在網址加上 `?feed=down`。若要在地圖不顯示時仍保留頂端那一列，可加上 `?map=down`。程式以 Next.js、React、MapLibre GL 和 Tailwind CSS 撰寫，公開網站以 Cloudflare Worker 提供。
+程式以 Next.js、React、MapLibre GL 和 Tailwind CSS 撰寫，公開網站以 Cloudflare Worker 提供。
 
 ## 同一份資料
 
