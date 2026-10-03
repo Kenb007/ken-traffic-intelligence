@@ -6,6 +6,7 @@ import {
   GPUInitializationError,
   Map,
   NavigationControl,
+  GeolocateControl,
   Popup,
   setWorkerUrl,
   type ErrorEvent,
@@ -380,6 +381,17 @@ export function CityMap({
       }
     }
     map.addControl(new NavigationControl({ visualizePitch: true }), "top-left")
+    map.addControl(
+      new GeolocateControl({
+        positionOptions: {
+          enableeHighAccuracy: true,
+        }
+          trackUserLocation: true,
+      showAccuracyCircle: true,
+      showUserLocation: true,
+      }),
+    "top-right"
+  )
     mapRef.current = map
     holdDataCreditOpen(map)
 
