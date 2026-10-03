@@ -611,17 +611,20 @@ export function CityMap({
     approachesRef.current = approaches
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const features: GeoJSON.Feature[] = approaches.map((point) => {
-      const colour = worstColour(point)
+    const features: GeoJSON.Feature[] = approaches.flatMap((point) => {
       const minutes = shortestMinutes(point)
-      const label = minutes == null ? "—" : messages.minutes(minutes)
+      if (minutes == null) return []
+      const colour = worstColour(point)
+      const label = messages.minutes(minutes)
       const icon = approachIconId(colour, label)
       ensureApproachIcon(map, icon, label, PILL[colour])
-      return {
-        type: "Feature",
-        properties: { id: point.id, icon },
-        geometry: { type: "Point", coordinates: point.coordinates },
-      }
+      return [
+        {
+          type: "Feature" as const,
+          properties: { id: point.id, icon },
+          geometry: { type: "Point" as const, coordinates: point.coordinates },
+        },
+      ]
     })
     geoJsonSource(map, "approaches")?.setData({ type: "FeatureCollection", features })
   }, [approaches, disabled, mapReady, locale, messages, styleEpoch])
