@@ -78,14 +78,17 @@ export function starSailings(sheets: { from: string; csv: string }[], now: numbe
   return clocksForNow
 }
 
+// A public-holiday band is not applied on its own. The timetable has no holiday calendar.
 function timetableApplies(when: string, day: number): boolean {
   const mon = /\bmon/i.test(when)
   const fri = /\bfri/i.test(when)
   const sat = /\bsat/i.test(when)
   const sun = /\bsun/i.test(when)
-  if (day === 6) return sat
+  const coversWeekdays = (mon && fri) || (mon && (sat || sun))
+  const coversSaturday = sat || (mon && sun)
+  if (day === 6) return coversSaturday
   if (day === 0) return sun
-  return (mon && fri) || (mon && sat && !sun)
+  return coversWeekdays
 }
 
 function hourSpan(value: string): { start: number; end: number } | null {

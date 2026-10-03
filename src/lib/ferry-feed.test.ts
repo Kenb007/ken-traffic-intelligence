@@ -40,3 +40,11 @@ const saturdayNoon = starSailings([wanChai], Date.parse("2026-10-03T12:24:00+08:
 assert.deepEqual(saturdayNoon.map((row) => row.remarkEn), ["every 12 min", "every 12 min"])
 const sundayNoon = starSailings([wanChai], Date.parse("2026-10-04T12:24:00+08:00"))
 assert.deepEqual(sundayNoon.map((row) => row.remarkEn), ["every 20 min", "every 20 min"])
+
+const everyDay = {
+  from: "star-central",
+  csv: "Central to Tsim Sha Tsui,Mon – Sun,9:00am-9:00pm,8",
+}
+assert.equal(starSailings([everyDay], Date.parse("2026-10-02T12:00:00+08:00"))[0]?.remarkEn, "every 8 min")
+assert.equal(starSailings([everyDay], Date.parse("2026-10-03T12:00:00+08:00"))[0]?.remarkEn, "every 8 min")
+assert.equal(starSailings([everyDay], Date.parse("2026-10-04T12:00:00+08:00"))[0]?.remarkEn, "every 8 min")

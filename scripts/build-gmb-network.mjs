@@ -126,7 +126,7 @@ async function save() {
       ids: stop.ids,
     }
   }
-  const temporary = "/tmp/gmb-network-next.json"
+  const temporary = `${OUTPUT}.next`
   await writeFile(temporary, JSON.stringify({ stops: publishedStops }))
   await rename(temporary, OUTPUT)
   await writeFile(CHECKPOINT, JSON.stringify(body))
