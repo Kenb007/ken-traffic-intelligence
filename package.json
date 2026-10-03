@@ -13,7 +13,7 @@
     "dev:vinext": "vite dev --port 4318",
     "build:vinext": "vite build",
     "start:vinext": "vite preview",
-    "deploy:vinext": "vinext-cloudflare deploy"
+    "deploy:vinext": "node scripts/deploy-main.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
