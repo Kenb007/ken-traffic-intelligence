@@ -27,6 +27,14 @@ type OpsHudProps = {
   warningsError: string | null
   conditions: WeatherConditions | null
   mapLive: boolean
+  pictureError: string | null
+  mtrError: string | null
+  kmbError: string | null
+  lrtError: string | null
+  citybusError: string | null
+  gmbError: string | null
+  nlbError: string | null
+  ferryError: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onFocus: (focus: { id: string; coordinates: [number, number] }) => void
@@ -69,6 +77,15 @@ export function OpsHud(props: OpsHudProps) {
     warningsReady: props.warningsReady,
     warningsError: props.warningsError,
     conditions: props.conditions,
+    pictureError: props.pictureError,
+    mtrError: props.mtrError,
+    kmbError: props.kmbError,
+    lrtError: props.lrtError,
+    citybusError: props.citybusError,
+    gmbError: props.gmbError,
+    nlbError: props.nlbError,
+    ferryError: props.ferryError,
+    mapError: props.mapLive ? null : m.mapFailed,
   }, m)
   const intel = board[tab]
   const urgentCount = intel.filter((item) => item.urgent).length
@@ -290,7 +307,7 @@ export function OpsHud(props: OpsHudProps) {
           ) : (
             <>
               <span className="shrink-0 font-[family-name:var(--font-hud)] text-[0.62rem] tracking-[0.14em] text-cyan-100/70 uppercase">
-                {tab === "ranked" ? m.ranked : tab === "roads" ? m.roads : tab === "boundary" ? m.boundary : m.weather}
+                {tabLabel(tab, m)}
               </span>
               <IntelMarquee items={intel} empty={emptyCopy(tab, m)} seconds={marqueeSeconds} onFocus={props.onFocus} />
               {urgentCount > 0 ? (
@@ -359,6 +376,8 @@ function tabLabel(id: IntelTab, m: Messages): string {
       return m.boundary
     case "weather":
       return m.weather
+    case "systems":
+      return m.systems
     default: {
       const exhaustive: never = id
       return exhaustive
@@ -466,6 +485,8 @@ function emptyCopy(tab: IntelTab, m: ReturnType<typeof useI18n>["messages"]): st
       return m.emptyBoundary
     case "weather":
       return m.emptyWeather
+    case "systems":
+      return m.emptySystems
     default: {
       const exhaustive: never = tab
       return exhaustive
