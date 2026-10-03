@@ -21,7 +21,11 @@ export function ferryMinutes(eta: string, now: number): number | null {
   if (/am/i.test(trimmed) && hours === 12) hours = 0
   const hongKong = new Date(now + 8 * 60 * 60 * 1000)
   const instant = Date.UTC(hongKong.getUTCFullYear(), hongKong.getUTCMonth(), hongKong.getUTCDate(), hours, minutes) - 8 * 60 * 60 * 1000
-  if (instant < now - 2 * 60_000) return null
+  if (instant < now - 2 * 60_000) {
+    // A clock from the previous morning is the next sailing. One that left a few minutes ago stays off the board.
+    if (now - instant <= 12 * 60 * 60 * 1000) return null
+    return Math.round((instant + 24 * 60 * 60 * 1000 - now) / 60_000)
+  }
   return Math.max(0, Math.round((instant - now) / 60_000))
 }
 
@@ -61,7 +65,7 @@ export function starSailings(sheets: { from: string; csv: string }[], now: numbe
       if (!direction.includes(" to ")) continue
       if (!timetableApplies(when, day)) continue
       const span = hourSpan(hours)
-      if (!span || minuteOfDay < span.start || minuteOfDay > span.end) continue
+      if (!span || !inHourSpan(minuteOfDay, span)) continue
       const remark = starFerryRemark(frequency)
       const destEn = direction.split(" to ").pop()?.trim() ?? ""
       clocksForNow.push({
@@ -89,6 +93,11 @@ function timetableApplies(when: string, day: number): boolean {
   if (day === 6) return coversSaturday
   if (day === 0) return sun
   return coversWeekdays
+}
+
+function inHourSpan(minuteOfDay: number, span: { start: number; end: number }): boolean {
+  if (span.end >= span.start) return minuteOfDay >= span.start && minuteOfDay <= span.end
+  return minuteOfDay >= span.start || minuteOfDay <= span.end
 }
 
 function hourSpan(value: string): { start: number; end: number } | null {

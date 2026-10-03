@@ -9,6 +9,8 @@ assert.equal(calls[0]?.minutes, 15)
 assert.equal(calls[0]?.route, "CECC")
 assert.equal(ferryMinutes("04:48", now), 48)
 assert.equal(ferryMinutes("03:50", now), null)
+assert.equal(ferryMinutes("04:15", Date.parse("2026-10-03T04:43:00+08:00")), null)
+assert.equal(ferryMinutes("00:20", Date.parse("2026-10-03T23:10:00+08:00")), 70)
 assert.deepEqual(starFerryRemark("6 -- 8"), { remarkTc: "6至8分鐘一班", remarkEn: "every 6 to 8 min" })
 assert.deepEqual(starFerryRemark("6"), { remarkTc: "6分鐘一班", remarkEn: "every 6 min" })
 
@@ -48,3 +50,11 @@ const everyDay = {
 assert.equal(starSailings([everyDay], Date.parse("2026-10-02T12:00:00+08:00"))[0]?.remarkEn, "every 8 min")
 assert.equal(starSailings([everyDay], Date.parse("2026-10-03T12:00:00+08:00"))[0]?.remarkEn, "every 8 min")
 assert.equal(starSailings([everyDay], Date.parse("2026-10-04T12:00:00+08:00"))[0]?.remarkEn, "every 8 min")
+
+const overnight = {
+  from: "star-central",
+  csv: "Central to Tsim Sha Tsui,\"Sat, Sun & Public Holidays\",11:00pm-1:00am,15",
+}
+assert.equal(starSailings([overnight], Date.parse("2026-10-03T23:30:00+08:00"))[0]?.remarkEn, "every 15 min")
+assert.equal(starSailings([overnight], Date.parse("2026-10-04T00:30:00+08:00"))[0]?.remarkEn, "every 15 min")
+assert.equal(starSailings([overnight], Date.parse("2026-10-04T02:00:00+08:00")).length, 0)
