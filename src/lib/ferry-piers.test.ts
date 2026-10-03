@@ -10,6 +10,7 @@ const berths: Record<string, [number, number]> = {
   "hkkf-central-6": [114.1603, 22.28739],
   "sun-north-point": [114.20091, 22.29417],
   "hkkf-hei-ling-chau": [114.02769, 22.25796],
+  "sun-chi-ma-wan": [113.99994, 22.23958],
 }
 
 for (const [id, [lng, lat]] of Object.entries(berths)) {

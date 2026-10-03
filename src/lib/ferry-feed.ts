@@ -1,4 +1,5 @@
 import { ferryCalls, starSailings } from "@/lib/ferry-clock"
+import { SUN_ROUTES } from "@/lib/ferry-routes"
 import { etaDue, ETA_FRESH_MS, forgetStale, heldRows, type HeldRows } from "@/lib/place-arrivals"
 import { etaQueue } from "@/lib/polite-fetch"
 import { pool } from "@/lib/pool"
@@ -11,17 +12,6 @@ type PierFile = { piers: PierRecord[] }
 
 const piers = (piersFile as PierFile).piers
 const FETCH_LIMIT = 4
-
-const SUN_ROUTES: { code: string; from: string; to: string; destTc: string; destEn: string }[] = [
-  { code: "CECC", from: "sun-central", to: "sun-cheung-chau", destTc: "長洲", destEn: "Cheung Chau" },
-  { code: "CCCE", from: "sun-cheung-chau", to: "sun-central", destTc: "中環", destEn: "Central" },
-  { code: "CEMW", from: "sun-central", to: "sun-mui-wo", destTc: "梅窩", destEn: "Mui Wo" },
-  { code: "MWCE", from: "sun-mui-wo", to: "sun-central", destTc: "中環", destEn: "Central" },
-  { code: "NPHH", from: "sun-north-point", to: "sun-hung-hom", destTc: "紅磡", destEn: "Hung Hom" },
-  { code: "HHNP", from: "sun-hung-hom", to: "sun-north-point", destTc: "北角", destEn: "North Point" },
-  { code: "NPKC", from: "sun-north-point", to: "sun-kowloon-city", destTc: "九龍城", destEn: "Kowloon City" },
-  { code: "KCNP", from: "sun-kowloon-city", to: "sun-north-point", destTc: "北角", destEn: "North Point" },
-]
 
 const HKKF_ROUTES: { id: number; from: string; to: string; fromTc: string; fromEn: string; toTc: string; toEn: string }[] = [
   { id: 1, from: "hkkf-central", to: "hkkf-sok-kwu-wan", fromTc: "中環", fromEn: "Central", toTc: "索罟灣", toEn: "Sok Kwu Wan" },
