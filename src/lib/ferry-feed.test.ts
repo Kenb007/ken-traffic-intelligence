@@ -26,3 +26,17 @@ assert.equal(saturday[0]?.remarkEn, "every 6 to 8 min")
 const friday = starSailings([sheet], Date.parse("2026-10-02T10:00:00+08:00"))
 assert.deepEqual(friday.map((row) => row.pierId), ["star-central"])
 assert.equal(starSailings([sheet], Date.parse("2026-10-03T05:00:00+08:00")).length, 0)
+
+const wanChai = {
+  from: "star-wanchai",
+  csv: [
+    "Wanchai to Tsim Sha Tsui,Mon – Sat (Except Public Holidays),9:12am-4:48pm,12",
+    "Wanchai to Tsim Sha Tsui,Sun & Public Holidays,7:40am-1:00pm,20",
+    "Tsim Sha Tsui to Wanchai,Mon – Sat (Except Public Holidays),9:12am-4:48pm,12",
+    "Tsim Sha Tsui to Wanchai,Sun & Public Holidays,7:40am-1:00pm,20",
+  ].join("\n"),
+}
+const saturdayNoon = starSailings([wanChai], Date.parse("2026-10-03T12:24:00+08:00"))
+assert.deepEqual(saturdayNoon.map((row) => row.remarkEn), ["every 12 min", "every 12 min"])
+const sundayNoon = starSailings([wanChai], Date.parse("2026-10-04T12:24:00+08:00"))
+assert.deepEqual(sundayNoon.map((row) => row.remarkEn), ["every 20 min", "every 20 min"])

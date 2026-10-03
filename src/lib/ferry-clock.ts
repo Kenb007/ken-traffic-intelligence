@@ -48,7 +48,7 @@ export type StarClock = {
 
 export function starSailings(sheets: { from: string; csv: string }[], now: number): StarClock[] {
   const hongKong = new Date(now + 8 * 60 * 60 * 1000)
-  const weekend = hongKong.getUTCDay() === 0 || hongKong.getUTCDay() === 6
+  const day = hongKong.getUTCDay()
   const minuteOfDay = hongKong.getUTCHours() * 60 + hongKong.getUTCMinutes()
   const clocksForNow: StarClock[] = []
   for (const sheet of sheets) {
@@ -59,8 +59,7 @@ export function starSailings(sheets: { from: string; csv: string }[], now: numbe
       const hours = cells[2] ?? ""
       const frequency = cells[3] ?? ""
       if (!direction.includes(" to ")) continue
-      const weekendRow = /sat|sun/i.test(when)
-      if (weekendRow !== weekend) continue
+      if (!timetableApplies(when, day)) continue
       const span = hourSpan(hours)
       if (!span || minuteOfDay < span.start || minuteOfDay > span.end) continue
       const remark = starFerryRemark(frequency)
@@ -77,6 +76,16 @@ export function starSailings(sheets: { from: string; csv: string }[], now: numbe
     }
   }
   return clocksForNow
+}
+
+function timetableApplies(when: string, day: number): boolean {
+  const mon = /\bmon/i.test(when)
+  const fri = /\bfri/i.test(when)
+  const sat = /\bsat/i.test(when)
+  const sun = /\bsun/i.test(when)
+  if (day === 6) return sat
+  if (day === 0) return sun
+  return (mon && fri) || (mon && sat && !sun)
 }
 
 function hourSpan(value: string): { start: number; end: number } | null {
