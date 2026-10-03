@@ -2,6 +2,9 @@ export type FerryClockCall = {
   route: string
   destTc: string
   destEn: string
+  originTc: string
+  originEn: string
+  arriving: boolean
   eta: string
   minutes: number
   remarkTc: string
@@ -11,8 +14,13 @@ export type FerryClockCall = {
 export function ferryMinutes(eta: string, now: number): number | null {
   const trimmed = eta.trim()
   if (!trimmed) return null
-  const iso = Date.parse(trimmed)
-  if (Number.isFinite(iso) && trimmed.includes("T")) return Math.max(0, Math.round((iso - now) / 60_000))
+  if (trimmed.includes("T")) {
+    const iso = Date.parse(trimmed)
+    if (!Number.isFinite(iso)) return null
+    // A dated time already in the past is not the next sailing. A minute or two of clock skew still counts as due.
+    if (iso < now - 2 * 60_000) return null
+    return Math.max(0, Math.round((iso - now) / 60_000))
+  }
   const match = /(\d{1,2}):(\d{2})/.exec(trimmed)
   if (!match?.[1] || !match[2]) return null
   let hours = Number(match[1])
@@ -29,12 +37,33 @@ export function ferryMinutes(eta: string, now: number): number | null {
   return Math.max(0, Math.round((instant - now) / 60_000))
 }
 
-export function ferryCalls(rows: { route: string; destTc: string; destEn: string; eta: string }[], now: number): FerryClockCall[] {
+export function ferryCalls(rows: {
+  route: string
+  destTc: string
+  destEn: string
+  originTc?: string
+  originEn?: string
+  arriving?: boolean
+  eta: string
+  remarkTc?: string
+  remarkEn?: string
+}[], now: number): FerryClockCall[] {
   const calls: FerryClockCall[] = []
   for (const row of rows) {
     const minutes = ferryMinutes(row.eta, now)
     if (minutes == null) continue
-    calls.push({ route: row.route, destTc: row.destTc, destEn: row.destEn, eta: row.eta, minutes, remarkTc: "", remarkEn: "" })
+    calls.push({
+      route: row.route,
+      destTc: row.destTc,
+      destEn: row.destEn,
+      originTc: row.originTc ?? "",
+      originEn: row.originEn ?? "",
+      arriving: row.arriving === true,
+      eta: row.eta,
+      minutes,
+      remarkTc: row.remarkTc ?? "",
+      remarkEn: row.remarkEn ?? "",
+    })
   }
   calls.sort((a, b) => a.minutes - b.minutes || a.route.localeCompare(b.route))
   return calls.slice(0, 6)
@@ -44,6 +73,9 @@ export type StarClock = {
   route: string
   destTc: string
   destEn: string
+  originTc: string
+  originEn: string
+  arriving: boolean
   eta: string
   pierId: string
   remarkTc: string
@@ -68,10 +100,14 @@ export function starSailings(sheets: { from: string; csv: string }[], now: numbe
       if (!span || !inHourSpan(minuteOfDay, span)) continue
       const remark = starFerryRemark(frequency)
       const destEn = direction.split(" to ").pop()?.trim() ?? ""
+      const place = starPlace(destEn)
       clocksForNow.push({
         route: "天星",
-        destTc: destEn.includes("Tsim") ? "尖沙咀" : destEn.includes("Wan") ? "灣仔" : "中環",
-        destEn,
+        destTc: place.tc,
+        destEn: place.en,
+        originTc: "",
+        originEn: "",
+        arriving: false,
         eta: "",
         pierId: direction.startsWith("Tsim") ? "star-tst" : direction.startsWith("Wan") ? "star-wanchai" : sheet.from,
         remarkTc: remark.remarkTc,
@@ -132,6 +168,12 @@ function splitCsv(line: string): string[] {
   }
   cells.push(current.trim())
   return cells
+}
+
+function starPlace(dest: string): { tc: string; en: string } {
+  if (/tsim/i.test(dest)) return { tc: "尖沙咀", en: "Tsim Sha Tsui" }
+  if (/wan/i.test(dest)) return { tc: "灣仔", en: "Wan Chai" }
+  return { tc: "中環", en: "Central" }
 }
 
 export function starFerryRemark(frequency: string): { remarkTc: string; remarkEn: string } {

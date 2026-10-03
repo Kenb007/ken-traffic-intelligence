@@ -1,6 +1,6 @@
-import { roadOf } from "@/lib/camera-place"
-import { controlName, displayText, hallStatus, hallSummary, vehicleSentence, type Messages } from "@/lib/i18n"
-import type { ApproachPoint, Corridor, TrafficResponse, WeatherConditions, WeatherWarning } from "@/lib/types"
+import { roadOf } from "./camera-place.ts"
+import { controlName, displayText, hallStatus, hallSummary, vehicleSentence, type Messages } from "./i18n.ts"
+import type { ApproachPoint, Corridor, TrafficResponse, WeatherConditions, WeatherWarning } from "./types.ts"
 
 export type IntelKind = "fault" | "incident" | "control" | "crossing" | "jam" | "works" | "slow" | "weather"
 
@@ -18,9 +18,9 @@ export type IntelItem = {
   coordinates: [number, number] | null
 }
 
-export type IntelTab = "ranked" | "roads" | "boundary" | "weather"
+export type IntelTab = "ranked" | "roads" | "boundary" | "weather" | "systems"
 
-export const INTEL_TABS: readonly IntelTab[] = ["ranked", "roads", "boundary", "weather"]
+export const INTEL_TABS: readonly IntelTab[] = ["ranked", "roads", "boundary", "weather", "systems"]
 
 export type IntelInput = {
   trafficError: string | null
@@ -36,6 +36,15 @@ export type IntelInput = {
   warningsReady: boolean
   warningsError: string | null
   conditions: WeatherConditions | null
+  pictureError: string | null
+  mtrError: string | null
+  kmbError: string | null
+  lrtError: string | null
+  citybusError: string | null
+  gmbError: string | null
+  nlbError: string | null
+  ferryError: string | null
+  mapError: string | null
 }
 
 const RANKED_LIMIT = 12
@@ -55,6 +64,7 @@ export function intelBoard(input: IntelInput, m: Messages): Record<IntelTab, Int
     roads: [...faults.filter((item) => item.id === "fault-speed" || item.id === "fault-incidents"), ...incidents, ...jams, ...works].sort(byScore).slice(0, 16),
     boundary: boundaryOf(input, m),
     weather: weatherOf(input, warnings, m),
+    systems: [...faults].sort(byScore),
   }
 }
 
@@ -71,6 +81,20 @@ function faultsOf(input: IntelInput, m: Messages): IntelItem[] {
   if (input.approachesError) items.push(fault("fault-crossings", 620_000, m.faultCrossings, input.approachesError, m))
   if (input.controlError) items.push(fault("fault-boundary", 580_000, m.faultBoundary, input.controlError, m))
   if (input.warningsError) items.push(fault("fault-weather", 160_000, m.faultWeather, input.warningsError, m))
+  const feeds: { id: string; score: number; title: string; detail: string | null }[] = [
+    { id: "fault-picture", score: 420_000, title: m.pictureFailed, detail: input.pictureError },
+    { id: "fault-mtr", score: 400_000, title: m.mtrFailed, detail: input.mtrError },
+    { id: "fault-kmb", score: 390_000, title: m.kmbFailed, detail: input.kmbError },
+    { id: "fault-lrt", score: 380_000, title: m.lrtFailed, detail: input.lrtError },
+    { id: "fault-citybus", score: 370_000, title: m.citybusFailed, detail: input.citybusError },
+    { id: "fault-gmb", score: 360_000, title: m.gmbFailed, detail: input.gmbError },
+    { id: "fault-nlb", score: 350_000, title: m.nlbFailed, detail: input.nlbError },
+    { id: "fault-ferry", score: 340_000, title: m.ferryFailed, detail: input.ferryError },
+    { id: "fault-map", score: 1_200_000, title: m.mapFailed, detail: input.mapError },
+  ]
+  for (const feed of feeds) {
+    if (feed.detail) items.push(fault(feed.id, feed.score, feed.title, feed.detail, m))
+  }
   return items
 }
 

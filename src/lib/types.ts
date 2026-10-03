@@ -273,6 +273,9 @@ export type FerryCall = {
   route: string
   destTc: string
   destEn: string
+  originTc: string
+  originEn: string
+  arriving: boolean
   eta: string
   minutes: number | null
   remarkTc: string
@@ -296,6 +299,7 @@ export type FerryVessel = {
   lat: number
   route: string
   eta: string
+  minutes: number | null
 }
 
 export type FerryResponse = {

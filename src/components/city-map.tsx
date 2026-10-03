@@ -37,7 +37,7 @@ import {
   workPopup,
 } from "@/components/map-cards"
 import { stopPlate, stopPlateKey, type StopPlate } from "@/lib/stop-plate"
-import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
+import { GMB_MIN_ZOOM, KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import { displayText, type Locale, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint, stationRecord } from "@/lib/mtr-network"
 import { lrtColor, lrtPoint, lrtRoutesThrough, lrtStation, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
@@ -611,17 +611,20 @@ export function CityMap({
     approachesRef.current = approaches
     const map = mapRef.current
     if (disabled || !map || !mapReady) return
-    const features: GeoJSON.Feature[] = approaches.map((point) => {
-      const colour = worstColour(point)
+    const features: GeoJSON.Feature[] = approaches.flatMap((point) => {
       const minutes = shortestMinutes(point)
-      const label = minutes == null ? "—" : messages.minutes(minutes)
+      if (minutes == null) return []
+      const colour = worstColour(point)
+      const label = messages.minutes(minutes)
       const icon = approachIconId(colour, label)
       ensureApproachIcon(map, icon, label, PILL[colour])
-      return {
-        type: "Feature",
-        properties: { id: point.id, icon },
-        geometry: { type: "Point", coordinates: point.coordinates },
-      }
+      return [
+        {
+          type: "Feature" as const,
+          properties: { id: point.id, icon },
+          geometry: { type: "Point" as const, coordinates: point.coordinates },
+        },
+      ]
     })
     geoJsonSource(map, "approaches")?.setData({ type: "FeatureCollection", features })
   }, [approaches, disabled, mapReady, locale, messages, styleEpoch])
@@ -654,9 +657,9 @@ export function CityMap({
       } else if (citybus?.ok) {
         geoJsonSource(map, "citybus-stops")?.setData(busStopCollection(map, citybus, locale, labels, "#c2410c"))
       }
-      if (!layers.gmb) {
+      if (!layers.gmb || !gmb?.ok) {
         geoJsonSource(map, "gmb-stops")?.setData(emptyCollection())
-      } else if (gmb?.ok) {
+      } else {
         geoJsonSource(map, "gmb-stops")?.setData(busStopCollection(map, gmb, locale, labels, "#65a30d"))
       }
       if (!layers.nlb) {
@@ -1066,12 +1069,12 @@ function addOverlay(map: Map, layer: Parameters<Map["addLayer"]>[0], before: str
   else map.addLayer(layer)
 }
 
-function addStopLabel(map: Map, id: string, source: string, before: string | undefined) {
+function addStopLabel(map: Map, id: string, source: string, before: string | undefined, minzoom = LABEL_MIN_ZOOM) {
   addOverlay(map, {
     id,
     type: "symbol",
     source,
-    minzoom: LABEL_MIN_ZOOM,
+    minzoom,
     filter: ["has", "icon"],
     layout: {
       "icon-image": ["get", "icon"],
@@ -1495,7 +1498,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
     id: "gmb-stops",
     type: "circle",
     source: "gmb-stops",
-    minzoom: KMB_MIN_ZOOM,
+    minzoom: GMB_MIN_ZOOM,
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 16, 6],
       "circle-color": "#f7fee7",
@@ -1504,7 +1507,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "gmb-stop-label", "gmb-stops", before)
+  addStopLabel(map, "gmb-stop-label", "gmb-stops", before, GMB_MIN_ZOOM)
   addOverlay(map, {
     id: "nlb-stops",
     type: "circle",
@@ -1675,10 +1678,15 @@ function ferryPierCollection(map: Map, ferry: FerryResponse | null, locale: Loca
       try {
         const parsed: unknown = JSON.parse(board)
         if (Array.isArray(parsed)) {
+          const seen = new Set<string>()
           marks = parsed.flatMap((item) => {
             if (typeof item !== "object" || item === null) return []
-            const route = (item as { route?: unknown }).route
-            return typeof route === "string" && route ? [route] : []
+            const row = item as { destTc?: unknown; destEn?: unknown; arriving?: unknown }
+            if (row.arriving === true) return []
+            const dest = displayText(locale, typeof row.destTc === "string" ? row.destTc : "", typeof row.destEn === "string" ? row.destEn : "")
+            if (!dest || seen.has(dest)) return []
+            seen.add(dest)
+            return [dest]
           })
         }
       } catch {

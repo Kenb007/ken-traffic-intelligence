@@ -1,4 +1,4 @@
-import { isSpeedBand } from "@/lib/speed"
+import { isSpeedBand } from "./speed.ts"
 import type { SpeedBand } from "@/lib/types"
 
 export type Locale = "zh-HK" | "zh-CN" | "en"
@@ -61,12 +61,14 @@ export type Messages = {
   bad: string
   ranked: string
   roads: string
+  systems: string
   hide: string
   intel: string
   emptyRanked: string
   emptyRoads: string
   emptyBoundary: string
   emptyWeather: string
+  emptySystems: string
   clear: string
   noFeed: string
   veryBusyCount: (n: number) => string
@@ -138,6 +140,7 @@ export type Messages = {
   facing: (direction: string) => string
   facingLabel: string
   towards: (name: string) => string
+  fromPlace: (name: string) => string
   boundLabel: string
   laneLabel: string
   classLabel: string
@@ -222,12 +225,14 @@ const en: Messages = {
   bad: "Bad",
   ranked: "Ranked",
   roads: "Roads",
+  systems: "Systems",
   hide: "Hide",
   intel: "Intel",
   emptyRanked: "Nothing urgent on the roads, boundary, or weather.",
   emptyRoads: "No open incident, bad road, or works.",
   emptyBoundary: "Waiting for the hall feed.",
   emptyWeather: "Waiting for the Observatory.",
+  emptySystems: "Every feed is answering.",
   clear: "Clear",
   noFeed: "No feed",
   veryBusyCount: (n) => (n === 1 ? "1 very busy" : `${n} very busy`),
@@ -299,6 +304,7 @@ const en: Messages = {
   facing: (direction) => direction,
   facingLabel: "Facing",
   towards: (name) => `Towards ${name}`,
+  fromPlace: (name) => `From ${name}`,
   boundLabel: "Direction",
   laneLabel: "Lane",
   classLabel: "Class",
@@ -383,12 +389,14 @@ const zhHK: Messages = {
   bad: "擠塞",
   ranked: "優先",
   roads: "道路",
+  systems: "系統",
   hide: "收起",
   intel: "情報",
   emptyRanked: "道路、管制站及天氣暫無須優先處理的項目。",
   emptyRoads: "沒有未結束事故、擠塞路段或工程。",
   emptyBoundary: "正在等候管制站資料。",
   emptyWeather: "正在等候天文台資料。",
+  emptySystems: "各項資料正常。",
   clear: "正常",
   noFeed: "沒有資料",
   veryBusyCount: (n) => `${n} 個非常繁忙`,
@@ -460,6 +468,7 @@ const zhHK: Messages = {
   facing: (direction) => `朝${direction}`,
   facingLabel: "鏡頭",
   towards: (name) => `往${name}`,
+  fromPlace: (name) => `由${name}`,
   boundLabel: "方向",
   laneLabel: "行車線",
   classLabel: "狀況",
@@ -541,12 +550,14 @@ const zhCN: Messages = {
   bad: "挤塞",
   ranked: "优先",
   roads: "道路",
+  systems: "系统",
   hide: "收起",
   intel: "情报",
   emptyRanked: "道路、管制站及天气暂无须优先处理的项目。",
   emptyRoads: "没有未结束事故、挤塞路段或工程。",
   emptyBoundary: "正在等候管制站资料。",
   emptyWeather: "正在等候天文台资料。",
+  emptySystems: "各项资料正常。",
   clear: "正常",
   noFeed: "没有资料",
   veryBusyCount: (n) => `${n} 个非常繁忙`,
@@ -617,6 +628,7 @@ const zhCN: Messages = {
   facing: (direction) => `朝${direction}`,
   facingLabel: "镜头",
   towards: (name) => `往${name}`,
+  fromPlace: (name) => `由${name}`,
   boundLabel: "方向",
   laneLabel: "行车线",
   classLabel: "状况",
