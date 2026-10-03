@@ -15,7 +15,7 @@ import { lineRecord, linesThrough, projectNetworkTrain, stationRecord } from "@/
 import { lrtRoutesThrough, lrtStation } from "@/lib/lrt-network"
 import { isCameraSnapshotUrl } from "@/lib/picture"
 import { isSpeedBand } from "@/lib/speed"
-import { ferryBadge } from "@/lib/ferry-routes"
+import { ferryBadge, ferryLeg } from "@/lib/ferry-routes"
 import { routesWithoutArrival } from "@/lib/stop-routes"
 import type { ApproachPoint, HarbourJourney, LrtResponse, MtrCalling, MtrResponse, SpeedBand } from "@/lib/types"
 
@@ -283,13 +283,18 @@ function ferryCall(call: KmbBoardCall, m: Messages): HTMLElement {
   row.className = "city-card-call city-card-call-plain"
   const badge = ferryBadge(call.route)
   const service = displayText(m.locale, badge.tc, badge.en)
-  const dest = readablePlace(displayText(m.locale, call.destTc, call.destEn))
-  const when = call.minutes == null ? clock(call.eta, m.locale) : m.minutes(call.minutes)
+  const leg = ferryLeg(call)
+  const place = leg ? readablePlace(displayText(m.locale, leg.tc, leg.en)) : ""
+  const remark = displayText(m.locale, call.remarkTc, call.remarkEn)
+  const headline = place ? (leg?.arriving ? m.fromPlace(place) : m.towards(place)) : service
+  const when = call.minutes == null ? remark || clock(call.eta, m.locale) : m.minutes(call.minutes)
   row.append(
-    text("span", "city-card-call-dest", dest ? m.towards(dest) : service),
+    text("span", "city-card-call-dest", headline),
     text("span", "city-card-call-when", when),
   )
-  if (service && dest && service !== dest) row.append(text("span", "city-card-call-kind", service))
+  const note = call.minutes != null && remark ? remark : ""
+  const kind = note || (service && place && service !== place ? service : "")
+  if (kind && kind !== headline) row.append(text("span", "city-card-call-kind", kind))
   return row
 }
 
@@ -327,6 +332,9 @@ type KmbBoardCall = {
   route: string
   destTc: string
   destEn: string
+  originTc: string
+  originEn: string
+  arriving: boolean
   eta: string
   minutes: number | null
   scheduled: boolean
@@ -350,6 +358,9 @@ function kmbBoard(properties: GeoJSON.GeoJsonProperties): KmbBoardCall[] {
         route,
         destTc: typeof row.destTc === "string" ? row.destTc : "",
         destEn: typeof row.destEn === "string" ? row.destEn : "",
+        originTc: typeof row.originTc === "string" ? row.originTc : "",
+        originEn: typeof row.originEn === "string" ? row.originEn : "",
+        arriving: row.arriving === true,
         eta: typeof row.eta === "string" ? row.eta : "",
         minutes: typeof row.minutes === "number" ? row.minutes : null,
         scheduled: row.scheduled === true,

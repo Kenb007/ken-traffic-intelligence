@@ -138,6 +138,7 @@ export type Messages = {
   facing: (direction: string) => string
   facingLabel: string
   towards: (name: string) => string
+  fromPlace: (name: string) => string
   boundLabel: string
   laneLabel: string
   classLabel: string
@@ -299,6 +300,7 @@ const en: Messages = {
   facing: (direction) => direction,
   facingLabel: "Facing",
   towards: (name) => `Towards ${name}`,
+  fromPlace: (name) => `From ${name}`,
   boundLabel: "Direction",
   laneLabel: "Lane",
   classLabel: "Class",
@@ -460,6 +462,7 @@ const zhHK: Messages = {
   facing: (direction) => `朝${direction}`,
   facingLabel: "鏡頭",
   towards: (name) => `往${name}`,
+  fromPlace: (name) => `由${name}`,
   boundLabel: "方向",
   laneLabel: "行車線",
   classLabel: "狀況",
@@ -617,6 +620,7 @@ const zhCN: Messages = {
   facing: (direction) => `朝${direction}`,
   facingLabel: "镜头",
   towards: (name) => `往${name}`,
+  fromPlace: (name) => `由${name}`,
   boundLabel: "方向",
   laneLabel: "行车线",
   classLabel: "状况",

@@ -1,4 +1,4 @@
-import { ferryCalls, starSailings } from "@/lib/ferry-clock"
+import { ferryCalls, ferryMinutes, starSailings } from "@/lib/ferry-clock"
 import { SUN_ROUTES } from "@/lib/ferry-routes"
 import { etaDue, ETA_FRESH_MS, forgetStale, heldRows, type HeldRows } from "@/lib/place-arrivals"
 import { etaQueue } from "@/lib/polite-fetch"
@@ -25,7 +25,18 @@ const STAR_SHEETS = [
   { url: "https://www.starferry.com.hk/sites/default/files/upload/open_data/csv/ferry_sf_wanchai_tsimshatsui_timetable_eng.csv", from: "star-wanchai", to: "star-tst" },
 ]
 
-type Clock = { route: string; destTc: string; destEn: string; eta: string; pierId: string; remarkTc: string; remarkEn: string }
+type Clock = {
+  route: string
+  destTc: string
+  destEn: string
+  originTc: string
+  originEn: string
+  arriving: boolean
+  eta: string
+  pierId: string
+  remarkTc: string
+  remarkEn: string
+}
 type SunFix = { vessel: FerryVessel | null; clocks: Clock[] }
 
 const clocks = new Map<string, HeldRows<Clock>>()
@@ -57,7 +68,18 @@ export async function loadFerrySnapshot(now = Date.now()): Promise<FerryResponse
     for (const row of rows) {
       const timed = row.eta ? ferryCalls([row], now)[0] : null
       const call = timed ?? (row.remarkTc || row.remarkEn
-        ? { route: row.route, destTc: row.destTc, destEn: row.destEn, eta: "", minutes: null, remarkTc: row.remarkTc, remarkEn: row.remarkEn }
+        ? {
+            route: row.route,
+            destTc: row.destTc,
+            destEn: row.destEn,
+            originTc: row.originTc,
+            originEn: row.originEn,
+            arriving: row.arriving,
+            eta: "",
+            minutes: null,
+            remarkTc: row.remarkTc,
+            remarkEn: row.remarkEn,
+          }
         : null)
       if (!call) continue
       const list = byPier.get(row.pierId) ?? []
@@ -76,7 +98,7 @@ export async function loadFerrySnapshot(now = Date.now()): Promise<FerryResponse
   const moving: FerryVessel[] = []
   for (const item of vessels.values()) {
     for (const vessel of heldRows(item, now) ?? []) {
-      if (vessel) moving.push(vessel)
+      if (vessel) moving.push({ ...vessel, minutes: ferryMinutes(vessel.eta, now) })
     }
   }
   return { ok: true, observedAt: new Date(now).toISOString(), piers: boards, vessels: moving }
@@ -94,13 +116,50 @@ async function fetchSun(route: (typeof SUN_ROUTES)[number]): Promise<SunFix | nu
     if (!row) return { vessel: null, clocks: [] }
     const depart = text(row.depart_time)
     const arrive = text(row.eta)
+    const remarkTc = text(row.rmk_tc)
+    const remarkEn = text(row.rmk_en)
     const next: Clock[] = []
-    if (depart) next.push({ route: route.code, destTc: route.destTc, destEn: route.destEn, eta: depart, pierId: route.from, remarkTc: "", remarkEn: "" })
-    if (arrive) next.push({ route: route.code, destTc: route.destTc, destEn: route.destEn, eta: arrive, pierId: route.to, remarkTc: "", remarkEn: "" })
+    if (depart) {
+      next.push({
+        route: route.code,
+        destTc: route.destTc,
+        destEn: route.destEn,
+        originTc: "",
+        originEn: "",
+        arriving: false,
+        eta: depart,
+        pierId: route.from,
+        remarkTc,
+        remarkEn,
+      })
+    }
+    if (arrive) {
+      next.push({
+        route: route.code,
+        destTc: route.destTc,
+        destEn: route.destEn,
+        originTc: route.fromTc,
+        originEn: route.fromEn,
+        arriving: true,
+        eta: arrive,
+        pierId: route.to,
+        remarkTc,
+        remarkEn,
+      })
+    }
     const lng = Number(row.lng)
     const lat = Number(row.lat)
     const vessel = Number.isFinite(lng) && Number.isFinite(lat) && lat > 22 && lat < 23 && lng > 113 && lng < 115
-      ? { id: `${route.code}-${text(row.vesselcode) || "boat"}`, nameTc: text(row.route_tc), nameEn: text(row.route_en), lng, lat, route: route.code, eta: arrive || depart }
+      ? {
+          id: `${route.code}-${text(row.vesselcode) || "boat"}`,
+          nameTc: `${route.fromTc} – ${route.destTc}`,
+          nameEn: `${route.fromEn} – ${route.destEn}`,
+          lng,
+          lat,
+          route: route.code,
+          eta: arrive || depart,
+          minutes: null,
+        }
       : null
     return { vessel, clocks: next }
   } catch {
@@ -122,11 +181,18 @@ async function fetchHkkf(route: (typeof HKKF_ROUTES)[number], direction: "inboun
     const arrive = text(row.ETA)
     const towardsDest = direction === "outbound"
     const next: Clock[] = []
+    const destTc = towardsDest ? route.toTc : route.fromTc
+    const destEn = towardsDest ? route.toEn : route.fromEn
+    const originTc = towardsDest ? route.fromTc : route.toTc
+    const originEn = towardsDest ? route.fromEn : route.toEn
     if (depart) {
       next.push({
         route: String(route.id),
-        destTc: towardsDest ? route.toTc : route.fromTc,
-        destEn: towardsDest ? route.toEn : route.fromEn,
+        destTc,
+        destEn,
+        originTc: "",
+        originEn: "",
+        arriving: false,
         eta: depart,
         pierId: towardsDest ? route.from : route.to,
         remarkTc: "",
@@ -136,8 +202,11 @@ async function fetchHkkf(route: (typeof HKKF_ROUTES)[number], direction: "inboun
     if (arrive) {
       next.push({
         route: String(route.id),
-        destTc: towardsDest ? route.toTc : route.fromTc,
-        destEn: towardsDest ? route.toEn : route.fromEn,
+        destTc,
+        destEn,
+        originTc,
+        originEn,
+        arriving: true,
         eta: arrive,
         pierId: towardsDest ? route.to : route.from,
         remarkTc: "",

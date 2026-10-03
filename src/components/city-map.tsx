@@ -1675,11 +1675,15 @@ function ferryPierCollection(map: Map, ferry: FerryResponse | null, locale: Loca
       try {
         const parsed: unknown = JSON.parse(board)
         if (Array.isArray(parsed)) {
+          const seen = new Set<string>()
           marks = parsed.flatMap((item) => {
             if (typeof item !== "object" || item === null) return []
-            const row = item as { destTc?: unknown; destEn?: unknown }
+            const row = item as { destTc?: unknown; destEn?: unknown; arriving?: unknown }
+            if (row.arriving === true) return []
             const dest = displayText(locale, typeof row.destTc === "string" ? row.destTc : "", typeof row.destEn === "string" ? row.destEn : "")
-            return dest ? [dest] : []
+            if (!dest || seen.has(dest)) return []
+            seen.add(dest)
+            return [dest]
           })
         }
       } catch {
