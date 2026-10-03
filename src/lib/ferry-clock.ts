@@ -9,6 +9,7 @@ export type FerryClockCall = {
   minutes: number
   remarkTc: string
   remarkEn: string
+  scheduled: boolean
 }
 
 export function ferryMinutes(eta: string, now: number): number | null {
@@ -47,6 +48,7 @@ export function ferryCalls(rows: {
   eta: string
   remarkTc?: string
   remarkEn?: string
+  scheduled?: boolean
 }[], now: number): FerryClockCall[] {
   const calls: FerryClockCall[] = []
   for (const row of rows) {
@@ -63,6 +65,7 @@ export function ferryCalls(rows: {
       minutes,
       remarkTc: row.remarkTc ?? "",
       remarkEn: row.remarkEn ?? "",
+      scheduled: row.scheduled === true,
     })
   }
   calls.sort((a, b) => a.minutes - b.minutes || a.route.localeCompare(b.route))

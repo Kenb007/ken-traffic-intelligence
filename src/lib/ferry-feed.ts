@@ -1,4 +1,5 @@
 import { ferryCalls, ferryMinutes, starSailings } from "@/lib/ferry-clock"
+import { fortuneDepartureTimes, nextFortuneDepartures } from "@/lib/fortune-timetable"
 import { SUN_ROUTES } from "@/lib/ferry-routes"
 import { etaDue, ETA_FRESH_MS, forgetStale, heldRows, type HeldRows } from "@/lib/place-arrivals"
 import { etaQueue } from "@/lib/polite-fetch"
@@ -36,12 +37,20 @@ type Clock = {
   pierId: string
   remarkTc: string
   remarkEn: string
+  scheduled?: boolean
 }
 type SunFix = { vessel: FerryVessel | null; clocks: Clock[] }
 
 const clocks = new Map<string, HeldRows<Clock>>()
 const vessels = new Map<string, HeldRows<FerryVessel | null>>()
 let starText: { at: number; sheets: { from: string; csv: string }[] } | null = null
+let fortunePages: { at: number; pages: { pierId: string; destTc: string; destEn: string; html: string }[] } | null = null
+
+const FORTUNE_LEGS = [
+  { origin: "16", destination: "17", pierId: "sun-north-point", destTc: "觀塘", destEn: "Kwun Tong" },
+  { origin: "17", destination: "16", pierId: "fortune-kwun-tong", destTc: "北角", destEn: "North Point" },
+  { origin: "17", destination: "18", pierId: "fortune-kwun-tong", destTc: "啟德", destEn: "Kai Tak" },
+]
 
 export async function loadFerrySnapshot(now = Date.now()): Promise<FerryResponse> {
   forgetStale(clocks, now)
@@ -61,6 +70,7 @@ export async function loadFerrySnapshot(now = Date.now()): Promise<FerryResponse
     if (job.key.startsWith("sun:")) vessels.set(job.key, { at: now, rows: result.vessel ? [result.vessel] : [] })
   })
   await rememberStar(now)
+  await rememberFortune(now)
 
   const byPier = new Map<string, FerryCall[]>()
   for (const item of clocks.values()) {
@@ -79,6 +89,7 @@ export async function loadFerrySnapshot(now = Date.now()): Promise<FerryResponse
             minutes: null,
             remarkTc: row.remarkTc,
             remarkEn: row.remarkEn,
+            scheduled: row.scheduled === true,
           }
         : null)
       if (!call) continue
@@ -236,6 +247,54 @@ async function rememberStar(now: number): Promise<void> {
   if (!starText) return
   const rows = starSailings(starText.sheets, now)
   clocks.set("star", { at: now, rows })
+}
+
+async function rememberFortune(now: number): Promise<void> {
+  if (!fortunePages || now - fortunePages.at > 60 * 60 * 1000) {
+    const date = hongKongDate(now)
+    const pages: { pierId: string; destTc: string; destEn: string; html: string }[] = []
+    for (const leg of FORTUNE_LEGS) {
+      try {
+        const url = `https://www.fortuneferry.com.hk/zh/route-and-fare?route=3&origin=${leg.origin}&destination=${leg.destination}&departure_date=${date}`
+        const response = await etaQueue(() => fetchUpstream(url, 60 * 60 * 1000, {
+          timeoutMs: 15_000,
+          headers: { Accept: "text/html", "User-Agent": "Mozilla/5.0 (compatible; HKTrafficIntelligence/1.0; +https://hktraffic.keith-li.workers.dev)" },
+        }))
+        if (response.status !== 200) continue
+        pages.push({ pierId: leg.pierId, destTc: leg.destTc, destEn: leg.destEn, html: new TextDecoder().decode(response.body) })
+      } catch {
+        // Keep the previous hour's page when one direction fails.
+      }
+    }
+    if (pages.length > 0) fortunePages = { at: now, pages }
+  }
+  if (!fortunePages) return
+  const rows: Clock[] = []
+  for (const page of fortunePages.pages) {
+    for (const eta of nextFortuneDepartures(fortuneDepartureTimes(page.html), now)) {
+      rows.push({
+        route: "富裕",
+        destTc: page.destTc,
+        destEn: page.destEn,
+        originTc: "",
+        originEn: "",
+        arriving: false,
+        eta,
+        pierId: page.pierId,
+        remarkTc: "船期",
+        remarkEn: "Timetable",
+        scheduled: true,
+      })
+    }
+  }
+  clocks.set("fortune", { at: now, rows })
+}
+
+function hongKongDate(now: number): string {
+  const hongKong = new Date(now + 8 * 60 * 60 * 1000)
+  const month = String(hongKong.getUTCMonth() + 1).padStart(2, "0")
+  const day = String(hongKong.getUTCDate()).padStart(2, "0")
+  return `${hongKong.getUTCFullYear()}-${month}-${day}`
 }
 
 function text(value: unknown): string {
