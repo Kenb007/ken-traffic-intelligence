@@ -1,4 +1,5 @@
 import { arrivalPairs } from "@/lib/arrival-pairs"
+import { nlbArrivalMs } from "@/lib/nlb-clock"
 import { nearestNlbStops, nlbStop } from "@/lib/nlb-network"
 import { arrivalFailure, etaDue, ETA_FRESH_MS, forgetStale, heldRows, type HeldRows } from "@/lib/place-arrivals"
 import { etaQueue } from "@/lib/polite-fetch"
@@ -83,7 +84,7 @@ export async function loadNlbNear(lng: number, lat: number, now = Date.now()): P
 function callAt(route: string, rows: Arrival[], now: number): NlbCall | null {
   let best: NlbCall | null = null
   for (const row of rows) {
-    const etaMs = row.estimatedArrivalTime ? Date.parse(row.estimatedArrivalTime.replace(" ", "T")) : NaN
+    const etaMs = row.estimatedArrivalTime ? nlbArrivalMs(row.estimatedArrivalTime) : NaN
     if (!Number.isFinite(etaMs)) continue
     const minutes = Math.max(0, Math.round((etaMs - now) / 60_000))
     if (best && (best.minutes ?? 999) <= minutes) continue
