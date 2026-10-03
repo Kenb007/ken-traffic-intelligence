@@ -1677,8 +1677,9 @@ function ferryPierCollection(map: Map, ferry: FerryResponse | null, locale: Loca
         if (Array.isArray(parsed)) {
           marks = parsed.flatMap((item) => {
             if (typeof item !== "object" || item === null) return []
-            const route = (item as { route?: unknown }).route
-            return typeof route === "string" && route ? [route] : []
+            const row = item as { destTc?: unknown; destEn?: unknown }
+            const dest = displayText(locale, typeof row.destTc === "string" ? row.destTc : "", typeof row.destEn === "string" ? row.destEn : "")
+            return dest ? [dest] : []
           })
         }
       } catch {

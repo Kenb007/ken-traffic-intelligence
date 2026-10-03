@@ -16,3 +16,11 @@ export const SUN_ROUTES: { code: string; from: string; to: string; destTc: strin
   { code: "IICHCMUW", from: "sun-cheung-chau", to: "sun-mui-wo", destTc: "梅窩", destEn: "Mui Wo" },
   { code: "IIMUWCHC", from: "sun-mui-wo", to: "sun-cheung-chau", destTc: "長洲", destEn: "Cheung Chau" },
 ]
+
+export function ferryBadge(code: string): { tc: string; en: string } {
+  if (code === "天星") return { tc: "天星", en: "Star Ferry" }
+  if (code.startsWith("II")) return { tc: "橫水渡", en: "Inter-island" }
+  if (/^[A-Z]{4,}$/.test(code)) return { tc: "新渡輪", en: "Sun Ferry" }
+  if (/^[1-4]$/.test(code)) return { tc: "港九小輪", en: "HKKF" }
+  return { tc: code, en: code }
+}

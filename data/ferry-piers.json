@@ -12,8 +12,8 @@
     {"id": "sun-kowloon-city", "nameTc": "九龍城碼頭", "nameEn": "Kowloon City Ferry Pier", "lng": 114.19431, "lat": 22.31784},
     {"id": "hkkf-central", "nameTc": "中環四號碼頭", "nameEn": "Central Pier 4", "lng": 114.15845, "lat": 22.28792},
     {"id": "hkkf-central-6", "nameTc": "中環六號碼頭", "nameEn": "Central Pier 6", "lng": 114.1603, "lat": 22.28739},
-    {"id": "hkkf-sok-kwu-wan", "nameTc": "索罟灣碼頭", "nameEn": "Sok Kwu Wan Ferry Pier", "lng": 114.1315, "lat": 22.2044},
-    {"id": "hkkf-yung-shue-wan", "nameTc": "榕樹灣碼頭", "nameEn": "Yung Shue Wan Ferry Pier", "lng": 114.1108, "lat": 22.2267},
+    {"id": "hkkf-sok-kwu-wan", "nameTc": "索罟灣碼頭", "nameEn": "Sok Kwu Wan Ferry Pier", "lng": 114.1313, "lat": 22.20626},
+    {"id": "hkkf-yung-shue-wan", "nameTc": "榕樹灣碼頭", "nameEn": "Yung Shue Wan Ferry Pier", "lng": 114.10877, "lat": 22.22631},
     {"id": "hkkf-peng-chau", "nameTc": "坪洲碼頭", "nameEn": "Peng Chau Ferry Pier", "lng": 114.03711, "lat": 22.28458},
     {"id": "hkkf-hei-ling-chau", "nameTc": "喜靈洲", "nameEn": "Hei Ling Chau", "lng": 114.02769, "lat": 22.25796}
   ]
