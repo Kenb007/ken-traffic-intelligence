@@ -280,7 +280,7 @@ export function ferryStopPopup(properties: GeoJSON.GeoJsonProperties, m: Message
 
 function ferryCall(call: KmbBoardCall, m: Messages): HTMLElement {
   const row = document.createElement("div")
-  row.className = "city-card-call city-card-call-plain"
+  row.className = call.scheduled ? "city-card-call city-card-call-plain city-card-call-timetable" : "city-card-call city-card-call-plain"
   const badge = ferryBadge(call.route)
   const service = displayText(m.locale, badge.tc, badge.en)
   const leg = ferryLeg(call)
@@ -292,7 +292,7 @@ function ferryCall(call: KmbBoardCall, m: Messages): HTMLElement {
     text("span", "city-card-call-dest", headline),
     text("span", "city-card-call-when", when),
   )
-  const note = call.minutes != null && remark ? remark : ""
+  const note = call.scheduled ? remark || service : call.minutes != null && remark ? remark : ""
   const kind = note || (service && place && service !== place ? service : "")
   if (kind && kind !== headline) row.append(text("span", "city-card-call-kind", kind))
   return row

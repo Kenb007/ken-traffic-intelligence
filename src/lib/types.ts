@@ -280,6 +280,7 @@ export type FerryCall = {
   minutes: number | null
   remarkTc: string
   remarkEn: string
+  scheduled?: boolean
 }
 
 export type FerryPier = {

@@ -19,6 +19,7 @@ export const SUN_ROUTES: { code: string; from: string; to: string; fromTc: strin
 
 export function ferryBadge(code: string): { tc: string; en: string } {
   if (code === "天星") return { tc: "天星", en: "Star Ferry" }
+  if (code === "富裕") return { tc: "富裕小輪", en: "Fortune Ferry" }
   if (code.startsWith("II")) return { tc: "橫水渡", en: "Inter-island" }
   if (SUN_ROUTES.some((route) => route.code === code)) return { tc: "新渡輪", en: "Sun Ferry" }
   if (/^[1-4]$/.test(code)) return { tc: "港九小輪", en: "HK & Kowloon Ferry" }

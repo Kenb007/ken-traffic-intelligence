@@ -14,6 +14,7 @@ const berths: Record<string, [number, number]> = {
   "hkkf-yung-shue-wan": [114.10877, 22.22631],
   "hkkf-sok-kwu-wan": [114.1313, 22.20626],
   "sun-mui-wo": [114.00116, 22.26507],
+  "fortune-kwun-tong": [114.22159, 22.30633],
 }
 
 for (const [id, [lng, lat]] of Object.entries(berths)) {
