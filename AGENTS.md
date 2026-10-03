@@ -8,6 +8,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Live site
+
+The live worker is built only from `main`. Run `npm run deploy:vinext`. It refuses another branch, a dirty tree, a commit that is not `origin/main`, and a side branch that is missing from `docs/branches.md`.
+
+## Branches
+
+Side branches are allowed. Every branch on `origin` or `github` other than `main` has one row in `docs/branches.md` saying what it is. Add the row when the branch is pushed. Remove the row when the branch is deleted. `node scripts/branch-register.mjs` prints whether the list matches the remotes.
+
 ## Jev
 
 Jev is TypeSafe's System One model. It does not write code or choose the next step. When a judgment is semantic and you are not sure, ask Jev, then act on the typed answer. Keep arithmetic, lookups, control flow, and side effects in code.
