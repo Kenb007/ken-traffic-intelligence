@@ -196,6 +196,14 @@ export function Dashboard() {
         conditions={warnings?.conditions ?? null}
         approachesError={approachesLive.error ?? (approaches && !approaches.ok ? approaches.error ?? "Crossing approaches failed." : null)}
         mapLive={mapLive}
+        pictureError={pictureError}
+        mtrError={mtrLive.error ?? (mtr && !mtr.ok ? mtr.error ?? "Next train feed failed" : null)}
+        kmbError={liveError(kmbLive.error, kmbLive.data, "KMB arrivals failed")}
+        lrtError={lrtLive.error ?? (lrt && !lrt.ok ? lrt.error ?? "Light Rail arrivals failed" : null)}
+        citybusError={liveError(citybusLive.error, citybusLive.data, "Citybus arrivals failed")}
+        gmbError={liveError(gmbLive.error, gmbLive.data, "Green minibus arrivals failed")}
+        nlbError={liveError(nlbLive.error, nlbLive.data, "New Lantao Bus arrivals failed")}
+        ferryError={liveError(ferryLive.error, ferryLive.data, "Ferry arrivals failed")}
         open={intelOpen}
         onOpenChange={setIntelOpen}
         onFocus={setFocus}
