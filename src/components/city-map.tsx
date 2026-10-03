@@ -37,7 +37,7 @@ import {
   workPopup,
 } from "@/components/map-cards"
 import { stopPlate, stopPlateKey, type StopPlate } from "@/lib/stop-plate"
-import { KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
+import { GMB_MIN_ZOOM, KMB_MIN_ZOOM, kmbViewKey } from "@/lib/kmb-view"
 import { displayText, type Locale, type Messages } from "@/lib/i18n"
 import { lineRecord, mtrStationCollection, mtrTrackCollection, stationPoint, stationRecord } from "@/lib/mtr-network"
 import { lrtColor, lrtPoint, lrtRoutesThrough, lrtStation, lrtStationCollection, lrtTrackCollection } from "@/lib/lrt-network"
@@ -654,9 +654,9 @@ export function CityMap({
       } else if (citybus?.ok) {
         geoJsonSource(map, "citybus-stops")?.setData(busStopCollection(map, citybus, locale, labels, "#c2410c"))
       }
-      if (!layers.gmb) {
+      if (!layers.gmb || !gmb?.ok) {
         geoJsonSource(map, "gmb-stops")?.setData(emptyCollection())
-      } else if (gmb?.ok) {
+      } else {
         geoJsonSource(map, "gmb-stops")?.setData(busStopCollection(map, gmb, locale, labels, "#65a30d"))
       }
       if (!layers.nlb) {
@@ -1066,12 +1066,12 @@ function addOverlay(map: Map, layer: Parameters<Map["addLayer"]>[0], before: str
   else map.addLayer(layer)
 }
 
-function addStopLabel(map: Map, id: string, source: string, before: string | undefined) {
+function addStopLabel(map: Map, id: string, source: string, before: string | undefined, minzoom = LABEL_MIN_ZOOM) {
   addOverlay(map, {
     id,
     type: "symbol",
     source,
-    minzoom: LABEL_MIN_ZOOM,
+    minzoom,
     filter: ["has", "icon"],
     layout: {
       "icon-image": ["get", "icon"],
@@ -1495,7 +1495,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
     id: "gmb-stops",
     type: "circle",
     source: "gmb-stops",
-    minzoom: KMB_MIN_ZOOM,
+    minzoom: GMB_MIN_ZOOM,
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 16, 6],
       "circle-color": "#f7fee7",
@@ -1504,7 +1504,7 @@ function addWatchLayers(map: Map, before: string | undefined) {
       "circle-pitch-alignment": "map",
     },
   }, before)
-  addStopLabel(map, "gmb-stop-label", "gmb-stops", before)
+  addStopLabel(map, "gmb-stop-label", "gmb-stops", before, GMB_MIN_ZOOM)
   addOverlay(map, {
     id: "nlb-stops",
     type: "circle",

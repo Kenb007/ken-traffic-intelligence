@@ -8,7 +8,7 @@ import { OpsHud } from "@/components/ops-hud"
 import { useLiveJson } from "@/components/use-live-json"
 import { useI18n } from "@/components/locale"
 import { decorateControlPoints } from "@/lib/control-points"
-import { KMB_MIN_ZOOM, KMB_POLL_MS, PLACE_POLL_MS } from "@/lib/kmb-view"
+import { GMB_MIN_ZOOM, KMB_MIN_ZOOM, KMB_POLL_MS, PLACE_POLL_MS } from "@/lib/kmb-view"
 import { inLantau } from "@/lib/lantau"
 import { PICTURE_POLL_MS } from "@/lib/picture"
 import { mergePlaceArrivals } from "@/lib/place-arrivals"
@@ -87,8 +87,12 @@ export function Dashboard() {
   const kmbUrl = layers.kmb && kmbQuery ? `/api/kmb?${kmbQuery}` : null
   const citybusPlacesUrl = layers.citybus && citybusQuery ? `/api/citybus/places?${citybusQuery}` : null
   const citybusUrl = layers.citybus && citybusQuery ? `/api/citybus?${citybusQuery}` : null
-  const gmbPlacesUrl = layers.gmb && kmbQuery ? `/api/gmb/places?${kmbQuery}` : null
-  const gmbUrl = layers.gmb && kmbQuery ? `/api/gmb?${kmbQuery}` : null
+  const gmbQuery =
+    view && view.zoom >= GMB_MIN_ZOOM
+      ? `lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}&zoom=${view.zoom.toFixed(2)}`
+      : null
+  const gmbPlacesUrl = layers.gmb && gmbQuery ? `/api/gmb/places?${gmbQuery}` : null
+  const gmbUrl = layers.gmb && gmbQuery ? `/api/gmb?${gmbQuery}` : null
   const nlbQuery =
     view && view.zoom >= KMB_MIN_ZOOM && inLantau(view.lng, view.lat)
       ? `lng=${view.lng.toFixed(3)}&lat=${view.lat.toFixed(3)}`
